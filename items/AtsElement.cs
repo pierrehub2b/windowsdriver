@@ -46,6 +46,9 @@ public class AtsElement
     [DataMember(Name = "visible")]
     public Boolean Visible { get; set; }
 
+    [DataMember(Name = "password")]
+    public Boolean Password { get; set; }
+
     [DataMember(Name = "attributes")]
     public DesktopData[] Attributes { get; set; }
 
@@ -64,6 +67,8 @@ public class AtsElement
         try
         {
             this.Tag = ElementProperty.getSimpleControlName(elem.Current.ControlType.ProgrammaticName);
+            this.Password = elem.Current.IsPassword;
+
             updateVisual(elem);
         }
         catch (ElementNotAvailableException ex)

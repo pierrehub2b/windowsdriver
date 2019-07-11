@@ -112,6 +112,11 @@ class WindowExecution : AtsExecution
         {
             int.TryParse(commandsData[0], out pid);
         }
+        else if (this.type == WindowType.Switch)
+        {
+            int.TryParse(commandsData[0], out handle);
+            window = DesktopWindow.getWindowByHandle(handle);
+        }
         else if (this.type == WindowType.Move || this.type == WindowType.Resize)
         {
             bounds = new int[] { 0, 0 };
@@ -122,6 +127,27 @@ class WindowExecution : AtsExecution
 
             window = DesktopWindow.getWindowByHandle(handle);
         }
+    }
+
+    private DesktopWindow[] getWindowsList()
+    {
+        List<DesktopWindow> wins = DesktopWindow.getOrderedWindowsByPid(pid);
+
+        if (ieWindows.Count > 0 && ieWindows[0].Pid == pid)
+        {
+            List<DesktopWindow> reorderedList = new List<DesktopWindow>();
+            foreach (DesktopWindow ieWin in ieWindows)
+            {
+                DesktopWindow reordered = wins.Find(w => w.Handle == ieWin.Handle);
+                if (reordered != null)
+                {
+                    reorderedList.Add(reordered);
+                }
+            }
+            return reorderedList.ToArray();
+        }
+
+        return wins.ToArray();
     }
 
     public override bool Run(HttpListenerContext context)
@@ -146,27 +172,7 @@ class WindowExecution : AtsExecution
 
                 try
                 {
-                    List<DesktopWindow> wins = DesktopWindow.getOrderedWindowsByPid(pid);
-
-                    if (ieWindows.Count > 0 && ieWindows[0].Pid == pid)
-                    {
-                        List<DesktopWindow> reorderedList = new List<DesktopWindow>();
-                        foreach (DesktopWindow ieWin in ieWindows)
-                        {
-                            DesktopWindow reordered = wins.Find(w => w.Handle == ieWin.Handle);
-                            if (reordered != null)
-                            {
-                                reorderedList.Add(reordered);
-                            }
-                        }
-                        response.Windows = reorderedList.ToArray();
-                    }
-                    else
-                    {
-                        //wins.Reverse();
-                        response.Windows = wins.ToArray();
-                    }
-                    
+                    response.Windows = getWindowsList();
                 }
                 catch (Exception e)
                 {
@@ -211,15 +217,26 @@ class WindowExecution : AtsExecution
                         response.setError(errorCode, "address bar not found");
                     }
                 }
-                else
-                {
-                    //response.setError(errorCode, "directory not found");
-                }
+
                 break;
 
             case WindowType.Switch:
 
-                //not yet implemented
+                try
+                {
+                    try
+                    {
+                        window.toFront();
+                    }
+                    catch (ElementNotAvailableException) { }
+
+                    response.Windows = new DesktopWindow[] { window };
+
+                }
+                catch (Exception e)
+                {
+                    response.setError(errorCode, e.Message);
+                }
                 break;
 
             case WindowType.ToFront:

@@ -32,7 +32,7 @@ public class VisualRecorder
 
     [DllImport("user32.dll", EntryPoint = "GetDC")]
     private static extern IntPtr GetDC(IntPtr ptr);
-
+         
     [DllImport("gdi32.dll", EntryPoint = "CreateCompatibleDC")]
     private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
 
@@ -48,14 +48,14 @@ public class VisualRecorder
     [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
     private static extern IntPtr DeleteObject(IntPtr hDc);
 
-    private const int SRCCOPY = 13369376;
+    [DllImport("gdi32.dll")]
+    public static extern bool DeleteDC(IntPtr hDC);
     
+    private const int SRCCOPY = 0x00CC0020;
+        
     private int frameIndex = 0;
     private BufferedStream visualStream;
     private VisualAction currentAction;
-
-    private IntPtr hDC;
-    private IntPtr hMemDC;
 
     private ImageCodecInfo animationEncoder;
     private EncoderParameters animationEncoderParameters;
@@ -136,8 +136,6 @@ public class VisualRecorder
 
     public byte[] Capture(int x, int y, int w, int h)
     {
-        hDC = GetDC(GetDesktopWindow());
-        hMemDC = CreateCompatibleDC(hDC);
         return Capture(x, y, w, h, maxQualityEncoder, maxQualityEncoderParameters);
     }
 
@@ -148,13 +146,18 @@ public class VisualRecorder
 
     public byte[] Capture(int x, int y, int w, int h, ImageCodecInfo encoder, EncoderParameters encoderParameters)
     {
-        IntPtr hBitmap = CreateCompatibleBitmap(hDC, w, h);
+        IntPtr hdcSrc = GetDC(GetDesktopWindow());
+        IntPtr hdcDest = CreateCompatibleDC(hdcSrc);
+        IntPtr hBitmap = CreateCompatibleBitmap(hdcSrc, w, h);
+
         if (hBitmap != IntPtr.Zero)
         {
-            IntPtr hOld = (IntPtr)SelectObject(hMemDC, hBitmap);
+            IntPtr hOld = (IntPtr)SelectObject(hdcDest, hBitmap);
 
-            BitBlt(hMemDC, 0, 0, w, h, hDC, x, y, SRCCOPY);
-            SelectObject(hMemDC, hOld);
+            BitBlt(hdcDest, 0, 0, w, h, hdcSrc, x, y, SRCCOPY);
+            SelectObject(hdcDest, hOld);
+
+            DeleteDC(hdcDest);
 
             Bitmap bitmap;
             using (bitmap = Image.FromHbitmap(hBitmap))
@@ -188,12 +191,15 @@ public class VisualRecorder
 
         visualStream = null;
         AmfSerializer = null;
+
+        //DeleteDC(hDC);
+
     }
 
     internal void Start(string folderPath, string id, string fullName, string description, string author, string groups, string prereq, int videoQuality, string started)
     {
-        hDC = GetDC(GetDesktopWindow());
-        hMemDC = CreateCompatibleDC(hDC);
+        //hDC = GetDC(GetDesktopWindow());
+        //hMemDC = CreateCompatibleDC(hDC);
 
         frameIndex = -1;
         startTime = DateTime.Now;

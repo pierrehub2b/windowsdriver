@@ -23,6 +23,8 @@ using System.Runtime.Serialization;
 using System.Windows.Automation;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Management;
+using System.Windows.Forms;
 
 [DataContract(Name = "com.ats.executor.drivers.desktop.DesktopWindow")]
 public class DesktopWindow : AtsElement
@@ -73,8 +75,8 @@ public class DesktopWindow : AtsElement
                     windowPattern.SetWindowVisualState(WindowVisualState.Normal);
                 }
                 catch (InvalidOperationException){}
-                return;
             }
+            return;
         }
         catch (ElementNotAvailableException) { }
 
@@ -133,6 +135,7 @@ public class DesktopWindow : AtsElement
     {
         SetForegroundWindow(Handle);
         SendMessage(Handle, WM_SYSCOMMAND, SC_RESTORE, 0);
+        windowPattern.SetWindowVisualState(WindowVisualState.Normal);
     }
 
     internal void state(string value)
@@ -168,6 +171,23 @@ public class DesktopWindow : AtsElement
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------------------------
+        private static List<int> GetChildProcesses(int parentId){
+
+        List<int> result = new List<int>();
+        result.Add(parentId);
+
+        var query = "Select * From Win32_Process Where ParentProcessId = " + parentId;
+
+        ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
+        ManagementObjectCollection processList = searcher.Get();
+
+        foreach (ManagementBaseObject proc in processList)
+        {
+            result.Add(Convert.ToInt32(proc.GetPropertyValue("ProcessId")));
+        }
+
+        return result;
+    }
 
     public static List<DesktopWindow> getOrderedWindowsByPid(int pid)
     {
@@ -184,6 +204,8 @@ public class DesktopWindow : AtsElement
 
         if (procExists)
         {
+            List<int> pids = GetChildProcesses(pid);
+
             List<DesktopWindow> windowsList = new List<DesktopWindow>();
             AutomationElement elementNode = TreeWalker.RawViewWalker.GetFirstChild(AutomationElement.RootElement);
 
@@ -191,7 +213,7 @@ public class DesktopWindow : AtsElement
             {
                 try
                 {
-                    if (elementNode.Current.ProcessId == pid)
+                    if (pids.IndexOf(elementNode.Current.ProcessId) != -1)
                     {
                         if (elementNode.Current.ControlType == ControlType.Window)
                         {
@@ -203,7 +225,9 @@ public class DesktopWindow : AtsElement
                         }
                     }
                 }
-                catch (InvalidOperationException) { }
+                catch (InvalidOperationException e) {
+                    Console.WriteLine(e.Message);
+                }
                 catch (ElementNotAvailableException) { }
 
                 elementNode = TreeWalker.ControlViewWalker.GetNextSibling(elementNode);
@@ -260,19 +284,29 @@ public class DesktopWindow : AtsElement
 
     public static DesktopWindow getWindowPid(string title)
     {
+        Condition propCondition = new PropertyCondition(AutomationElement.NameProperty, title, PropertyConditionFlags.IgnoreCase);
+
         AutomationElement winNode = TreeWalker.RawViewWalker.GetFirstChild(AutomationElement.RootElement);
+
         while (winNode != null)
         {
             try
             {
                 if (winNode.Current.Name.IndexOf(title) >= 0)
                 {
-                    return CachedElement.getCachedWindow(winNode);
+                    return CachedElement.getCachedWindow(winNode); 
                 }
             }
             catch (InvalidOperationException) { }
             catch (ElementNotAvailableException) { }
+                        
+            AutomationElement textChild = winNode.FindFirst(TreeScope.Element | TreeScope.Children, propCondition);
 
+            if(textChild != null)
+            {
+                return CachedElement.getCachedWindow(winNode);
+            }
+                       
             winNode = TreeWalker.ControlViewWalker.GetNextSibling(winNode);
         }
         return null;
