@@ -66,7 +66,15 @@ public class AtsElement
 
         try
         {
-            this.Tag = ElementProperty.getSimpleControlName(elem.Current.ControlType.ProgrammaticName);
+            if(elem.Current.ControlType == null)
+            {
+                this.Tag = elem.Current.ClassName;
+            }
+            else
+            {
+                this.Tag = ElementProperty.getSimpleControlName(elem.Current.ControlType.ProgrammaticName);
+            }
+
             this.Password = elem.Current.IsPassword;
 
             updateVisual(elem);
@@ -74,6 +82,10 @@ public class AtsElement
         catch (ElementNotAvailableException ex)
         {
             throw ex;
+        }
+        catch (Exception ex)
+        {
+            this.Tag = "*";
         }
     }
 
@@ -98,14 +110,14 @@ public class AtsElement
         }
     }
 
-    internal string getText()
+    internal string getElementText(AutomationElement elem)
     {
         object pattern;
-        if (Element.TryGetCurrentPattern(TextPattern.Pattern, out pattern))
+        if (elem.TryGetCurrentPattern(TextPattern.Pattern, out pattern))
         {
             return (pattern as TextPattern).DocumentRange.GetText(-1);
         }
-        else if (Element.TryGetCurrentPattern(ValuePattern.Pattern, out pattern))
+        else if (elem.TryGetCurrentPattern(ValuePattern.Pattern, out pattern))
         {
             try
             {
@@ -114,6 +126,36 @@ public class AtsElement
             catch (Exception) { }
         }
         return null;
+    }
+
+    internal string getText()
+    {
+        return getElementText(Element);
+    }
+
+    internal string getElementInnerText(AutomationElement elem, string separator)
+    {
+        var walker = TreeWalker.RawViewWalker;
+        var innerTextValue = getElementText(elem);
+
+        var current = walker.GetFirstChild(elem);
+        while (current != null)
+        {
+            var txt = getElementInnerText(current, separator);
+            if(txt != null && txt.Length > 0)
+            {
+                innerTextValue += separator + txt;
+                separator = "\t";
+            }
+            current = walker.GetNextSibling(current);
+        }
+
+        return innerTextValue;
+    }
+    
+    internal string getInnerText()
+    {
+        return getElementInnerText(Element, "");
     }
 
     internal List<AtsElement> getElements(string tag, string[] attributes)
@@ -125,7 +167,7 @@ public class AtsElement
 
         List<AtsElement> listElements = new List<AtsElement>();
         addChild(listElements, Element, tag, attributes);
-
+        
         return listElements;
     }
 
@@ -143,7 +185,13 @@ public class AtsElement
             }
         }
 
-        if ("*".Equals(tag) || parent.Current.ControlType.ProgrammaticName.Equals(tag))
+        var currentTag = parent.Current.ClassName;
+        if(parent.Current.ControlType != null)
+        {
+            currentTag = parent.Current.ControlType.ProgrammaticName;
+        }
+
+        if ("*".Equals(tag) || currentTag.Equals(tag))
         {
             AtsElement el = CachedElement.getCachedElement(parent);
 
@@ -166,28 +214,29 @@ public class AtsElement
                 if (attr.Count == attributes.Length)
                 {
                     el.Attributes = attr.ToArray();
-                    listChild.Add(el);
                 }
             }
-            else
-            {
-                listChild.Add(el);
-            }
+
+            listChild.Add(el);
         }
 
-        var walker = TreeWalker.RawViewWalker;
-
-        var current = walker.GetFirstChild(parent);
-        while (current != null)
+        if (parent.Current.ControlType != ControlType.ScrollBar 
+            && parent.Current.ControlType != ControlType.Button
+            && parent.Current.ControlType != ControlType.Image)
         {
-            addChild(listChild, current, tag, attributes);
-            current = walker.GetNextSibling(current);
+            var current = TreeWalker.RawViewWalker.GetFirstChild(parent);
+            while (current != null)
+            {
+                addChild(listChild, current, tag, attributes);
+                current = TreeWalker.RawViewWalker.GetNextSibling(current);
+            }
         }
     }
 
     internal List<DesktopData> getProperties()
     {
         List<DesktopData> properties = new List<DesktopData>();
+        properties.Add(new DesktopData("InnerText", getInnerText()));
 
         string txt = getText();
         if (txt != null)
@@ -216,6 +265,10 @@ public class AtsElement
         if ("Text".Equals(name))
         {
             return new DesktopData("Text", getText());
+        }
+        else if ("InnerText".Equals(name))
+        {
+            return new DesktopData("InnerText", getInnerText());
         }
 
         AutomationProperty prop = Array.Find(Element.GetSupportedProperties(), p => p.ProgrammaticName.EndsWith("." + name + "Property"));
@@ -248,13 +301,8 @@ public class AtsElement
 
         while (current != null && current.Current.ClassName != "#32769")
         {
-            parents.Add(CachedElement.getCachedElement(current));
+            parents.Insert(0, CachedElement.getCachedElement(current));
             current = walker.GetParent(current);
-        }
-
-        if(parents.Count > 0)
-        {
-            parents.RemoveAt(parents.Count - 1);
         }
 
         return parents;
