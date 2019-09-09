@@ -54,7 +54,7 @@ public class DesktopWindow : AtsElement
     private const string RESTORE = "restore";
     private const string CLOSE = "close";
     
-    public DesktopWindow(AutomationElement elem) : base(elem)
+    public DesktopWindow(AutomationElement elem) : base(elem, "Window")
     {
         try
         {
@@ -93,11 +93,15 @@ public class DesktopWindow : AtsElement
     internal void resize(int w, int h)
     {
         waitIdle();
-        try
-        {
-            transformPattern.Resize(w, h);
-        }
-        catch (InvalidOperationException) { }
+        //try
+        //{
+            if (transformPattern.Current.CanResize)
+            {
+                transformPattern.Resize(w, h);
+            }
+
+        //}
+        //catch (InvalidOperationException) { }
     }
 
     internal void move(int x, int y)
@@ -211,8 +215,8 @@ public class DesktopWindow : AtsElement
 
             while (elementNode != null)
             {
-                try
-                {
+                //try
+                //{
                     if (pids.IndexOf(elementNode.Current.ProcessId) != -1)
                     {
                         if (elementNode.Current.ControlType == ControlType.Window)
@@ -224,11 +228,11 @@ public class DesktopWindow : AtsElement
                             windowsList.Add(CachedElement.getCachedWindow(elementNode));
                         }
                     }
-                }
-                catch (InvalidOperationException e) {
-                    Console.WriteLine(e.Message);
-                }
-                catch (ElementNotAvailableException) { }
+                //}
+                //catch (InvalidOperationException e) {
+                //    Console.WriteLine(e.Message);
+                //}
+                //catch (ElementNotAvailableException) { }
 
                 elementNode = TreeWalker.ControlViewWalker.GetNextSibling(elementNode);
             }
@@ -248,15 +252,15 @@ public class DesktopWindow : AtsElement
             AutomationElement elementNode = TreeWalker.RawViewWalker.GetFirstChild(AutomationElement.RootElement);
             while (elementNode != null)
             {
-                try
-                {
+                //try
+                //{
                     if (elementNode.Current.ProcessId == pid)
                     {
                         return new DesktopWindow(elementNode);
                     }
-                }
-                catch (ElementNotAvailableException) { }
-                catch (InvalidOperationException) { }
+                //}
+                //catch (ElementNotAvailableException) { }
+                //catch (InvalidOperationException) { }
 
                 elementNode = TreeWalker.ControlViewWalker.GetNextSibling(elementNode);
             }
@@ -268,15 +272,12 @@ public class DesktopWindow : AtsElement
     {
         if (handle > 0)
         {
-            AutomationElement window = AutomationElement.RootElement.FindFirst(TreeScope.Children, new PropertyCondition(AutomationElement.NativeWindowHandleProperty, handle));
+            AutomationElement window = AutomationElement.FromHandle(new IntPtr(handle));
+            //AutomationElement window = AutomationElement.RootElement.FindFirst(TreeScope.Children, new PropertyCondition(AutomationElement.NativeWindowHandleProperty, handle));
 
             if (window != null)
             {
-                try
-                {
-                    return new DesktopWindow(window);
-                }
-                catch (InvalidOperationException) { }
+               return new DesktopWindow(window);
             }
         }
         return null;
@@ -290,15 +291,15 @@ public class DesktopWindow : AtsElement
 
         while (winNode != null)
         {
-            try
-            {
+            //try
+            //{
                 if (winNode.Current.Name.IndexOf(title) >= 0)
                 {
                     return CachedElement.getCachedWindow(winNode); 
                 }
-            }
-            catch (InvalidOperationException) { }
-            catch (ElementNotAvailableException) { }
+            //}
+            //catch (InvalidOperationException) { }
+            //catch (ElementNotAvailableException) { }
                         
             AutomationElement textChild = winNode.FindFirst(TreeScope.Element | TreeScope.Children, propCondition);
 

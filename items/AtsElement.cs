@@ -19,7 +19,10 @@ under the License.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 using System.Windows.Automation;
 
 [DataContract(Name = "com.ats.element.AtsElement")]
@@ -54,46 +57,71 @@ public class AtsElement
 
     public AutomationElement Element { get; set; }
 
+    private string value = null;
+    private string innerText = "";
+
+    private static readonly ParallelOptions pOptions = new ParallelOptions() { MaxDegreeOfParallelism = 10};
+
+    public static IDictionary<int, string> ControlTypes = new Dictionary<int, string>();
+    static AtsElement()
+    {
+        FieldInfo[] properties = typeof(ControlType).GetFields();
+        foreach (FieldInfo field in properties)
+        {
+            ControlType value = (ControlType)field.GetValue(null);
+            ControlTypes.Add(value.Id, field.Name);
+        }
+    }
+    public static int GetTagKey(string value)
+    {
+        foreach (KeyValuePair<int, string> pair in ControlTypes)
+        {
+            if (pair.Value.Equals(value))
+            {
+                return pair.Key;
+            }
+        }
+        return 0;
+    }
+
     public virtual void dispose()
     {
         this.Element = null;
     }
-    
+
+    public AtsElement(AutomationElement elem, string tag)
+    {
+        this.Id = Guid.NewGuid().ToString();
+        this.Element = elem;
+        this.Tag = tag;
+
+        updateBounding();
+    }
+
     public AtsElement(AutomationElement elem)
     {
         this.Id = Guid.NewGuid().ToString();
         this.Element = elem;
-
-        try
-        {
-            if(elem.Current.ControlType == null)
-            {
-                this.Tag = elem.Current.ClassName;
-            }
-            else
-            {
-                this.Tag = ElementProperty.getSimpleControlName(elem.Current.ControlType.ProgrammaticName);
-            }
-
-            this.Password = elem.Current.IsPassword;
-
-            updateVisual(elem);
-        }
-        catch (ElementNotAvailableException ex)
-        {
-            throw ex;
-        }
-        catch (Exception ex)
-        {
-            this.Tag = "*";
-        }
-    }
-
-    public void updateVisual(AutomationElement elem)
-    {
+        this.Password = elem.Current.IsPassword;
         this.Visible = !elem.Current.IsOffscreen;
 
-        System.Windows.Rect bounding = elem.Current.BoundingRectangle;
+        updateBounding();
+
+        string tag = "*";
+        if (elem.Current.ControlType == null)
+        {
+            tag = elem.Current.ClassName;
+        }
+        else
+        {
+            ControlTypes.TryGetValue(elem.Current.ControlType.Id, out tag);
+        }
+        this.Tag = tag;
+    }
+
+    private void updateBounding()
+    {
+        System.Windows.Rect bounding = Element.Current.BoundingRectangle;
         if (bounding.IsEmpty)
         {
             this.X = 0;
@@ -133,115 +161,88 @@ public class AtsElement
         return getElementText(Element);
     }
 
-    internal string getElementInnerText(AutomationElement elem, string separator)
+    public void addInnerText(string value)
     {
-        var walker = TreeWalker.RawViewWalker;
-        var innerTextValue = getElementText(elem);
-
-        var current = walker.GetFirstChild(elem);
-        while (current != null)
+        if(value.Length > 0)
         {
-            var txt = getElementInnerText(current, separator);
-            if(txt != null && txt.Length > 0)
-            {
-                innerTextValue += separator + txt;
-                separator = "\t";
-            }
-            current = walker.GetNextSibling(current);
+            innerText += value + "\t";
         }
-
-        return innerTextValue;
     }
-    
-    internal string getInnerText()
+
+    public void loadAttributes(string[] attributes)
     {
-        return getElementInnerText(Element, "");
+        List<DesktopData> attr = new List<DesktopData>();
+
+        Parallel.ForEach<string>(attributes, a =>
+        {
+            DesktopData data = getProperty(a);
+            if (data != null)
+            {
+                attr.Add(data);
+            }
+        });
+
+        this.Attributes = attr.ToArray();
     }
 
     internal List<AtsElement> getElements(string tag, string[] attributes)
     {
-        if (!"*".Equals(tag))
+        List<AtsElement> listElements = new List<AtsElement>();
+        Attributes = new DesktopData[0];
+        listElements.Add(this);
+        
+        addChild(listElements, Element, tag, attributes, this);
+
+        if (attributes.Length > 0)
         {
-            tag = string.Format("ControlType.{0}", tag);
+            Parallel.ForEach<AtsElement>(listElements, elem =>
+            {
+                elem.loadAttributes(attributes);
+            });
         }
 
-        List<AtsElement> listElements = new List<AtsElement>();
-        addChild(listElements, Element, tag, attributes);
-        
         return listElements;
     }
 
-    private void addChild(List<AtsElement> listChild, AutomationElement parent, string tag, string[] attributes)
+    private void addChild(List<AtsElement> listChild, AutomationElement parent, string tag, string[] attributes, AtsElement currentElement)
     {
-        if (parent.Current.ControlType == ControlType.Document)
+        if ("*".Equals(tag) || (parent.Current.ControlType == null && parent.Current.ClassName.Equals(tag)) || (parent.Current.ControlType != null && parent.Current.ControlType.Id == GetTagKey(tag)))
         {
-            object documentUrl;
-            if (parent.TryGetCurrentPattern(ValuePattern.Pattern, out documentUrl))
-            {
-                if ((documentUrl as ValuePattern).Current.Value.StartsWith("http"))
-                {
-                    return;
-                }
-            }
+            currentElement = CachedElement.getCachedElement(parent);
+            listChild.Add(currentElement);
         }
 
-        var currentTag = parent.Current.ClassName;
-        if(parent.Current.ControlType != null)
+        object valuePattern;
+        if (true == parent.TryGetCurrentPattern(ValuePatternIdentifiers.Pattern, out valuePattern))
         {
-            currentTag = parent.Current.ControlType.ProgrammaticName;
+            value = ((ValuePattern)valuePattern).Current.Value;
         }
 
-        if ("*".Equals(tag) || currentTag.Equals(tag))
+        List<AutomationElement> children = parent.FindAll(TreeScope.Children, Condition.TrueCondition).Cast<AutomationElement>().ToList();
+        Parallel.ForEach<AutomationElement>(children, pOptions, elem =>
         {
-            AtsElement el = CachedElement.getCachedElement(parent);
-
-            if (attributes.Length > 0)
-            {
-                List<DesktopData> attr = new List<DesktopData>();
-                foreach (string a in attributes)
-                {
-                    DesktopData prop = el.getProperty(a);
-                    if (prop != null)
-                    {
-                        attr.Add(prop);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                if (attr.Count == attributes.Length)
-                {
-                    el.Attributes = attr.ToArray();
-                }
-            }
-
-            listChild.Add(el);
-        }
-
-        if (parent.Current.ControlType != ControlType.ScrollBar 
-            && parent.Current.ControlType != ControlType.Button
-            && parent.Current.ControlType != ControlType.Image)
-        {
-            var current = TreeWalker.RawViewWalker.GetFirstChild(parent);
-            while (current != null)
-            {
-                addChild(listChild, current, tag, attributes);
-                current = TreeWalker.RawViewWalker.GetNextSibling(current);
-            }
-        }
+            currentElement.addInnerText(elem.Current.Name);
+            addChild(listChild, elem, tag, attributes, currentElement);
+        });
     }
 
     internal List<DesktopData> getProperties()
     {
         List<DesktopData> properties = new List<DesktopData>();
-        properties.Add(new DesktopData("InnerText", getInnerText()));
-
+        if(innerText.Length > 0)
+        {
+            properties.Add(new DesktopData("InnerText", innerText.Substring(0, innerText.Length-1)));
+        }
+        
         string txt = getText();
         if (txt != null)
         {
             properties.Add(new DesktopData("Text", txt));
+        }
+
+        if(value != null)
+        {
+            properties.Add(new DesktopData("Value", value));
         }
 
         AutomationProperty[] list = Array.FindAll(Element.GetSupportedProperties(), ElementProperty.notRequiredProperties);
@@ -268,7 +269,12 @@ public class AtsElement
         }
         else if ("InnerText".Equals(name))
         {
-            return new DesktopData("InnerText", getInnerText());
+            string result = innerText;
+            if (result.Length > 0)
+            {
+                return new DesktopData("InnerText", result.Substring(0, result.Length - 1));
+            }
+            return new DesktopData("InnerText", result);
         }
 
         AutomationProperty prop = Array.Find(Element.GetSupportedProperties(), p => p.ProgrammaticName.EndsWith("." + name + "Property"));
@@ -296,14 +302,24 @@ public class AtsElement
     {
         List<AtsElement> parents = new List<AtsElement>();
 
-        var walker = TreeWalker.RawViewWalker;
-        var current = walker.GetParent(Element);
+        TreeWalker walker = TreeWalker.RawViewWalker;
+        AutomationElement parent = walker.GetParent(Element);
 
-        while (current != null && current.Current.ClassName != "#32769")
+        while (parent != null && parent.Current.ClassName != "#32769")
         {
-            parents.Insert(0, CachedElement.getCachedElement(current));
-            current = walker.GetParent(current);
+            AtsElement parentElement = CachedElement.getCachedElement(parent);
+
+            AutomationElementCollection siblings = parent.FindAll(TreeScope.Children, Condition.TrueCondition);
+            foreach(AutomationElement sibling in siblings)
+            {
+                parentElement.addInnerText(sibling.Current.Name);
+            }
+
+            parents.Insert(0, parentElement);
+            parent = walker.GetParent(parent);
         }
+
+        //TODO get full innertext
 
         return parents;
     }

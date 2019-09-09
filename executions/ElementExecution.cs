@@ -32,12 +32,12 @@ class ElementExecution : AtsExecution
         Attributes = 3
     };
 
-    private string tag = "*";
-    private string propertyName;
-    private int handle = -1;
-    private string[] attributes;
+    private readonly string tag = "*";
+    private readonly string propertyName;
+    private readonly int handle = -1;
+    private readonly string[] attributes;
 
-    private AtsElement element;
+    private readonly AtsElement element;
 
     public ElementExecution(int type, string[] commandsData) :base()
     {
