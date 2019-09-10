@@ -17,25 +17,28 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Windows.Automation;
 
 class ElementExecution : AtsExecution
 {
-    private ElementType elemType;
+    private readonly ElementType elemType;
     private enum ElementType
     {
         Childs = 0,
         Parents = 1,
         Find = 2,
-        Attributes = 3
+        Attributes = 3,
+        Select = 4
     };
 
     private readonly string tag = "*";
     private readonly string propertyName;
     private readonly int handle = -1;
     private readonly string[] attributes;
+
+    private readonly int index = -1;
 
     private readonly AtsElement element;
 
@@ -60,6 +63,16 @@ class ElementExecution : AtsExecution
             else if (elemType == ElementType.Attributes && commandsData.Length > 1)
             {
                 propertyName = commandsData[1];
+            }
+            else if (elemType == ElementType.Select && commandsData.Length > 2)
+            {
+                if ("index".Equals(commandsData[1])){
+                    int.TryParse(commandsData[2], out this.index);
+                }
+                else
+                {
+                    propertyName = commandsData[2];
+                }
             }
         }
     }
@@ -99,28 +112,15 @@ class ElementExecution : AtsExecution
         {
             if (element != null)
             {
-                try
+                element.loadProperties();
+
+                if (propertyName == null)
                 {
-                    if (propertyName != null)
-                    {
-                        DesktopData prop = element.getProperty(propertyName);
-                        if (prop != null)
-                        {
-                            response.Data = new DesktopData[] { prop };
-                        }
-                        else
-                        {
-                            response.setError(-11, "property not found : " + propertyName);
-                        }
-                    }
-                    else
-                    {
-                        response.Data = element.getProperties().ToArray();
-                    }
+                    response.Data = element.Attributes;
                 }
-                catch (ElementNotAvailableException)
+                else
                 {
-                    //CachedElement.removeCachedElement(element);
+                    response.Data = new DesktopData[] { element.getProperty(propertyName) };
                 }
             }
             else
@@ -133,6 +133,28 @@ class ElementExecution : AtsExecution
             if (element != null)
             {
                 response.Elements = element.getParents().ToArray();
+            }
+            else
+            {
+                response.setError(-8, "cached element not found");
+            }
+        }
+        else if (elemType == ElementType.Select)
+        {
+            if (element != null)
+            {
+                try
+                {
+                    if (index > -1)
+                    {
+                        element.SelectIndex(index);
+                    }
+                    else
+                    {
+                        element.SelectText(propertyName);
+                    }
+                }
+                catch (Exception) { }
             }
             else
             {

@@ -21,9 +21,9 @@ using System.Net;
 
 class MouseExecution : AtsExecution
 {
-    private static int errorCode = -5;
+    private static readonly int errorCode = -5;
 
-    private MouseType type;
+    private readonly MouseType type;
     private enum MouseType
     {
         Move = 0,
@@ -36,10 +36,10 @@ class MouseExecution : AtsExecution
         Wheel = 7
     };
 
-    private ActionMouse action;
+    private readonly ActionMouse action;
 
-    private int[] move;
-    private int wheelDelta = 0;
+    private readonly int[] move;
+    private readonly int wheelDelta = 0;
 
     public MouseExecution(int type, string[] commandsData, ActionMouse action) : base()
     {

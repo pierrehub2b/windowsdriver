@@ -30,6 +30,8 @@ using System.IO;
 using System.Windows.Forms;
 using System.Linq;
 using Microsoft.Win32;
+using FlaUI.Core;
+using FlaUI.Core.AutomationElements.Infrastructure;
 
 // State object for reading client data asynchronously
 public class StateObject
@@ -39,71 +41,26 @@ public class StateObject
     public byte[] buffer = new byte[BufferSize];
 }
 
-public static class ElementProperty
-{
-    public static readonly Predicate<AutomationProperty> notRequiredProperties = new Predicate<AutomationProperty>(p => p != AutomationElementIdentifiers.ControlTypeProperty && p != AutomationElementIdentifiers.ProcessIdProperty && p != AutomationElementIdentifiers.RuntimeIdProperty && p != AutomationElementIdentifiers.BoundingRectangleProperty);
-    private static readonly Regex propertyNameEnd = new Regex("Property$");
-    private static readonly Regex controlTypeStart = new Regex("^ControlType.");
-
-    internal static string getSimplePropertyName(string name)
-    {
-        string prop = propertyNameEnd.Replace(name, string.Empty);
-        int dotPos = prop.LastIndexOf(".");
-        if (dotPos > -1)
-        {
-            return prop.Substring(dotPos + 1);
-        }
-        return prop;
-    }
-
-    internal static string getSimpleControlName(string name)
-    {
-        return controlTypeStart.Replace(name, string.Empty);
-    }
-}
-
 public static class CachedElement
 {
-    private static ConcurrentDictionary<string, AtsElement> cached = new ConcurrentDictionary<string, AtsElement>();
+    private static readonly ConcurrentDictionary<string, AtsElement> cached = new ConcurrentDictionary<string, AtsElement>();
 
     public static AtsElement getCachedElementById(string id)
     {
-        AtsElement value = null;
-        cached.TryGetValue(id, out value);
+        cached.TryGetValue(id, out AtsElement value);
         return value;
     }
 
-    public static AtsElement getCachedElement(AutomationElement elem)
+    public static AtsElement createCachedElement(AutomationElement elem)
     {
-        /*string key = AtsElement.getElementId(elem);
-
-        AtsElement found;
-        if (cached.TryGetValue(key, out found))
-        {
-            try
-            {
-                found.updateVisual(elem);
-            }
-            catch (ElementNotAvailableException)
-            {
-                removeCachedElement(found);
-                return null;
-            }
-
-            return found;
-        }
-        else
-        {
-            AtsElement newElement = new AtsElement(elem);
-            cached.TryAdd(key, newElement);
-            return newElement;
-        }*/
-
-
         AtsElement newElement = new AtsElement(elem);
         cached.TryAdd(newElement.Id, newElement);
         return newElement;
+    }
 
+    public static void addCachedElement(AtsElement elem)
+    {
+        cached.TryAdd(elem.Id, elem);
     }
 
     public static DesktopWindow getCachedWindow(AutomationElement elem)
@@ -113,7 +70,7 @@ public static class CachedElement
         return window;
     }
 
-    public static void removeCachedElement(AtsElement element)
+    /*public static void removeCachedElement(AtsElement element)
     {
         cached.TryRemove(element.Id, out element);
     }
@@ -122,24 +79,22 @@ public static class CachedElement
     {
         foreach (var kvp in cached)
         {
-            AtsElement elem = null;
-            if (cached.TryRemove(kvp.Key, out elem))
+            if (cached.TryRemove(kvp.Key, out AtsElement elem))
             {
                 elem.dispose();
             }
         }
-    }
+    }*/
 }
 
 public class DesktopDriver
 {
     public const int DefaultPort = 9988;
-    private static DesktopData[] capabilities = GetCapabilities();
+    private static readonly DesktopData[] capabilities = GetCapabilities();
 
-    private static ManualResetEvent allDone = new ManualResetEvent(false);
-    private static ActionKeyboard keyboard = new ActionKeyboard();
-    private static ActionMouse mouse = new ActionMouse();
-    private static VisualRecorder recorder = new VisualRecorder();
+    private static readonly ActionKeyboard keyboard = new ActionKeyboard();
+    private static readonly ActionMouse mouse = new ActionMouse();
+    private static readonly VisualRecorder recorder = new VisualRecorder();
 
     public static int Main(String[] args)
     {
@@ -174,18 +129,16 @@ public class DesktopDriver
         string[] cmdType = listener.Request.RawUrl.Substring(1).Split('/');
         if (cmdType.Length > 1)
         {
-            int t0 = -1;
-            int.TryParse(cmdType[0], out t0);
-
-            int t1 = -1;
-            int.TryParse(cmdType[1], out t1);
+            int.TryParse(cmdType[0], out int t0);
+            int.TryParse(cmdType[1], out int t1);
 
             string postData = "";
             using (var reader = new StreamReader(listener.Request.InputStream, listener.Request.ContentEncoding))
             {
                 postData = reader.ReadToEnd();
             }
-            req = new DesktopRequest(t0, t1, postData.Split('\n'), mouse, keyboard, recorder, capabilities, ieWindows);
+            //req = new DesktopRequest(t0, t1, postData.Split('\n'), mouse, keyboard, recorder, capabilities, ieWindows);
+            req = new DesktopRequest(t0, t1, postData.Split('\n'), mouse, keyboard, recorder, capabilities, null);
         }
         else
         {
@@ -199,7 +152,7 @@ public class DesktopDriver
     // IE specific management
     //-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    private static List<DesktopWindow> ieWindows = new List<DesktopWindow>();
+    /*private static List<DesktopWindow> ieWindows = new List<DesktopWindow>();
     private static AutomationEventHandler openHandler = new AutomationEventHandler(OnWindowOpen);
     private static void OnWindowOpen(object el, AutomationEventArgs e)
     {
@@ -232,18 +185,20 @@ public class DesktopDriver
                 });
             }
         }
-    }
+    }*/
 
     //-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     private static DesktopData[] GetCapabilities()
     {
-        List<DesktopData> osData = new List<DesktopData>();
-        osData.Add(new DesktopData("MachineName", Environment.MachineName));
-        osData.Add(new DesktopData("DriverVersion", System.Reflection.Assembly.GetEntryAssembly().GetName().Version.ToString()));
-        osData.Add(new DesktopData("DotNetVersion", Environment.Version.ToString()));
-        osData.Add(new DesktopData("ScreenResolution", Screen.PrimaryScreen.Bounds.Width.ToString() + "x" + Screen.PrimaryScreen.Bounds.Height.ToString()));
-        osData.Add(new DesktopData("Version", Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseId", "").ToString()));
+        List<DesktopData> osData = new List<DesktopData>
+        {
+            new DesktopData("MachineName", Environment.MachineName),
+            new DesktopData("DriverVersion", System.Reflection.Assembly.GetEntryAssembly().GetName().Version.ToString()),
+            new DesktopData("DotNetVersion", Environment.Version.ToString()),
+            new DesktopData("ScreenResolution", Screen.PrimaryScreen.Bounds.Width.ToString() + "x" + Screen.PrimaryScreen.Bounds.Height.ToString()),
+            new DesktopData("Version", Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseId", "").ToString())
+        };
 
         string driveLetter = Path.GetPathRoot(Environment.CurrentDirectory);
         DriveInfo dinf = new DriveInfo(driveLetter);

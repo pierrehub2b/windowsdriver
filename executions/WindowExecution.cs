@@ -25,9 +25,9 @@ using System.Windows.Automation;
 
 class WindowExecution : AtsExecution
 {
-    private static int errorCode = -7;
+    private static readonly int errorCode = -7;
 
-    private WindowType type;
+    private readonly WindowType type;
     private enum WindowType
     {
         Title = 0,
@@ -43,17 +43,17 @@ class WindowExecution : AtsExecution
         State = 10
     };
 
-    private DesktopWindow window;
-    private ActionKeyboard keyboard;
+    private readonly DesktopWindow window;
+    private readonly ActionKeyboard keyboard;
 
-    private int pid = -1;
-    private int[] bounds;
-    private string keys;
-    private string state;
+    private readonly int pid = -1;
+    private readonly int[] bounds;
+    private readonly string keys;
+    private readonly string state;
 
-    private string folderPath;
+    private readonly string folderPath;
 
-    private List<DesktopWindow> ieWindows;
+    private readonly List<DesktopWindow> ieWindows;
 
     public WindowExecution(int type, string[] commandsData, ActionKeyboard keyboard, List<DesktopWindow> ieWindows, VisualRecorder recorder) : base()
     {
@@ -133,7 +133,7 @@ class WindowExecution : AtsExecution
     {
         List<DesktopWindow> wins = DesktopWindow.getOrderedWindowsByPid(pid);
 
-        if (ieWindows.Count > 0 && ieWindows[0].Pid == pid)
+        if (ieWindows != null && ieWindows.Count > 0 && ieWindows[0].Pid == pid)
         {
             List<DesktopWindow> reorderedList = new List<DesktopWindow>();
             foreach (DesktopWindow ieWin in ieWindows)
@@ -208,14 +208,8 @@ class WindowExecution : AtsExecution
 
                 if (folderPath != null && window != null)
                 {
-                    try
-                    {
-                        window.toFront();
+                       window.toFront();
                         keyboard.addressBar(folderPath);
-                    }
-                    catch (ElementNotAvailableException) {
-                        response.setError(errorCode, "address bar not found");
-                    }
                 }
 
                 break;
@@ -224,11 +218,11 @@ class WindowExecution : AtsExecution
 
                 try
                 {
-                    try
-                    {
+                    //try
+                    //{
                         window.toFront();
-                    }
-                    catch (ElementNotAvailableException) { }
+                    //}
+                    //catch (ElementNotAvailableException) { }
 
                     response.Windows = new DesktopWindow[] { window };
 
@@ -243,11 +237,11 @@ class WindowExecution : AtsExecution
 
                 if (window != null)
                 {
-                    try
-                    {
+                    //try
+                    //{
                         window.toFront();
-                    }
-                    catch (ElementNotAvailableException) { }
+                    //}
+                    //catch (ElementNotAvailableException) { }
                 }
                 else
                 {
@@ -259,11 +253,11 @@ class WindowExecution : AtsExecution
 
                 if (window != null)
                 {
-                    try
-                    {
+                    //try
+                    //{
                         window.toFront();
-                    }
-                    catch (ElementNotAvailableException) { }
+                    //}
+                    //catch (ElementNotAvailableException) { }
                 }
                 keyboard.rootKeys(keys.ToLower());
                 

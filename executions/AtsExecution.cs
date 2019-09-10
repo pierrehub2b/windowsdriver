@@ -24,7 +24,7 @@ using System.Net;
 
 class AtsExecution
 {
-    private static DataContractAmfSerializer AmfSerializer = new DataContractAmfSerializer(typeof(DesktopResponse), new[] { typeof(DesktopData), typeof(AtsElement), typeof(DesktopWindow) });
+    private static readonly DataContractAmfSerializer AmfSerializer = new DataContractAmfSerializer(typeof(DesktopResponse), new[] { typeof(DesktopData), typeof(AtsElement), typeof(DesktopWindow) });
     protected DesktopResponse response;
 
     public AtsExecution()

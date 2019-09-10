@@ -23,7 +23,10 @@ using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Management;
-using System.Windows.Forms;
+using FlaUI.Core.AutomationElements.Infrastructure;
+using FlaUI.UIA3;
+using System.Threading.Tasks;
+using FlaUI.Core.Definitions;
 
 [DataContract(Name = "com.ats.executor.drivers.desktop.DesktopWindow")]
 public class DesktopWindow : AtsElement
@@ -36,8 +39,8 @@ public class DesktopWindow : AtsElement
 
     [DllImport("user32.dll")]
     internal static extern bool SendMessage(int hWnd, Int32 msg, Int32 wParam, Int32 lParam);
-    static Int32 WM_SYSCOMMAND = 0x0112;
-    static Int32 SC_RESTORE = 0xF120;
+    static readonly int WM_SYSCOMMAND = 0x0112;
+    static readonly int SC_RESTORE = 0xF120;
     
     [DataMember(Name = "pid")]
     public int Pid { get; set; }
@@ -45,126 +48,99 @@ public class DesktopWindow : AtsElement
     [DataMember(Name = "handle")]
     public int Handle { get; set; }
 
-    private WindowPattern windowPattern;
-    private TransformPattern transformPattern;
-
     private const string MAXIMIZE = "maximize";
     private const string REDUCE = "reduce";
     private const string RESTORE = "restore";
     private const string CLOSE = "close";
-    
+
+    private readonly bool canMove = false;
+    private readonly bool canResize = false;
+    private readonly bool isWindow = false;
+
     public DesktopWindow(AutomationElement elem) : base(elem, "Window")
     {
-        try
+        elem.Properties.ProcessId.TryGetValue(out int pid);
+        this.Pid = pid;
+
+        elem.Properties.NativeWindowHandle.TryGetValue(out IntPtr handle);
+        this.Handle = handle.ToInt32();
+
+        if (elem.Patterns.Transform.IsSupported)
         {
-            Pid = elem.Current.ProcessId;
-            Handle = elem.Current.NativeWindowHandle;
-
-            object pattern;
-            if (elem.TryGetCurrentPattern(TransformPattern.Pattern, out pattern))
-            {
-                transformPattern = (TransformPattern)pattern;
-            }
-
-            if (elem.TryGetCurrentPattern(WindowPattern.Pattern, out pattern))
-            {
-                windowPattern = (WindowPattern)pattern;
-                try
-                {
-                    windowPattern.SetWindowVisualState(WindowVisualState.Normal);
-                }
-                catch (InvalidOperationException){}
-            }
-            return;
+            this.canMove = elem.Patterns.Transform.Pattern.CanMove;
+            this.canResize = elem.Patterns.Transform.Pattern.CanResize;
         }
-        catch (ElementNotAvailableException) { }
 
-        throw new InvalidOperationException("Element is not a desktop window");
-    }
-
-    public override void dispose()
-    {
-        base.dispose();
-        windowPattern = null;
-        transformPattern = null;
+        this.isWindow = elem.Patterns.Window.IsSupported;
     }
 
     internal void resize(int w, int h)
     {
         waitIdle();
-        //try
-        //{
-            if (transformPattern.Current.CanResize)
-            {
-                transformPattern.Resize(w, h);
-            }
-
-        //}
-        //catch (InvalidOperationException) { }
+        if (canResize)
+        {
+            Element.Patterns.Transform.Pattern.Resize(w, h);
+        }
     }
 
     internal void move(int x, int y)
     {
-        try
-        {
-            transformPattern.Move(x, y);
-        }
-        catch (InvalidOperationException) { }
         waitIdle();
+        if (canMove)
+        {
+            Element.Patterns.Transform.Pattern.Move(x, y);
+        }
     }
 
     internal void close()
     {
-        try
+        if (isWindow)
         {
-            windowPattern.Close();
+            Element.AsWindow().Close();
         }
-        catch (InvalidOperationException) { }
-        catch (ElementNotAvailableException) { }
-
         dispose();
     }
 
     internal void waitIdle()
     {
-        try
-        {
-            windowPattern.WaitForInputIdle(5000);
-        }
-        catch (ArgumentOutOfRangeException) { }
+        //TODO if needed
     }
 
     internal void toFront()
     {
         SetForegroundWindow(Handle);
         SendMessage(Handle, WM_SYSCOMMAND, SC_RESTORE, 0);
-        windowPattern.SetWindowVisualState(WindowVisualState.Normal);
+        //Element.AsWindow().SetForeground();
+        //Element.AsWindow().Focus();
+        Element.AsWindow().FocusNative();
+        //windowPattern.SetWindowVisualState(WindowVisualState.Normal);
     }
 
     internal void state(string value)
     {
-        if (windowPattern != null)
+        if (isWindow)
         {
             switch (value)
             {
                 case MAXIMIZE:
-                    if (windowPattern.Current.CanMaximize && !windowPattern.Current.IsModal)
+                    
+                    /*if (windowPattern.Current.CanMaximize && !windowPattern.Current.IsModal)
                     {
                         windowPattern.SetWindowVisualState(WindowVisualState.Maximized);
-                    }
+                    }*/
                     break;
                 case REDUCE:
-                    if (windowPattern.Current.CanMinimize && !windowPattern.Current.IsModal)
+                    /*if (windowPattern.Current.CanMinimize && !windowPattern.Current.IsModal)
                     {
                         windowPattern.SetWindowVisualState(WindowVisualState.Minimized);
-                    }
+                    }*/
                     break;
                 case RESTORE:
-                    if (!windowPattern.Current.IsModal)
+                    /*if (!windowPattern.Current.IsModal)
                     {
                         windowPattern.SetWindowVisualState(WindowVisualState.Normal);
                         toFront();
-                    }
+                    }*/
                     break;
                 case CLOSE:
                     close();
@@ -174,10 +150,12 @@ public class DesktopWindow : AtsElement
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------------------------
-        private static List<int> GetChildProcesses(int parentId){
+   /*     private static List<int> GetChildProcesses(int parentId){
 
-        List<int> result = new List<int>();
-        result.Add(parentId);
+        List<int> result = new List<int>
+        {
+            parentId
+        };
 
         var query = "Select * From Win32_Process Where ParentProcessId = " + parentId;
 
@@ -190,7 +168,7 @@ public class DesktopWindow : AtsElement
         }
 
         return result;
-    }
+    }*/
 
     public static List<DesktopWindow> getOrderedWindowsByPid(int pid)
     {
@@ -207,10 +185,28 @@ public class DesktopWindow : AtsElement
 
         if (procExists)
         {
-            List<int> pids = GetChildProcesses(pid);
+            //List<int> pids = GetChildProcesses(pid);
+                        
+            AutomationElement[] winChildren = new UIA3Automation().GetDesktop().FindAllChildren(w => w.ByProcessId(pid));
 
             List<DesktopWindow> windowsList = new List<DesktopWindow>();
-            AutomationElement elementNode = TreeWalker.RawViewWalker.GetFirstChild(AutomationElement.RootElement);
+
+            Parallel.ForEach<AutomationElement>(winChildren, win =>
+            {
+                //if (pids.IndexOf(win.Properties.ProcessId) != -1)
+                //{
+                    if (win.ControlType == ControlType.Window)
+                    {
+                        windowsList.Insert(0, CachedElement.getCachedWindow(win));
+                    }
+                    else if (win.ControlType == ControlType.Pane)
+                    {
+                        windowsList.Add(CachedElement.getCachedWindow(win));
+                    }
+                //}
+            });
+
+            /*AutomationElement elementNode = TreeWalker.RawViewWalker.GetFirstChild(AutomationElement.RootElement);
 
             while (elementNode != null)
             {
@@ -234,7 +230,7 @@ public class DesktopWindow : AtsElement
                 //catch (ElementNotAvailableException) { }
 
                 elementNode = TreeWalker.ControlViewWalker.GetNextSibling(elementNode);
-            }
+            }*/
 
             return windowsList;
         }
@@ -248,20 +244,10 @@ public class DesktopWindow : AtsElement
     {
         if (pid > 0)
         {
-            AutomationElement elementNode = TreeWalker.RawViewWalker.GetFirstChild(AutomationElement.RootElement);
-            while (elementNode != null)
+            AutomationElement window = new UIA3Automation().GetDesktop().FindFirstChild(w => w.ByProcessId(pid));
+            if(window != null)
             {
-                //try
-                //{
-                    if (elementNode.Current.ProcessId == pid)
-                    {
-                        return new DesktopWindow(elementNode);
-                    }
-                //}
-                //catch (ElementNotAvailableException) { }
-                //catch (InvalidOperationException) { }
-
-                elementNode = TreeWalker.ControlViewWalker.GetNextSibling(elementNode);
+                return new DesktopWindow(window);
             }
         }
         return null;
@@ -271,12 +257,10 @@ public class DesktopWindow : AtsElement
     {
         if (handle > 0)
         {
-            AutomationElement window = AutomationElement.FromHandle(new IntPtr(handle));
-            //AutomationElement window = AutomationElement.RootElement.FindFirst(TreeScope.Children, new PropertyCondition(AutomationElement.NativeWindowHandleProperty, handle));
-
-            if (window != null)
+            AutomationElement window = new UIA3Automation().FromHandle(new IntPtr(handle));
+            if(window != null)
             {
-               return new DesktopWindow(window);
+                return new DesktopWindow(window);
             }
         }
         return null;
@@ -284,32 +268,33 @@ public class DesktopWindow : AtsElement
 
     public static DesktopWindow getWindowPid(string title)
     {
-        Condition propCondition = new PropertyCondition(AutomationElement.NameProperty, title, PropertyConditionFlags.IgnoreCase);
+        UIA3Automation uia3 = new UIA3Automation();
+        AutomationElement[] windows = uia3.GetDesktop().FindAllChildren();
 
-        AutomationElement winNode = TreeWalker.RawViewWalker.GetFirstChild(AutomationElement.RootElement);
-
-        while (winNode != null)
+        foreach (AutomationElement window in windows)
         {
-            //try
-            //{
-                if (winNode.Current.Name.IndexOf(title) >= 0)
-                {
-                    return CachedElement.getCachedWindow(winNode); 
-                }
-            //}
-            //catch (InvalidOperationException) { }
-            //catch (ElementNotAvailableException) { }
-                        
-            AutomationElement textChild = winNode.FindFirst(TreeScope.Element | TreeScope.Children, propCondition);
-
-            if(textChild != null)
+            if (window.Properties.Name.IsSupported && window.Name.Contains(title))
             {
-                return CachedElement.getCachedWindow(winNode);
+                return CachedElement.getCachedWindow(window);
             }
-
-
-            winNode = TreeWalker.ControlViewWalker.GetNextSibling(winNode);
         }
+
+        //-------------------------------------------------------------------------------------------------
+        // second chance to find the window
+        //-------------------------------------------------------------------------------------------------
+
+        foreach (AutomationElement window in windows)
+        {
+            AutomationElement[] windowChildren = window.FindAllChildren();
+            foreach (AutomationElement windowChild in windows)
+            {
+                if (windowChild.Properties.Name.IsSupported && windowChild.Name.Contains(title))
+                {
+                    return CachedElement.getCachedWindow(windowChild);
+                }
+            }
+        }
+
         return null;
     }
 }

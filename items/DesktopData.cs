@@ -35,4 +35,16 @@ public class DesktopData
         this.name = name;
         this.value = ":" + value;
     }
+
+    public DesktopData(string name, bool value)
+    {
+        this.name = name;
+        this.value = ":" + value;
+    }
+    public DesktopData(string name, int value)
+    {
+        this.name = name;
+        this.value = ":" + value;
+    }
+
 }

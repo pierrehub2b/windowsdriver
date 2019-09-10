@@ -17,13 +17,13 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using FlaUI.Core;
+using FlaUI.Core.AutomationElements.Infrastructure;
+using FlaUI.Core.AutomationElements;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
-using System.Windows.Automation;
 
 [DataContract(Name = "com.ats.element.AtsElement")]
 public class AtsElement
@@ -57,32 +57,7 @@ public class AtsElement
 
     public AutomationElement Element { get; set; }
 
-    private string value = null;
-    private string innerText = "";
-
-    private static readonly ParallelOptions pOptions = new ParallelOptions() { MaxDegreeOfParallelism = 10};
-
-    public static IDictionary<int, string> ControlTypes = new Dictionary<int, string>();
-    static AtsElement()
-    {
-        FieldInfo[] properties = typeof(ControlType).GetFields();
-        foreach (FieldInfo field in properties)
-        {
-            ControlType value = (ControlType)field.GetValue(null);
-            ControlTypes.Add(value.Id, field.Name);
-        }
-    }
-    public static int GetTagKey(string value)
-    {
-        foreach (KeyValuePair<int, string> pair in ControlTypes)
-        {
-            if (pair.Value.Equals(value))
-            {
-                return pair.Key;
-            }
-        }
-        return 0;
-    }
+    private readonly string innerText = "";
 
     public virtual void dispose()
     {
@@ -95,232 +70,396 @@ public class AtsElement
         this.Element = elem;
         this.Tag = tag;
 
-        updateBounding();
+        updateBounding(elem);
     }
 
     public AtsElement(AutomationElement elem)
     {
         this.Id = Guid.NewGuid().ToString();
         this.Element = elem;
-        this.Password = elem.Current.IsPassword;
-        this.Visible = !elem.Current.IsOffscreen;
 
-        updateBounding();
-
-        string tag = "*";
-        if (elem.Current.ControlType == null)
+        if (elem.Properties.IsOffscreen.IsSupported)
         {
-            tag = elem.Current.ClassName;
+            this.Visible = !elem.Properties.IsOffscreen.Value;
         }
         else
         {
-            ControlTypes.TryGetValue(elem.Current.ControlType.Id, out tag);
+            this.Visible = true;
         }
-        this.Tag = tag;
+
+        this.Tag = elem.Properties.ControlType.ValueOrDefault.ToString();
+        if (this.Tag.Length == 0)
+        {
+            this.Tag = elem.Properties.ClassName;
+        }
+
+        updateBounding(elem);
     }
 
-    private void updateBounding()
+    private void updateBounding(AutomationElement elem)
     {
-        System.Windows.Rect bounding = Element.Current.BoundingRectangle;
-        if (bounding.IsEmpty)
-        {
-            this.X = 0;
-            this.Y = 0;
-            this.Width = 0;
-            this.Height = 0;
-        }
-        else
-        {
-            this.X = bounding.X;
-            this.Y = bounding.Y;
-            this.Width = bounding.Width;
-            this.Height = bounding.Height;
-        }
+        this.X = elem.BoundingRectangle.X;
+        this.Y = elem.BoundingRectangle.Y;
+        this.Width = elem.BoundingRectangle.Width;
+        this.Height = elem.BoundingRectangle.Height;
     }
 
-    internal string getElementText(AutomationElement elem)
+    internal bool isTag(string value)
     {
-        object pattern;
-        if (elem.TryGetCurrentPattern(TextPattern.Pattern, out pattern))
+        return Tag.Equals(value);
+    }
+
+    public void SelectIndex(int index)
+    {
+        ComboBox combo = Element.AsComboBox();
+
+        if(combo != null)
         {
-            return (pattern as TextPattern).DocumentRange.GetText(-1);
-        }
-        else if (elem.TryGetCurrentPattern(ValuePattern.Pattern, out pattern))
-        {
-            try
+            combo.Expand();
+            combo.Select(index);
+            if (combo.IsEditable)
             {
-                return (pattern as ValuePattern).Current.Value;
+                combo.EditableText = Element.AsComboBox().SelectedItem.Text;
             }
-            catch (Exception) { }
-        }
-        return null;
-    }
-
-    internal string getText()
-    {
-        return getElementText(Element);
-    }
-
-    public void addInnerText(string value)
-    {
-        if(value.Length > 0)
-        {
-            innerText += value + "\t";
+            combo.Collapse();
         }
     }
 
-    public void loadAttributes(string[] attributes)
+    public void SelectText(string text)
     {
-        List<DesktopData> attr = new List<DesktopData>();
-
-        Parallel.ForEach<string>(attributes, a =>
+        ComboBox combo = Element.AsComboBox();
+        if (combo != null)
         {
-            DesktopData data = getProperty(a);
-            if (data != null)
+            combo.Expand();
+            combo.Select(text);
+            if (combo.IsEditable)
             {
-                attr.Add(data);
+                combo.EditableText = Element.AsComboBox().SelectedItem.Text;
             }
-        });
-
-        this.Attributes = attr.ToArray();
+            combo.Collapse();
+        }
     }
+
+    //-----------------------------------------------------------------------------------------------------
 
     internal List<AtsElement> getElements(string tag, string[] attributes)
     {
-        List<AtsElement> listElements = new List<AtsElement>();
-        Attributes = new DesktopData[0];
-        listElements.Add(this);
-        
-        addChild(listElements, Element, tag, attributes, this);
+        List<AtsElement> listElements = new List<AtsElement>
+        {
+            this
+        };
+
+        AutomationElement[] uiElements = Element.FindAllDescendants();
+        if ("*".Equals(tag) || tag.Length == 0)
+        {
+            foreach (AutomationElement element in uiElements)
+            {
+                listElements.Add(CachedElement.createCachedElement(element));
+            }
+        }
+        else
+        {
+            foreach (AutomationElement element in uiElements)
+            {
+                AtsElement atsElement = new AtsElement(element);
+                if (atsElement.isTag(tag))
+                {
+                    CachedElement.addCachedElement(atsElement);
+                    listElements.Add(atsElement);
+                }
+            }
+        }
 
         if (attributes.Length > 0)
         {
             Parallel.ForEach<AtsElement>(listElements, elem =>
             {
-                elem.loadAttributes(attributes);
+                elem.loadProperties(attributes);
             });
         }
 
         return listElements;
     }
 
-    private void addChild(List<AtsElement> listChild, AutomationElement parent, string tag, string[] attributes, AtsElement currentElement)
+    //-----------------------------------------------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------------------------------------------------------
+
+    internal void loadProperties()
     {
-        if ("*".Equals(tag) || (parent.Current.ControlType == null && parent.Current.ClassName.Equals(tag)) || (parent.Current.ControlType != null && parent.Current.ControlType.Id == GetTagKey(tag)))
+        if (Attributes == null)
         {
-            currentElement = CachedElement.getCachedElement(parent);
-            listChild.Add(currentElement);
+            Attributes = Properties.addProperties(new string[] {
+                Properties.Name,
+                Properties.AutomationId,
+                Properties.ClassName,
+                Properties.HelpText,
+                Properties.ItemStatus,
+                Properties.ItemType,
+                Properties.AriaRole,
+                Properties.AriaProperties,
+                Properties.AcceleratorKey,
+                Properties.AccessKey,
+                Properties.IsEnabled,
+                Properties.IsPassword,
+                Properties.Text,
+                Properties.Value,
+                Properties.IsReadOnly,
+                Properties.SelectedItems,
+                Properties.IsSelected,
+                Properties.Toggle,
+                Properties.RangeValue,
+                Properties.HorizontalScrollPercent,
+                Properties.VerticalScrollPercent,
+                Properties.FillColor,
+                Properties.FillPatternColor,
+                Properties.FillPatternStyle,
+                Properties.AnnotationTypeName,
+                Properties.Author,
+                Properties.DateTime
+            }, Element.Properties, Element.Patterns);
         }
-
-        object valuePattern;
-        if (true == parent.TryGetCurrentPattern(ValuePatternIdentifiers.Pattern, out valuePattern))
-        {
-            value = ((ValuePattern)valuePattern).Current.Value;
-        }
-
-        List<AutomationElement> children = parent.FindAll(TreeScope.Children, Condition.TrueCondition).Cast<AutomationElement>().ToList();
-        Parallel.ForEach<AutomationElement>(children, pOptions, elem =>
-        {
-            currentElement.addInnerText(elem.Current.Name);
-            addChild(listChild, elem, tag, attributes, currentElement);
-        });
     }
-
-    internal List<DesktopData> getProperties()
-    {
-        List<DesktopData> properties = new List<DesktopData>();
-        if(innerText.Length > 0)
-        {
-            properties.Add(new DesktopData("InnerText", innerText.Substring(0, innerText.Length-1)));
-        }
-        
-        string txt = getText();
-        if (txt != null)
-        {
-            properties.Add(new DesktopData("Text", txt));
-        }
-
-        if(value != null)
-        {
-            properties.Add(new DesktopData("Value", value));
-        }
-
-        AutomationProperty[] list = Array.FindAll(Element.GetSupportedProperties(), ElementProperty.notRequiredProperties);
-        foreach (AutomationProperty prop in list)
-        {
-            try
-            {
-                object propertyValue = Element.GetCurrentPropertyValue(prop);
-                if (propertyValue != null)
-                {
-                    properties.Add(new DesktopData(ElementProperty.getSimplePropertyName(prop.ProgrammaticName), propertyValue.ToString()));
-                }
-            }
-            catch (InvalidOperationException) { }
-        }
-        return properties;
-    }
-
+       
     internal DesktopData getProperty(string name)
     {
-        if ("Text".Equals(name))
+        foreach (DesktopData data in Attributes)
         {
-            return new DesktopData("Text", getText());
-        }
-        else if ("InnerText".Equals(name))
-        {
-            string result = innerText;
-            if (result.Length > 0)
+            if (data.name.Equals(name))
             {
-                return new DesktopData("InnerText", result.Substring(0, result.Length - 1));
-            }
-            return new DesktopData("InnerText", result);
-        }
-
-        AutomationProperty prop = Array.Find(Element.GetSupportedProperties(), p => p.ProgrammaticName.EndsWith("." + name + "Property"));
-
-        if (prop != null)
-        {
-            try
-            {
-                object propertyValue = Element.GetCurrentPropertyValue(prop);
-                if (propertyValue != null)
-                {
-                    return new DesktopData(name, propertyValue.ToString());
-                }
-            }
-            catch (ElementNotAvailableException)
-            {
-                CachedElement.removeCachedElement(this);
+                return data;
             }
         }
-
         return null;
     }
 
+    public void loadProperties(string[] attributes)
+    {
+        this.Attributes = Properties.addProperties(attributes, Element.Properties, Element.Patterns);
+    }
+
+    public void addInnerText(string value)
+    {
+        //TODO inner text
+    }
+
+    //-----------------------------------------------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------------------------------------------------------
+
     internal List<AtsElement> getParents()
     {
+        loadProperties();
+
         List<AtsElement> parents = new List<AtsElement>();
 
-        TreeWalker walker = TreeWalker.RawViewWalker;
-        AutomationElement parent = walker.GetParent(Element);
-
-        while (parent != null && parent.Current.ClassName != "#32769")
+        AutomationElement parent = Element.Parent;
+        while (parent != null)
         {
-            AtsElement parentElement = CachedElement.getCachedElement(parent);
-
-            AutomationElementCollection siblings = parent.FindAll(TreeScope.Children, Condition.TrueCondition);
-            foreach(AutomationElement sibling in siblings)
-            {
-                parentElement.addInnerText(sibling.Current.Name);
-            }
+            AtsElement parentElement = CachedElement.createCachedElement(parent);
+            parentElement.loadProperties();
 
             parents.Insert(0, parentElement);
-            parent = walker.GetParent(parent);
+            parent = parent.Parent;
         }
-
+        
         //TODO get full innertext
 
         return parents;
+    }
+
+    private static class Properties
+    {
+        public const string Name = "Name";
+        public const string AutomationId = "AutomationId";
+        public const string ClassName = "ClassName";
+        public const string HelpText = "HelpText";
+        public const string ItemStatus = "ItemStatus";
+        public const string ItemType = "ItemType";
+        public const string AriaRole = "AriaRole";
+        public const string AriaProperties = "AriaProperties";
+        public const string AcceleratorKey = "AcceleratorKey";
+        public const string AccessKey = "AccessKey";
+        public const string IsEnabled = "IsEnabled";
+        public const string IsPassword = "IsPassword";
+        public const string Text = "Text";
+        public const string Value = "Value";
+        public const string IsReadOnly = "IsReadOnly";
+        public const string IsSelected = "IsSelected";
+        public const string SelectedItems = "SelectedItems";
+        public const string Toggle = "Toggle";
+        public const string RangeValue = "RangeValue";
+        public const string HorizontalScrollPercent = "HorizontalScrollPercent";
+        public const string VerticalScrollPercent = "VerticalScrollPercent";
+        public const string FillColor = "FillColor";
+        public const string FillPatternColor = "FillPatternColor";
+        public const string FillPatternStyle = "FillPatternStyle";
+        public const string AnnotationTypeName = "AnnotationTypeName";
+        public const string Author = "Author";
+        public const string DateTime = "DateTime";
+
+        private static void addProperty(string propertyName, AutomationElementPropertyValues propertyValues, AutomationElementPatternValuesBase patterns, List<DesktopData> properties)
+        {
+            switch (propertyName)
+            {
+                case Name:
+                    checkProperty(propertyName, propertyValues.Name, properties);
+                    break;
+                case AutomationId:
+                    checkProperty(propertyName, propertyValues.AutomationId, properties);
+                    break;
+                case ClassName:
+                    checkProperty(propertyName, propertyValues.ClassName, properties);
+                    break;
+                case HelpText:
+                    checkProperty(propertyName, propertyValues.HelpText, properties);
+                    break;
+                case ItemStatus:
+                    checkProperty(propertyName, propertyValues.ItemStatus, properties);
+                    break;
+                case ItemType:
+                    checkProperty(propertyName, propertyValues.ItemType, properties);
+                    break;
+                case AriaRole:
+                    checkProperty(propertyName, propertyValues.AriaRole, properties);
+                    break;
+                case AriaProperties:
+                    checkProperty(propertyName, propertyValues.AriaProperties, properties);
+                    break;
+                case AcceleratorKey:
+                    checkProperty(propertyName, propertyValues.AcceleratorKey, properties);
+                    break;
+                case AccessKey:
+                    checkProperty(propertyName, propertyValues.AccessKey, properties);
+                    break;
+                case IsEnabled:
+                    checkProperty(propertyName, propertyValues.IsEnabled, properties);
+                    break;
+                case IsPassword:
+                    checkProperty(propertyName, propertyValues.IsPassword, properties);
+                    break;
+                case Text:
+                    if (patterns.Text.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patterns.Text.Pattern.DocumentRange.GetText(999999999)));
+                    }
+                    break;
+                case Value:
+                    if (patterns.Value.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patterns.Value.Pattern.Value.ValueOrDefault));
+                    }
+                    break;
+                case IsReadOnly:
+                    if (patterns.Value.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patterns.Value.Pattern.IsReadOnly));
+                    }
+                    break;
+                case SelectedItems:
+                    if (patterns.Selection.IsSupported)
+                    {
+                        List<string> items = new List<string>();
+                        foreach(AutomationElement item in patterns.Selection.Pattern.Selection.ValueOrDefault)
+                        {
+                            items.Add(item.Name);
+                        }
+                        properties.Add(new DesktopData(propertyName, String.Join(",", items)));
+                    }
+                    break;
+                case IsSelected:
+                    if (patterns.SelectionItem.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patterns.SelectionItem.Pattern.IsSelected));
+                    }
+                    break;
+                case Toggle:
+                    if (patterns.Toggle.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patterns.Toggle.Pattern.ToggleState.ToString()));
+                    }
+                    break;
+                case RangeValue:
+                    if (patterns.RangeValue.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, Convert.ToInt32(patterns.RangeValue.Pattern.Value)));
+                    }
+                    break;
+                case HorizontalScrollPercent:
+                    if (patterns.Scroll.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, Convert.ToInt32(patterns.Scroll.Pattern.HorizontalScrollPercent.ValueOrDefault)));
+                    }
+                    break;
+                case VerticalScrollPercent:
+                    if (patterns.Scroll.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, Convert.ToInt32(patterns.Scroll.Pattern.VerticalScrollPercent.ValueOrDefault)));
+                    }
+                    break;
+                case FillColor:
+                    if (patterns.Styles.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patterns.Styles.Pattern.FillColor.ValueOrDefault));
+                    }
+                    break;
+                case FillPatternColor:
+                    if (patterns.Styles.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patterns.Styles.Pattern.FillPatternColor.ValueOrDefault));
+                    }
+                    break;
+                case FillPatternStyle:
+                    if (patterns.Styles.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patterns.Styles.Pattern.FillPatternStyle.ValueOrDefault));
+                    }
+                    break;
+                case AnnotationTypeName:
+                    if (patterns.Annotation.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patterns.Annotation.Pattern.AnnotationTypeName));
+                    }
+                    break;
+                case Author:
+                    if (patterns.Annotation.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patterns.Annotation.Pattern.Author));
+                    }
+                    break;
+                case DateTime:
+                    if (patterns.Annotation.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patterns.Annotation.Pattern.DateTime));
+                    }
+                    break;
+            }
+        }
+
+        public static DesktopData[] addProperties(string[] attributes, AutomationElementPropertyValues properties, AutomationElementPatternValuesBase patterns)
+        {
+            List<DesktopData> result = new List<DesktopData>();
+
+            Parallel.ForEach<string>(attributes, a =>
+            {
+                addProperty(a, properties, patterns, result);
+            });
+
+            return result.ToArray();
+        }
+
+        private static void checkProperty(string name, AutomationProperty<bool> property, List<DesktopData> properties)
+        {
+            if (property.IsSupported)
+            {
+                properties.Add(new DesktopData(name, property.ValueOrDefault));
+            }
+        }
+
+        private static void checkProperty(string name, AutomationProperty<string> property, List<DesktopData> properties)
+        {
+            if (property.IsSupported)
+            {
+                properties.Add(new DesktopData(name, property.ValueOrDefault));
+            }
+        }
     }
 }
