@@ -20,7 +20,6 @@ under the License.
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Windows.Automation;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Management;
@@ -307,7 +306,8 @@ public class DesktopWindow : AtsElement
             {
                 return CachedElement.getCachedWindow(winNode);
             }
-                       
+
+
             winNode = TreeWalker.ControlViewWalker.GetNextSibling(winNode);
         }
         return null;
