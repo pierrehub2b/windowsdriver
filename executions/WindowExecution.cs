@@ -57,15 +57,14 @@ class WindowExecution : AtsExecution
 
     public WindowExecution(int type, string[] commandsData, ActionKeyboard keyboard, List<DesktopWindow> ieWindows, VisualRecorder recorder) : base()
     {
-        int handle = -1;
         this.type = (WindowType)type;
         this.keyboard = keyboard;
         this.ieWindows = ieWindows;
 
         if (this.type == WindowType.Close || this.type == WindowType.Handle || this.type == WindowType.ToFront || this.type == WindowType.State || this.type == WindowType.Keys)
         {
-            int.TryParse(commandsData[0], out handle);
-            window = DesktopWindow.getWindowByHandle(handle);
+            int.TryParse(commandsData[0], out int handle);
+            window = DesktopWindow.GetWindowByHandle(handle);
 
             if (this.type == WindowType.State)
             {
@@ -83,8 +82,8 @@ class WindowExecution : AtsExecution
         }
         else if (this.type == WindowType.Url)
         {
-            int.TryParse(commandsData[0], out handle);
-            window = DesktopWindow.getWindowByHandle(handle);
+            int.TryParse(commandsData[0], out int handle);
+            window = DesktopWindow.GetWindowByHandle(handle);
 
             string fname = Environment.ExpandEnvironmentVariables(commandsData[1]);
 
@@ -106,7 +105,7 @@ class WindowExecution : AtsExecution
         }
         else if (this.type == WindowType.Title)
         {
-            window = DesktopWindow.getWindowPid(commandsData[0]);
+            window = DesktopWindow.GetWindowPid(commandsData[0]);
         }
         else if (this.type == WindowType.List)
         {
@@ -114,24 +113,24 @@ class WindowExecution : AtsExecution
         }
         else if (this.type == WindowType.Switch)
         {
-            int.TryParse(commandsData[0], out handle);
-            window = DesktopWindow.getWindowByHandle(handle);
+            int.TryParse(commandsData[0], out int handle);
+            window = DesktopWindow.GetWindowByHandle(handle);
         }
         else if (this.type == WindowType.Move || this.type == WindowType.Resize)
         {
             bounds = new int[] { 0, 0 };
 
-            int.TryParse(commandsData[0], out handle);
+            int.TryParse(commandsData[0], out int handle);
             int.TryParse(commandsData[1], out bounds[0]);
             int.TryParse(commandsData[2], out bounds[1]);
 
-            window = DesktopWindow.getWindowByHandle(handle);
+            window = DesktopWindow.GetWindowByHandle(handle);
         }
     }
 
-    private DesktopWindow[] getWindowsList()
+    private DesktopWindow[] GetWindowsList()
     {
-        List<DesktopWindow> wins = DesktopWindow.getOrderedWindowsByPid(pid);
+        List<DesktopWindow> wins = DesktopWindow.GetOrderedWindowsByPid(pid);
 
         if (ieWindows != null && ieWindows.Count > 0 && ieWindows[0].Pid == pid)
         {
@@ -158,21 +157,21 @@ class WindowExecution : AtsExecution
 
                 if (window != null)
                 {
-                    window.close();
+                    window.Close();
                 }
                 break;
 
             case WindowType.State:
                 if (window != null)
                 {
-                    window.state(state);
+                    window.ChangeState(state);
                 }
                 break;
             case WindowType.List:
 
                 try
                 {
-                    response.Windows = getWindowsList();
+                    response.Windows = GetWindowsList();
                 }
                 catch (Exception e)
                 {
@@ -184,7 +183,7 @@ class WindowExecution : AtsExecution
 
                 if (window != null)
                 {
-                    window.move(bounds[0], bounds[1]);
+                    window.Move(bounds[0], bounds[1]);
                 }
                 else
                 {
@@ -196,7 +195,7 @@ class WindowExecution : AtsExecution
 
                 if (window != null)
                 {
-                    window.resize(bounds[0], bounds[1]);
+                    window.Resize(bounds[0], bounds[1]);
                 }
                 else
                 {
@@ -208,7 +207,7 @@ class WindowExecution : AtsExecution
 
                 if (folderPath != null && window != null)
                 {
-                       window.toFront();
+                       window.ToFront();
                         keyboard.addressBar(folderPath);
                 }
 
@@ -218,12 +217,7 @@ class WindowExecution : AtsExecution
 
                 try
                 {
-                    //try
-                    //{
-                        window.toFront();
-                    //}
-                    //catch (ElementNotAvailableException) { }
-
+                    window.ToFront();
                     response.Windows = new DesktopWindow[] { window };
 
                 }
@@ -237,11 +231,7 @@ class WindowExecution : AtsExecution
 
                 if (window != null)
                 {
-                    //try
-                    //{
-                        window.toFront();
-                    //}
-                    //catch (ElementNotAvailableException) { }
+                    window.ToFront();
                 }
                 else
                 {
@@ -253,11 +243,7 @@ class WindowExecution : AtsExecution
 
                 if (window != null)
                 {
-                    //try
-                    //{
-                        window.toFront();
-                    //}
-                    //catch (ElementNotAvailableException) { }
+                    window.ToFront();
                 }
                 keyboard.rootKeys(keys.ToLower());
                 

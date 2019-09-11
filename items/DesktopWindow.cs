@@ -18,11 +18,9 @@ under the License.
  */
 
 using System;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Management;
 using FlaUI.Core.AutomationElements.Infrastructure;
 using FlaUI.UIA3;
 using System.Threading.Tasks;
@@ -31,7 +29,7 @@ using FlaUI.Core.Definitions;
 [DataContract(Name = "com.ats.executor.drivers.desktop.DesktopWindow")]
 public class DesktopWindow : AtsElement
 {
-    [DllImport("User32.dll")]
+    /*[DllImport("User32.dll")]
     private static extern Int32 SetForegroundWindow(int hWnd);
 
     [DllImport("user32.dll")]
@@ -40,7 +38,7 @@ public class DesktopWindow : AtsElement
     [DllImport("user32.dll")]
     internal static extern bool SendMessage(int hWnd, Int32 msg, Int32 wParam, Int32 lParam);
     static readonly int WM_SYSCOMMAND = 0x0112;
-    static readonly int SC_RESTORE = 0xF120;
+    static readonly int SC_RESTORE = 0xF120;*/
     
     [DataMember(Name = "pid")]
     public int Pid { get; set; }
@@ -56,6 +54,8 @@ public class DesktopWindow : AtsElement
     private readonly bool canMove = false;
     private readonly bool canResize = false;
     private readonly bool isWindow = false;
+
+    private bool isMaximized = false;
 
     public DesktopWindow(AutomationElement elem) : base(elem, "Window")
     {
@@ -74,103 +74,123 @@ public class DesktopWindow : AtsElement
         this.isWindow = elem.Patterns.Window.IsSupported;
     }
 
-    internal void resize(int w, int h)
+    internal void Resize(int w, int h)
     {
-        waitIdle();
+        WaitIdle();
         if (canResize)
         {
             Element.Patterns.Transform.Pattern.Resize(w, h);
         }
     }
 
-    internal void move(int x, int y)
+    internal void Move(int x, int y)
     {
-        waitIdle();
+        WaitIdle();
         if (canMove)
         {
             Element.Patterns.Transform.Pattern.Move(x, y);
         }
     }
 
-    internal void close()
+    internal void Close()
     {
         if (isWindow)
         {
             Element.AsWindow().Close();
         }
-        dispose();
+        Dispose();
     }
 
-    internal void waitIdle()
+    internal void WaitIdle()
     {
         //TODO if needed
     }
 
-    internal void toFront()
+    internal void ToFront()
     {
-        SetForegroundWindow(Handle);
-        SendMessage(Handle, WM_SYSCOMMAND, SC_RESTORE, 0);
-        //Element.AsWindow().SetForeground();
-        //Element.AsWindow().Focus();
-        Element.AsWindow().FocusNative();
-        //windowPattern.SetWindowVisualState(WindowVisualState.Normal);
+        //SetForegroundWindow(Handle);
+        //SendMessage(Handle, WM_SYSCOMMAND, SC_RESTORE, 0);
+
+        if (isWindow)
+        {
+            double w = Element.AsWindow().ActualWidth;
+            double h = Element.AsWindow().ActualHeight;
+
+            Element.AsWindow().SetForeground();
+            Element.AsWindow().FocusNative();
+
+            if (isMaximized)
+            {
+                Element.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Maximized);
+            }
+            else
+            {
+                Element.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Normal);
+            }
+
+            if(Element.AsWindow().ActualWidth != w || Element.AsWindow().ActualHeight != h)
+            {
+                Resize(Convert.ToInt32(w), Convert.ToInt32(h));
+            }
+        }
     }
 
-    internal void state(string value)
+    internal void ChangeState(string value)
     {
         if (isWindow)
         {
             switch (value)
             {
                 case MAXIMIZE:
-                    
-                    /*if (windowPattern.Current.CanMaximize && !windowPattern.Current.IsModal)
+                    if (Element.Patterns.Window.Pattern.CanMaximize)
                     {
-                        windowPattern.SetWindowVisualState(WindowVisualState.Maximized);
-                    }*/
+                        Element.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Maximized);
+                        isMaximized = true;
+                    }
                     break;
                 case REDUCE:
-                    /*if (windowPattern.Current.CanMinimize && !windowPattern.Current.IsModal)
+                    if (Element.Patterns.Window.Pattern.CanMinimize)
                     {
-                        windowPattern.SetWindowVisualState(WindowVisualState.Minimized);
-                    }*/
+                        Element.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Minimized);
+                        isMaximized = false;
+                    }
                     break;
                 case RESTORE:
-                    /*if (!windowPattern.Current.IsModal)
-                    {
-                        windowPattern.SetWindowVisualState(WindowVisualState.Normal);
-                        toFront();
-                    }*/
+                    Element.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Normal);
+                    isMaximized = false;
                     break;
                 case CLOSE:
-                    close();
+                    Close();
                     break;
             }
         }
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------------------------
-   /*     private static List<int> GetChildProcesses(int parentId){
+    // find windows
+    //-----------------------------------------------------------------------------------------------------------------------------------------------
 
-        List<int> result = new List<int>
-        {
-            parentId
-        };
+    /*     private static List<int> GetChildProcesses(int parentId){
 
-        var query = "Select * From Win32_Process Where ParentProcessId = " + parentId;
+    List<int> result = new List<int>
+    {
+        parentId
+    };
 
-        ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
-        ManagementObjectCollection processList = searcher.Get();
+    var query = "Select * From Win32_Process Where ParentProcessId = " + parentId;
 
-        foreach (ManagementBaseObject proc in processList)
-        {
-            result.Add(Convert.ToInt32(proc.GetPropertyValue("ProcessId")));
-        }
+    ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
+    ManagementObjectCollection processList = searcher.Get();
 
-        return result;
-    }*/
+    foreach (ManagementBaseObject proc in processList)
+    {
+        result.Add(Convert.ToInt32(proc.GetPropertyValue("ProcessId")));
+    }
 
-    public static List<DesktopWindow> getOrderedWindowsByPid(int pid)
+    return result;
+}*/
+
+    public static List<DesktopWindow> GetOrderedWindowsByPid(int pid)
     {
         bool procExists = false;
         Process[] procs = Process.GetProcesses();
@@ -185,16 +205,11 @@ public class DesktopWindow : AtsElement
 
         if (procExists)
         {
-            //List<int> pids = GetChildProcesses(pid);
-                        
             AutomationElement[] winChildren = new UIA3Automation().GetDesktop().FindAllChildren(w => w.ByProcessId(pid));
-
             List<DesktopWindow> windowsList = new List<DesktopWindow>();
 
             Parallel.ForEach<AutomationElement>(winChildren, win =>
             {
-                //if (pids.IndexOf(win.Properties.ProcessId) != -1)
-                //{
                     if (win.ControlType == ControlType.Window)
                     {
                         windowsList.Insert(0, CachedElement.getCachedWindow(win));
@@ -203,34 +218,7 @@ public class DesktopWindow : AtsElement
                     {
                         windowsList.Add(CachedElement.getCachedWindow(win));
                     }
-                //}
             });
-
-            /*AutomationElement elementNode = TreeWalker.RawViewWalker.GetFirstChild(AutomationElement.RootElement);
-
-            while (elementNode != null)
-            {
-                //try
-                //{
-                    if (pids.IndexOf(elementNode.Current.ProcessId) != -1)
-                    {
-                        if (elementNode.Current.ControlType == ControlType.Window)
-                        {
-                            windowsList.Insert(0, CachedElement.getCachedWindow(elementNode));
-                        }
-                        else if (elementNode.Current.ControlType == ControlType.Pane)
-                        {
-                            windowsList.Add(CachedElement.getCachedWindow(elementNode));
-                        }
-                    }
-                //}
-                //catch (InvalidOperationException e) {
-                //    Console.WriteLine(e.Message);
-                //}
-                //catch (ElementNotAvailableException) { }
-
-                elementNode = TreeWalker.ControlViewWalker.GetNextSibling(elementNode);
-            }*/
 
             return windowsList;
         }
@@ -240,7 +228,7 @@ public class DesktopWindow : AtsElement
         }
     }
 
-    public static DesktopWindow getTopWindowByPid(int pid)
+    /*public static DesktopWindow getTopWindowByPid(int pid)
     {
         if (pid > 0)
         {
@@ -251,9 +239,9 @@ public class DesktopWindow : AtsElement
             }
         }
         return null;
-    }
+    }*/
 
-    public static DesktopWindow getWindowByHandle(int handle)
+    public static DesktopWindow GetWindowByHandle(int handle)
     {
         if (handle > 0)
         {
@@ -266,7 +254,7 @@ public class DesktopWindow : AtsElement
         return null;
     }
 
-    public static DesktopWindow getWindowPid(string title)
+    public static DesktopWindow GetWindowPid(string title)
     {
         UIA3Automation uia3 = new UIA3Automation();
         AutomationElement[] windows = uia3.GetDesktop().FindAllChildren();

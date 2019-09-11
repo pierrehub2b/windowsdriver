@@ -57,9 +57,9 @@ public class AtsElement
 
     public AutomationElement Element { get; set; }
 
-    private readonly string innerText = "";
+    //private readonly string innerText = "";
 
-    public virtual void dispose()
+    public virtual void Dispose()
     {
         this.Element = null;
     }
@@ -70,7 +70,7 @@ public class AtsElement
         this.Element = elem;
         this.Tag = tag;
 
-        updateBounding(elem);
+        UpdateBounding(elem);
     }
 
     public AtsElement(AutomationElement elem)
@@ -87,24 +87,47 @@ public class AtsElement
             this.Visible = true;
         }
 
-        this.Tag = elem.Properties.ControlType.ValueOrDefault.ToString();
-        if (this.Tag.Length == 0)
+        if (elem.Properties.IsPassword.IsSupported)
+        {
+            this.Password = elem.Properties.IsPassword.Value;
+        }
+        else
+        {
+            this.Password = false;
+        }
+
+        if (elem.Properties.ControlType.IsSupported)
+        {
+            this.Tag = elem.Properties.ControlType.ValueOrDefault.ToString();
+        }
+        
+        if ((this.Tag == null || this.Tag.Length == 0) && elem.Properties.ClassName.IsSupported)
         {
             this.Tag = elem.Properties.ClassName;
         }
 
-        updateBounding(elem);
+        UpdateBounding(elem);
     }
 
-    private void updateBounding(AutomationElement elem)
+    private void UpdateBounding(AutomationElement elem)
     {
-        this.X = elem.BoundingRectangle.X;
-        this.Y = elem.BoundingRectangle.Y;
-        this.Width = elem.BoundingRectangle.Width;
-        this.Height = elem.BoundingRectangle.Height;
+        if (elem.Properties.BoundingRectangle.IsSupported)
+        {
+            this.X = elem.BoundingRectangle.X;
+            this.Y = elem.BoundingRectangle.Y;
+            this.Width = elem.BoundingRectangle.Width;
+            this.Height = elem.BoundingRectangle.Height;
+        }
+        else
+        {
+            this.X = 0;
+            this.Y = 0;
+            this.Width = 9999999;
+            this.Height = 9999999;
+        }
     }
 
-    internal bool isTag(string value)
+    internal bool IsTag(string value)
     {
         return Tag.Equals(value);
     }
@@ -142,7 +165,7 @@ public class AtsElement
 
     //-----------------------------------------------------------------------------------------------------
 
-    internal List<AtsElement> getElements(string tag, string[] attributes)
+    internal List<AtsElement> GetElements(string tag, string[] attributes)
     {
         List<AtsElement> listElements = new List<AtsElement>
         {
@@ -162,7 +185,7 @@ public class AtsElement
             foreach (AutomationElement element in uiElements)
             {
                 AtsElement atsElement = new AtsElement(element);
-                if (atsElement.isTag(tag))
+                if (atsElement.IsTag(tag))
                 {
                     CachedElement.addCachedElement(atsElement);
                     listElements.Add(atsElement);
@@ -174,7 +197,7 @@ public class AtsElement
         {
             Parallel.ForEach<AtsElement>(listElements, elem =>
             {
-                elem.loadProperties(attributes);
+                elem.LoadProperties(attributes);
             });
         }
 
@@ -184,11 +207,11 @@ public class AtsElement
     //-----------------------------------------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------------------------------------
 
-    internal void loadProperties()
+    internal void LoadProperties()
     {
-        if (Attributes == null)
-        {
-            Attributes = Properties.addProperties(new string[] {
+        //if (Attributes == null)
+        //{
+            Attributes = Properties.AddProperties(new string[] {
                 Properties.Name,
                 Properties.AutomationId,
                 Properties.ClassName,
@@ -216,11 +239,11 @@ public class AtsElement
                 Properties.AnnotationTypeName,
                 Properties.Author,
                 Properties.DateTime
-            }, Element.Properties, Element.Patterns);
-        }
+            }, Password, Element.Properties, Element.Patterns);
+        //}
     }
        
-    internal DesktopData getProperty(string name)
+    internal DesktopData GetProperty(string name)
     {
         foreach (DesktopData data in Attributes)
         {
@@ -232,22 +255,22 @@ public class AtsElement
         return null;
     }
 
-    public void loadProperties(string[] attributes)
+    public void LoadProperties(string[] attributes)
     {
-        this.Attributes = Properties.addProperties(attributes, Element.Properties, Element.Patterns);
+        this.Attributes = Properties.AddProperties(attributes, this.Password, Element.Properties, Element.Patterns);
     }
 
-    public void addInnerText(string value)
+    /*public void AddInnerText(string value)
     {
         //TODO inner text
-    }
+    }*/
 
     //-----------------------------------------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------------------------------------
 
-    internal List<AtsElement> getParents()
+    internal List<AtsElement> GetParents()
     {
-        loadProperties();
+        LoadProperties();
 
         List<AtsElement> parents = new List<AtsElement>();
 
@@ -255,7 +278,7 @@ public class AtsElement
         while (parent != null)
         {
             AtsElement parentElement = CachedElement.createCachedElement(parent);
-            parentElement.loadProperties();
+            parentElement.LoadProperties();
 
             parents.Insert(0, parentElement);
             parent = parent.Parent;
@@ -296,45 +319,57 @@ public class AtsElement
         public const string Author = "Author";
         public const string DateTime = "DateTime";
 
-        private static void addProperty(string propertyName, AutomationElementPropertyValues propertyValues, AutomationElementPatternValuesBase patterns, List<DesktopData> properties)
+        public static DesktopData[] AddProperties(string[] attributes, bool isPassword, AutomationElementPropertyValues properties, AutomationElementPatternValuesBase patterns)
+        {
+            List<DesktopData> result = new List<DesktopData>();
+
+            Parallel.ForEach<string>(attributes, a =>
+            {
+                AddProperty(a, isPassword, properties, patterns, result);
+            });
+
+            return result.ToArray();
+        }
+
+        private static void AddProperty(string propertyName, bool isPassword, AutomationElementPropertyValues propertyValues, AutomationElementPatternValuesBase patterns, List<DesktopData> properties)
         {
             switch (propertyName)
             {
                 case Name:
-                    checkProperty(propertyName, propertyValues.Name, properties);
+                    CheckProperty(propertyName, propertyValues.Name, properties);
                     break;
                 case AutomationId:
-                    checkProperty(propertyName, propertyValues.AutomationId, properties);
+                    CheckProperty(propertyName, propertyValues.AutomationId, properties);
                     break;
                 case ClassName:
-                    checkProperty(propertyName, propertyValues.ClassName, properties);
+                    CheckProperty(propertyName, propertyValues.ClassName, properties);
                     break;
                 case HelpText:
-                    checkProperty(propertyName, propertyValues.HelpText, properties);
+                    CheckProperty(propertyName, propertyValues.HelpText, properties);
                     break;
                 case ItemStatus:
-                    checkProperty(propertyName, propertyValues.ItemStatus, properties);
+                    CheckProperty(propertyName, propertyValues.ItemStatus, properties);
                     break;
                 case ItemType:
-                    checkProperty(propertyName, propertyValues.ItemType, properties);
+                    CheckProperty(propertyName, propertyValues.ItemType, properties);
                     break;
                 case AriaRole:
-                    checkProperty(propertyName, propertyValues.AriaRole, properties);
+                    CheckProperty(propertyName, propertyValues.AriaRole, properties);
                     break;
                 case AriaProperties:
-                    checkProperty(propertyName, propertyValues.AriaProperties, properties);
+                    CheckProperty(propertyName, propertyValues.AriaProperties, properties);
                     break;
                 case AcceleratorKey:
-                    checkProperty(propertyName, propertyValues.AcceleratorKey, properties);
+                    CheckProperty(propertyName, propertyValues.AcceleratorKey, properties);
                     break;
                 case AccessKey:
-                    checkProperty(propertyName, propertyValues.AccessKey, properties);
+                    CheckProperty(propertyName, propertyValues.AccessKey, properties);
                     break;
                 case IsEnabled:
-                    checkProperty(propertyName, propertyValues.IsEnabled, properties);
+                    properties.Add(new DesktopData(propertyName, isPassword));
                     break;
                 case IsPassword:
-                    checkProperty(propertyName, propertyValues.IsPassword, properties);
+                    CheckProperty(propertyName, propertyValues.IsPassword, properties);
                     break;
                 case Text:
                     if (patterns.Text.IsSupported)
@@ -343,7 +378,11 @@ public class AtsElement
                     }
                     break;
                 case Value:
-                    if (patterns.Value.IsSupported)
+                    if (isPassword)
+                    {
+                        properties.Add(new DesktopData(propertyName, "#PASSWORD_VALUE#"));
+                    }
+                    else if (patterns.Value.IsSupported)
                     {
                         properties.Add(new DesktopData(propertyName, patterns.Value.Pattern.Value.ValueOrDefault));
                     }
@@ -360,7 +399,10 @@ public class AtsElement
                         List<string> items = new List<string>();
                         foreach(AutomationElement item in patterns.Selection.Pattern.Selection.ValueOrDefault)
                         {
-                            items.Add(item.Name);
+                            if (item.Patterns.SelectionItem.IsSupported && item.Properties.Name.IsSupported)
+                            {
+                                items.Add(item.Name);
+                            }
                         }
                         properties.Add(new DesktopData(propertyName, String.Join(",", items)));
                     }
@@ -433,20 +475,8 @@ public class AtsElement
                     break;
             }
         }
-
-        public static DesktopData[] addProperties(string[] attributes, AutomationElementPropertyValues properties, AutomationElementPatternValuesBase patterns)
-        {
-            List<DesktopData> result = new List<DesktopData>();
-
-            Parallel.ForEach<string>(attributes, a =>
-            {
-                addProperty(a, properties, patterns, result);
-            });
-
-            return result.ToArray();
-        }
-
-        private static void checkProperty(string name, AutomationProperty<bool> property, List<DesktopData> properties)
+               
+        private static void CheckProperty(string name, AutomationProperty<bool> property, List<DesktopData> properties)
         {
             if (property.IsSupported)
             {
@@ -454,7 +484,7 @@ public class AtsElement
             }
         }
 
-        private static void checkProperty(string name, AutomationProperty<string> property, List<DesktopData> properties)
+        private static void CheckProperty(string name, AutomationProperty<string> property, List<DesktopData> properties)
         {
             if (property.IsSupported)
             {

@@ -84,10 +84,10 @@ class ElementExecution : AtsExecution
             if (handle > 0)
             {
                 List<AtsElement> elements = new List<AtsElement>();
-                DesktopWindow window = DesktopWindow.getWindowByHandle(handle);
+                DesktopWindow window = DesktopWindow.GetWindowByHandle(handle);
                 if (window != null)
                 {
-                    elements.AddRange(window.getElements(tag, attributes));
+                    elements.AddRange(window.GetElements(tag, attributes));
                 }
 
                 response.Elements = elements.ToArray();
@@ -101,7 +101,7 @@ class ElementExecution : AtsExecution
         {
             if (element != null)
             {
-                response.Elements = element.getElements(tag, attributes).ToArray();
+                response.Elements = element.GetElements(tag, attributes).ToArray();
             }
             else
             {
@@ -112,7 +112,7 @@ class ElementExecution : AtsExecution
         {
             if (element != null)
             {
-                element.loadProperties();
+                element.LoadProperties();
 
                 if (propertyName == null)
                 {
@@ -120,7 +120,7 @@ class ElementExecution : AtsExecution
                 }
                 else
                 {
-                    response.Data = new DesktopData[] { element.getProperty(propertyName) };
+                    response.Data = new DesktopData[] { element.GetProperty(propertyName) };
                 }
             }
             else
@@ -132,7 +132,7 @@ class ElementExecution : AtsExecution
         {
             if (element != null)
             {
-                response.Elements = element.getParents().ToArray();
+                response.Elements = element.GetParents().ToArray();
             }
             else
             {
