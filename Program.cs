@@ -21,16 +21,12 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
-using System.Windows.Automation;
 using System.Management;
 using System.Collections.Concurrent;
-using System.Text.RegularExpressions;
 using System.IO;
 using System.Windows.Forms;
 using System.Linq;
 using Microsoft.Win32;
-using FlaUI.Core;
 using FlaUI.Core.AutomationElements.Infrastructure;
 
 // State object for reading client data asynchronously

@@ -18,7 +18,6 @@ under the License.
  */
 
 using System;
-using System.Drawing.Imaging;
 using System.IO;
 
 class RecordExecution : AtsExecution

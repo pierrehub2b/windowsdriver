@@ -28,18 +28,7 @@ using FlaUI.Core.Definitions;
 
 [DataContract(Name = "com.ats.executor.drivers.desktop.DesktopWindow")]
 public class DesktopWindow : AtsElement
-{
-    /*[DllImport("User32.dll")]
-    private static extern Int32 SetForegroundWindow(int hWnd);
-
-    [DllImport("user32.dll")]
-    private static extern int ShowWindow(int hWnd, uint Msg);
-
-    [DllImport("user32.dll")]
-    internal static extern bool SendMessage(int hWnd, Int32 msg, Int32 wParam, Int32 lParam);
-    static readonly int WM_SYSCOMMAND = 0x0112;
-    static readonly int SC_RESTORE = 0xF120;*/
-    
+{    
     [DataMember(Name = "pid")]
     public int Pid { get; set; }
 
@@ -108,9 +97,6 @@ public class DesktopWindow : AtsElement
 
     internal void ToFront()
     {
-        //SetForegroundWindow(Handle);
-        //SendMessage(Handle, WM_SYSCOMMAND, SC_RESTORE, 0);
-
         if (isWindow)
         {
             double w = Element.AsWindow().ActualWidth;
