@@ -20,6 +20,7 @@ under the License.
 using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.AutomationElements.Infrastructure;
+using FlaUI.Core.Definitions;
 using FlaUI.Core.Shapes;
 using System;
 using System.Collections.Generic;
@@ -155,6 +156,18 @@ public class AtsElement
                 item.Click();
             }
         }
+        else
+        {
+            AutomationElement list = Element.FindFirstChild(Element.ConditionFactory.ByControlType(ControlType.List));
+            if (list != null)
+            {
+                AutomationElement[] listItems = list.FindAllChildren();
+                if(listItems.Length > index)
+                {
+                    SelectListItem(listItems[index]);
+                }
+            }
+        }
 
         if (expandCollapse)
         {
@@ -178,7 +191,7 @@ public class AtsElement
                 {
                     if (regex.IsMatch(item.Text))
                     {
-                        SelectComboItem(item);
+                        SelectListItem(item);
                         break;
                     }
                 }
@@ -189,16 +202,47 @@ public class AtsElement
                 {
                     if (item.Text.Equals(text))
                     {
-                        SelectComboItem(item);
+                        SelectListItem(item);
                         break;
                     }
                 }
             }
         }
-        else if (Element.Patterns.Value.IsSupported)
+        else
+        {
+            AutomationElement list = Element.FindFirstChild(Element.ConditionFactory.ByControlType(ControlType.List));
+            if(list != null)
+            {
+                AutomationElement[] listItems = list.FindAllChildren();
+                if (regexp)
+                {
+                    Regex regex = new Regex(@text);
+                    foreach (AutomationElement item in listItems)
+                    {
+                        if (regex.IsMatch(item.Name))
+                        {
+                            SelectListItem(item);
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (AutomationElement item in listItems)
+                    {
+                        if (item.Name.Equals(text))
+                        {
+                            SelectListItem(item);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        /*else if (Element.Patterns.Value.IsSupported)
         {
             Element.Patterns.Value.Pattern.SetValue(text);
-        }
+        }*/
 
         if (expandCollapse)
         {
@@ -226,7 +270,7 @@ public class AtsElement
         return false;
     }
 
-    private void SelectComboItem(ComboBoxItem item)
+    private void SelectListItem(AutomationElement item)
     {
         if (item.Patterns.ScrollItem.IsSupported)
         {
