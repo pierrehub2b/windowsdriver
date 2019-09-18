@@ -37,7 +37,7 @@ class ElementExecution : AtsExecution
 
     private readonly Executor executor;
 
-    public ElementExecution(int type, string[] commandsData, ActionMouse mouse) : base()
+    public ElementExecution(int type, string[] commandsData) : base()
     {
         elemType = (ElementType)type;
 
@@ -100,12 +100,12 @@ class ElementExecution : AtsExecution
                     {
                         if (commandsData.Length > 3)
                         {
-                            executor = new SelectExecutor(response, element, mouse, commandsData[1], commandsData[2], commandsData[3]);
+                            executor = new SelectExecutor(response, element, commandsData[1], commandsData[2], commandsData[3]);
                             return;
                         }
                         else
                         {
-                            executor = new SelectExecutor(response, element, mouse, commandsData[1], commandsData[2]);
+                            executor = new SelectExecutor(response, element, commandsData[1], commandsData[2]);
                             return;
                         }
                     }
@@ -237,19 +237,16 @@ class ElementExecution : AtsExecution
         private readonly bool regexp;
         private readonly string type;
         private readonly string value;
-        private readonly ActionMouse mouse;
 
-        public SelectExecutor(DesktopResponse response, AtsElement element, ActionMouse mouse, string type, string value) : base(response, element)
+        public SelectExecutor(DesktopResponse response, AtsElement element, string type, string value) : base(response, element)
         {
-            this.mouse = mouse;
             this.type = type;
             this.value = value;
             this.regexp = false;
         }
 
-        public SelectExecutor(DesktopResponse response, AtsElement element, ActionMouse mouse, string type, string value, string regexp) : base(response, element)
+        public SelectExecutor(DesktopResponse response, AtsElement element, string type, string value, string regexp) : base(response, element)
         {
-            this.mouse = mouse;
             this.type = type;
             this.value = value;
             bool.TryParse(regexp, out this.regexp);
@@ -260,11 +257,11 @@ class ElementExecution : AtsExecution
             if ("index".Equals(type))
             {
                 int.TryParse(value, out int index);
-                element.SelectIndex(mouse, index);
+                element.SelectIndex(index);
             }
             else
             {
-                element.SelectText(mouse, value, regexp);
+                element.SelectText(value, regexp);
             }
         }
     }

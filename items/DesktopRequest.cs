@@ -67,7 +67,7 @@ class DesktopRequest
         }
         else if (type == CommandType.Element)
         {
-            execution = new ElementExecution(cmdSubType, cmdData, mouse);
+            execution = new ElementExecution(cmdSubType, cmdData);
         }
         else
         {

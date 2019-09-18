@@ -22,8 +22,8 @@ using FlaUI.Core.AutomationElements;
 using FlaUI.Core.AutomationElements.Infrastructure;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
+using FlaUI.Core.Input;
 using FlaUI.Core.Shapes;
-using FlaUI.UIA3;
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
@@ -138,9 +138,9 @@ public class AtsElement
         return Tag.Equals(value);
     }
 
-    internal void SelectIndex(ActionMouse mouse, int index)
+    internal void SelectIndex(int index)
     {
-        bool expandCollapse = ExpandElement(mouse);
+        bool expandCollapse = ExpandElement();
 
         if (Element.Patterns.Selection.IsSupported)
         {
@@ -171,8 +171,7 @@ public class AtsElement
             }
             else
             {
-                UIA3Automation ui3 = new UIA3Automation();
-                AutomationElement listItem = ui3.GetDesktop().FindFirst(
+                AutomationElement listItem = Element.Automation.GetDesktop().FindFirst(
                     TreeScope.Children, 
                     new AndCondition(
                         Element.ConditionFactory.ByControlType(ControlType.Pane), 
@@ -183,10 +182,9 @@ public class AtsElement
                     AutomationElement[] items = listItem.FindAllChildren();
                     if(items.Length > index)
                     {
-                        ClickListItem(items[index], mouse);
+                        ClickListItem(items[index]);
                     }
                 }
-                ui3.Dispose();
             }
         }
 
@@ -196,9 +194,9 @@ public class AtsElement
         }
     }
 
-    internal void SelectText(ActionMouse mouse, string text, bool regexp)
+    internal void SelectText(string text, bool regexp)
     {
-        bool expandCollapse = ExpandElement(mouse);
+        bool expandCollapse = ExpandElement();
 
         if (Element.Patterns.Selection.IsSupported)
         {
@@ -261,8 +259,7 @@ public class AtsElement
             }
             else
             {
-                UIA3Automation ui3 = new UIA3Automation();
-                AutomationElement listItem = ui3.GetDesktop().FindFirst(
+                AutomationElement listItem = Element.Automation.GetDesktop().FindFirst(
                     TreeScope.Children,
                     new AndCondition(Element.ConditionFactory.ByControlType(ControlType.Pane),
                     Element.ConditionFactory.ByClassName(Element.ClassName)));
@@ -277,7 +274,7 @@ public class AtsElement
                         {
                             if (regex.IsMatch(item.Name))
                             {
-                                ClickListItem(item, mouse);
+                                ClickListItem(item);
                                 break;
                             }
                         }
@@ -288,13 +285,12 @@ public class AtsElement
                         {
                             if (item.Name.Equals(text))
                             {
-                                ClickListItem(item, mouse);
+                                ClickListItem(item);
                                 break;
                             }
                         }
                     }
                 }
-                ui3.Dispose();
             }
         }
         /*else if (Element.Patterns.Value.IsSupported)
@@ -308,7 +304,7 @@ public class AtsElement
         }
     }
 
-    private bool ExpandElement(ActionMouse mouse)
+    private bool ExpandElement()
     {
         Element.FocusNative();
         
@@ -319,9 +315,8 @@ public class AtsElement
 
         if (dropDown != null)
         {
-            Point pt = dropDown.GetClickablePoint();
-            mouse.mouseMove(Convert.ToInt32(pt.X), Convert.ToInt32(pt.Y));
-            mouse.click();
+            Mouse.Position = dropDown.GetClickablePoint();
+            Mouse.LeftClick();
         }
 
         if (Element.Patterns.ExpandCollapse.IsSupported)
@@ -332,7 +327,7 @@ public class AtsElement
         return false;
     }
 
-    private void ClickListItem(AutomationElement item, ActionMouse mouse)
+    private void ClickListItem(AutomationElement item)
     {
         item.FocusNative();
 
@@ -342,8 +337,9 @@ public class AtsElement
         }
 
         Rectangle rect = item.BoundingRectangle;
-        mouse.mouseMove(Convert.ToInt32(rect.X + (rect.Width / 2)), Convert.ToInt32(rect.Y + (rect.Height / 2)));
-        mouse.click();
+
+        Mouse.Position = new Point(rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2));
+        Mouse.LeftClick();
     }
 
     private void SelectListItem(AutomationElement item)
