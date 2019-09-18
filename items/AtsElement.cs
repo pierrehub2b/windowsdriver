@@ -20,8 +20,10 @@ under the License.
 using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.AutomationElements.Infrastructure;
+using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.Shapes;
+using FlaUI.UIA3;
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
@@ -167,6 +169,25 @@ public class AtsElement
                     SelectListItem(listItems[index]);
                 }
             }
+            else
+            {
+                UIA3Automation ui3 = new UIA3Automation();
+                AutomationElement listItem = ui3.GetDesktop().FindFirst(
+                    TreeScope.Children, 
+                    new AndCondition(
+                        Element.ConditionFactory.ByControlType(ControlType.Pane), 
+                        Element.ConditionFactory.ByClassName(Element.ClassName)));
+                
+                if(listItem != null)
+                {
+                    AutomationElement[] items = listItem.FindAllChildren();
+                    if(items.Length > index)
+                    {
+                        ClickListItem(items[index], mouse);
+                    }
+                }
+                ui3.Dispose();
+            }
         }
 
         if (expandCollapse)
@@ -238,6 +259,43 @@ public class AtsElement
                     }
                 }
             }
+            else
+            {
+                UIA3Automation ui3 = new UIA3Automation();
+                AutomationElement listItem = ui3.GetDesktop().FindFirst(
+                    TreeScope.Children,
+                    new AndCondition(Element.ConditionFactory.ByControlType(ControlType.Pane),
+                    Element.ConditionFactory.ByClassName(Element.ClassName)));
+
+                if (listItem != null)
+                {
+                    AutomationElement[] items = listItem.FindAllChildren();
+                    if (regexp)
+                    {
+                        Regex regex = new Regex(@text);
+                        foreach (AutomationElement item in items)
+                        {
+                            if (regex.IsMatch(item.Name))
+                            {
+                                ClickListItem(item, mouse);
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (AutomationElement item in items)
+                        {
+                            if (item.Name.Equals(text))
+                            {
+                                ClickListItem(item, mouse);
+                                break;
+                            }
+                        }
+                    }
+                }
+                ui3.Dispose();
+            }
         }
         /*else if (Element.Patterns.Value.IsSupported)
         {
@@ -253,8 +311,12 @@ public class AtsElement
     private bool ExpandElement(ActionMouse mouse)
     {
         Element.FocusNative();
+        
+        AutomationElement dropDown = Element.FindFirstChild(
+            new OrCondition(
+                Element.ConditionFactory.ByControlType(ControlType.Button), 
+                Element.ConditionFactory.ByControlType(ControlType.SplitButton)));
 
-        AutomationElement dropDown = Element.FindFirstChild(c => c.ByControlType(FlaUI.Core.Definitions.ControlType.Button));
         if (dropDown != null)
         {
             Point pt = dropDown.GetClickablePoint();
@@ -268,6 +330,20 @@ public class AtsElement
             return true;
         }
         return false;
+    }
+
+    private void ClickListItem(AutomationElement item, ActionMouse mouse)
+    {
+        item.FocusNative();
+
+        if (item.Patterns.Invoke.IsSupported)
+        {
+            item.Patterns.Invoke.Pattern.Invoke();
+        }
+
+        Rectangle rect = item.BoundingRectangle;
+        mouse.mouseMove(Convert.ToInt32(rect.X + (rect.Width / 2)), Convert.ToInt32(rect.Y + (rect.Height / 2)));
+        mouse.click();
     }
 
     private void SelectListItem(AutomationElement item)
