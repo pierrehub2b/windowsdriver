@@ -28,11 +28,9 @@ public class WebServer
     private readonly HttpListener listener;
     private readonly Func<HttpListenerContext, bool> _responderMethod;
 
-    private int port;
 
     public WebServer(int port, Func<HttpListenerContext, bool> method)
     {
-        this.port = port;
         this.listener = new HttpListener();
 
         if (!HttpListener.IsSupported)

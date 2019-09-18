@@ -33,8 +33,8 @@ class ActionMouse
     private const int MOUSEEVENTF_MIDDLEUP = 0x0040;
     private const int MOUSEEVENTF_WHEEL = 0x0800;
     private const int WM_MOUSEMOVE = 0x200;
-	
-	[DllImport("user32.dll")]
+
+    [DllImport("user32.dll")]
     private static extern bool SetCursorPos(int X, int Y);
 
     internal void mouseMove(int x, int y)

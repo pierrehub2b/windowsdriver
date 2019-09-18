@@ -17,18 +17,18 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using FlaUI.Core.AutomationElements.Infrastructure;
+using FlaUI.Core.Definitions;
+using FlaUI.UIA3;
 using System;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Diagnostics;
-using FlaUI.Core.AutomationElements.Infrastructure;
-using FlaUI.UIA3;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
-using FlaUI.Core.Definitions;
 
 [DataContract(Name = "com.ats.executor.drivers.desktop.DesktopWindow")]
 public class DesktopWindow : AtsElement
-{    
+{
     [DataMember(Name = "pid")]
     public int Pid { get; set; }
 
@@ -114,7 +114,7 @@ public class DesktopWindow : AtsElement
                 Element.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Normal);
             }
 
-            if(Element.AsWindow().ActualWidth != w || Element.AsWindow().ActualHeight != h)
+            if (Element.AsWindow().ActualWidth != w || Element.AsWindow().ActualHeight != h)
             {
                 Resize(Convert.ToInt32(w), Convert.ToInt32(h));
             }
@@ -178,6 +178,8 @@ public class DesktopWindow : AtsElement
 
     public static List<DesktopWindow> GetOrderedWindowsByPid(int pid)
     {
+        List<DesktopWindow> windowsList = new List<DesktopWindow>();
+
         bool procExists = false;
         Process[] procs = Process.GetProcesses();
         foreach (Process proc in procs)
@@ -191,27 +193,25 @@ public class DesktopWindow : AtsElement
 
         if (procExists)
         {
-            AutomationElement[] winChildren = new UIA3Automation().GetDesktop().FindAllChildren(w => w.ByProcessId(pid));
-            List<DesktopWindow> windowsList = new List<DesktopWindow>();
+            UIA3Automation ui3 = new UIA3Automation();
+            AutomationElement[] winChildren = ui3.GetDesktop().FindAllChildren(w => w.ByProcessId(pid));
 
             Parallel.ForEach<AutomationElement>(winChildren, win =>
             {
-                    if (win.ControlType == ControlType.Window)
-                    {
-                        windowsList.Insert(0, CachedElement.getCachedWindow(win));
-                    }
-                    else if (win.ControlType == ControlType.Pane)
-                    {
-                        windowsList.Add(CachedElement.getCachedWindow(win));
-                    }
+                if (win.ControlType == ControlType.Window)
+                {
+                    windowsList.Insert(0, CachedElement.GetCachedWindow(win));
+                }
+                else if (win.ControlType == ControlType.Pane)
+                {
+                    windowsList.Add(CachedElement.GetCachedWindow(win));
+                }
             });
 
-            return windowsList;
+            ui3.Dispose();
         }
-        else
-        {
-            throw new Exception(string.Format("Pid {0} does not exists", pid));
-        }
+
+        return windowsList;
     }
 
     /*public static DesktopWindow getTopWindowByPid(int pid)
@@ -231,8 +231,11 @@ public class DesktopWindow : AtsElement
     {
         if (handle > 0)
         {
-            AutomationElement window = new UIA3Automation().FromHandle(new IntPtr(handle));
-            if(window != null)
+            UIA3Automation ui3 = new UIA3Automation();
+            AutomationElement window = ui3.FromHandle(new IntPtr(handle));
+            ui3.Dispose();
+
+            if (window != null)
             {
                 return new DesktopWindow(window);
             }
@@ -245,11 +248,13 @@ public class DesktopWindow : AtsElement
         UIA3Automation uia3 = new UIA3Automation();
         AutomationElement[] windows = uia3.GetDesktop().FindAllChildren();
 
+        uia3.Dispose();
+
         foreach (AutomationElement window in windows)
         {
             if (window.Properties.Name.IsSupported && window.Name.Contains(title))
             {
-                return CachedElement.getCachedWindow(window);
+                return CachedElement.GetCachedWindow(window);
             }
         }
 
@@ -264,7 +269,7 @@ public class DesktopWindow : AtsElement
             {
                 if (windowChild.Properties.Name.IsSupported && windowChild.Name.Contains(title))
                 {
-                    return CachedElement.getCachedWindow(windowChild);
+                    return CachedElement.GetCachedWindow(windowChild);
                 }
             }
         }

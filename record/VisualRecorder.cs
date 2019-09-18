@@ -23,7 +23,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 
 public class VisualRecorder
 {
@@ -32,7 +31,7 @@ public class VisualRecorder
 
     [DllImport("user32.dll", EntryPoint = "GetDC")]
     private static extern IntPtr GetDC(IntPtr ptr);
-         
+
     [DllImport("gdi32.dll", EntryPoint = "CreateCompatibleDC")]
     private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
 
@@ -50,9 +49,9 @@ public class VisualRecorder
 
     [DllImport("gdi32.dll")]
     public static extern bool DeleteDC(IntPtr hDC);
-    
+
     private const int SRCCOPY = 0x00CC0020;
-        
+
     private int frameIndex = 0;
     private BufferedStream visualStream;
     private VisualAction currentAction;
@@ -62,7 +61,7 @@ public class VisualRecorder
 
     private ImageCodecInfo maxQualityEncoder;
     private EncoderParameters maxQualityEncoderParameters;
-    
+
     private string imageType;
 
     private DataContractAmfSerializer AmfSerializer;
@@ -89,7 +88,8 @@ public class VisualRecorder
     public int CurrentPid
     {
         get { return currentPid; }
-        set {
+        set
+        {
             if (value != currentPid)
             {
                 currentPid = value;
@@ -100,7 +100,7 @@ public class VisualRecorder
 
                 //cpuCounter = new PerformanceCounter("Processor", "% Processor Time", processName);
                 //ramCounter.InstanceName = processName;
-                
+
                 /*string processName = GetPerformanceCounterProcessName(value);
                 if (processName != null)
                 {
@@ -207,7 +207,8 @@ public class VisualRecorder
 
         if (videoQuality > 0)
         {
-            if (AmfSerializer == null) {
+            if (AmfSerializer == null)
+            {
                 AmfSerializer = new DataContractAmfSerializer(typeof(VisualAction), new[] { typeof(VisualElement), typeof(VisualReport), typeof(TestBound) });
             }
 
@@ -221,7 +222,7 @@ public class VisualRecorder
             {
                 animationEncoder = GetEncoder(ImageFormat.Jpeg);
                 animationEncoderParameters = new EncoderParameters(2);
-                
+
                 if (videoQuality == 3) // quality level
                 {
                     animationEncoderParameters.Param[1] = new EncoderParameter(Encoder.Quality, 70L);
@@ -279,7 +280,7 @@ public class VisualRecorder
 
     internal void AddValue(string v)
     {
-        if(v != string.Empty)
+        if (v != string.Empty)
         {
             currentAction.Value = v;
         }
@@ -307,7 +308,7 @@ public class VisualRecorder
 
     internal void AddPosition(string hpos, string hposValue, string vpos, string vposValue)
     {
-        if(currentAction.Element != null)
+        if (currentAction.Element != null)
         {
             currentAction.Element.updatePosition(hpos, hposValue, vpos, vposValue);
         }
@@ -318,7 +319,8 @@ public class VisualRecorder
         currentAction.Index = frameIndex;
         frameIndex++;
 
-        if(visualStream != null) {
+        if (visualStream != null)
+        {
             AmfSerializer.WriteObject(visualStream, currentAction);
         }
     }

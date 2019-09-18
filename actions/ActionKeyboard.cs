@@ -72,7 +72,7 @@ class ActionKeyboard
                 SendKeys.SendWait("{" + match.Groups[1].ToString().ToUpper() + "}");
             }
             catch (Exception) { }
-            
+
             /*VirtualKeyCode code;
             if (Enum.TryParse<VirtualKeyCode>(match.Groups[1].ToString().ToUpper(), out code))
             {
@@ -91,7 +91,7 @@ class ActionKeyboard
             SendKeys.SendWait(keys);
         }
     }
-    
+
     internal void down(string code)
     {
         if ("33".Equals(code))//ctrl key
@@ -115,7 +115,7 @@ class ActionKeyboard
             simulator.Keyboard.KeyUp(VirtualKeyCode.SHIFT);
         }
     }
-    
+
     private string Base64Decode(string base64EncodedData)
     {
         var base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
@@ -124,7 +124,8 @@ class ActionKeyboard
 
     private void pasteText(string text)
     {
-        if (text.Length > 0) {
+        if (text.Length > 0)
+        {
             Thread thread = new Thread(() => Clipboard.SetText(text));
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();

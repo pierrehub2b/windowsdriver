@@ -20,6 +20,7 @@ under the License.
 using System.Collections.Generic;
 using System.Net;
 using System.Runtime.Serialization;
+using windowsdriver.items;
 
 class DesktopRequest
 {
@@ -33,14 +34,14 @@ class DesktopRequest
         Mouse = 5
     };
 
-    private AtsExecution execution;
+    private readonly AtsExecution execution;
 
     public DesktopRequest(int errorCode, bool atsAgent, string message)
     {
         execution = new AtsExecution(errorCode, atsAgent, message);
     }
 
-    public DesktopRequest(int cmdType, int cmdSubType, string[] cmdData, ActionMouse mouse, ActionKeyboard keyboard, VisualRecorder recorder, DesktopData[] capabilities, List<DesktopWindow> ieWindows)
+    public DesktopRequest(int cmdType, int cmdSubType, string[] cmdData, ActionMouse mouse, ActionKeyboard keyboard, VisualRecorder recorder, DesktopData[] capabilities, List<IEWindow> ieWindows)
     {
         CommandType type = (CommandType)cmdType;
 
@@ -66,7 +67,7 @@ class DesktopRequest
         }
         else if (type == CommandType.Element)
         {
-            execution = new ElementExecution(cmdSubType, cmdData);
+            execution = new ElementExecution(cmdSubType, cmdData, mouse);
         }
         else
         {
@@ -86,9 +87,10 @@ public class DesktopResponse
     public int type = 0;
     public string atsvFilePath;
 
-    public DesktopResponse() {}
+    public DesktopResponse() { }
 
-    public DesktopResponse(int error, bool atsAgent, string message) {
+    public DesktopResponse(int error, bool atsAgent, string message)
+    {
         setError(error, message);
         if (!atsAgent)
         {
@@ -100,7 +102,7 @@ public class DesktopResponse
     {
         setError(-1, "command request error");
     }
-    
+
     public void setError(int code, string message)
     {
         ErrorCode = code;

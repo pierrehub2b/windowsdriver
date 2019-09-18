@@ -36,7 +36,7 @@ class AtsExecution
     {
         response = new DesktopResponse(error, atsAgent, message);
     }
-    
+
     public virtual bool Run(HttpListenerContext context)
     {
         bool serverRun = true;
@@ -45,7 +45,7 @@ class AtsExecution
             context.Response.ContentType = "application/x-amf";
             AmfSerializer.WriteObject(context.Response.OutputStream, response);
         }
-        else if(response.atsvFilePath != null)
+        else if (response.atsvFilePath != null)
         {
             try
             {
@@ -67,7 +67,8 @@ class AtsExecution
                 context.Response.StatusCode = (int)HttpStatusCode.OK;
 
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 context.Response.StatusDescription = e.Message;
             }

@@ -17,17 +17,20 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using FlaUI.Core.AutomationElements.Infrastructure;
+using FlaUI.Core.Definitions;
+using FlaUI.UIA3;
+using Microsoft.Win32;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Management;
 using System.Net;
 using System.Net.Sockets;
-using System.Management;
-using System.Collections.Concurrent;
-using System.IO;
 using System.Windows.Forms;
-using System.Linq;
-using Microsoft.Win32;
-using FlaUI.Core.AutomationElements.Infrastructure;
+using windowsdriver.items;
 
 // State object for reading client data asynchronously
 public class StateObject
@@ -41,25 +44,25 @@ public static class CachedElement
 {
     private static readonly ConcurrentDictionary<string, AtsElement> cached = new ConcurrentDictionary<string, AtsElement>();
 
-    public static AtsElement getCachedElementById(string id)
+    public static AtsElement GetCachedElementById(string id)
     {
         cached.TryGetValue(id, out AtsElement value);
         return value;
     }
 
-    public static AtsElement createCachedElement(AutomationElement elem)
+    public static AtsElement CreateCachedElement(AutomationElement elem)
     {
         AtsElement newElement = new AtsElement(elem);
         cached.TryAdd(newElement.Id, newElement);
         return newElement;
     }
 
-    public static void addCachedElement(AtsElement elem)
+    public static void AddCachedElement(AtsElement elem)
     {
         cached.TryAdd(elem.Id, elem);
     }
 
-    public static DesktopWindow getCachedWindow(AutomationElement elem)
+    public static DesktopWindow GetCachedWindow(AutomationElement elem)
     {
         DesktopWindow window = new DesktopWindow(elem);
         cached.TryAdd(window.Id, window);
@@ -92,8 +95,19 @@ public class DesktopDriver
     private static readonly ActionMouse mouse = new ActionMouse();
     private static readonly VisualRecorder recorder = new VisualRecorder();
 
+    private static readonly List<IEWindow> ieWindows = new List<IEWindow>();
+
     public static int Main(String[] args)
     {
+        UIA3Automation uia3 = new UIA3Automation();
+        var eventHandler = uia3.GetDesktop().RegisterStructureChangedEvent(TreeScope.Children, (element, type, arg3) =>
+        {
+            if (type.Equals(StructureChangeType.ChildAdded) && element.Properties.ClassName.IsSupported && "IEFrame".Equals(element.ClassName))
+            {
+                ieWindows.Add(new IEWindow(element.AsWindow(), ieWindows));
+            }
+        });
+
         int defaultPort = DefaultPort;
         for (int i = 0; i < args.Length; i++)
         {
@@ -133,8 +147,7 @@ public class DesktopDriver
             {
                 postData = reader.ReadToEnd();
             }
-            //req = new DesktopRequest(t0, t1, postData.Split('\n'), mouse, keyboard, recorder, capabilities, ieWindows);
-            req = new DesktopRequest(t0, t1, postData.Split('\n'), mouse, keyboard, recorder, capabilities, null);
+            req = new DesktopRequest(t0, t1, postData.Split('\n'), mouse, keyboard, recorder, capabilities, ieWindows);
         }
         else
         {
@@ -143,45 +156,6 @@ public class DesktopDriver
 
         return req.execute(listener);
     }
-
-    //-----------------------------------------------------------------------------------------------------------------------------------------------------------------
-    // IE specific management
-    //-----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-    /*private static List<DesktopWindow> ieWindows = new List<DesktopWindow>();
-    private static AutomationEventHandler openHandler = new AutomationEventHandler(OnWindowOpen);
-    private static void OnWindowOpen(object el, AutomationEventArgs e)
-    {
-        AutomationElement win;
-        try
-        {
-            win = el as AutomationElement;
-        }
-        catch (ElementNotAvailableException)
-        {
-            return;
-        }
-
-        if (e.EventId == WindowPattern.WindowOpenedEvent && win != null && "IEFrame".Equals(win.Current.ClassName))
-        {
-            object winPattern;
-            if (win.TryGetCurrentPattern(WindowPattern.Pattern, out winPattern))
-            {
-                ieWindows.Add(new DesktopWindow(win));
-                Automation.AddAutomationEventHandler(WindowPattern.WindowClosedEvent, win, TreeScope.Subtree, (sender2, e2) =>
-                {
-                    foreach (DesktopWindow ieWin in ieWindows)
-                    {
-                        if (ieWin.Handle == win.Current.NativeWindowHandle)
-                        {
-                            ieWindows.Remove(ieWin);
-                            break;
-                        }
-                    }
-                });
-            }
-        }
-    }*/
 
     //-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -201,16 +175,16 @@ public class DesktopDriver
         if (dinf.IsReady)
         {
             osData.Add(new DesktopData("DriveLetter", driveLetter));
-            osData.Add(new DesktopData("DiskTotalSize", dinf.TotalSize/1024/1024 + " Mo"));
-            osData.Add(new DesktopData("DiskFreeSpace", dinf.AvailableFreeSpace/1024/1024 + " Mo"));
+            osData.Add(new DesktopData("DiskTotalSize", dinf.TotalSize / 1024 / 1024 + " Mo"));
+            osData.Add(new DesktopData("DiskFreeSpace", dinf.AvailableFreeSpace / 1024 / 1024 + " Mo"));
         }
 
-        var os = new ManagementObjectSearcher("select * from Win32_OperatingSystem").Get().Cast<ManagementObject>().First();
+        ManagementObject os = new ManagementObjectSearcher("select * from Win32_OperatingSystem").Get().Cast<ManagementObject>().First();
         osData.Add(new DesktopData("BuildNumber", (string)os["BuildNumber"]));
         osData.Add(new DesktopData("Name", (string)os["Caption"]));
         osData.Add(new DesktopData("CountryCode", (string)os["CountryCode"]));
 
-        var cpu = new ManagementObjectSearcher("select * from Win32_Processor").Get().Cast<ManagementObject>().First();
+        ManagementObject cpu = new ManagementObjectSearcher("select * from Win32_Processor").Get().Cast<ManagementObject>().First();
         osData.Add(new DesktopData("CpuSocket", (string)cpu["SocketDesignation"]));
         osData.Add(new DesktopData("CpuName", (string)cpu["Caption"]));
         osData.Add(new DesktopData("CpuArchitecture", "" + (ushort)cpu["Architecture"]));

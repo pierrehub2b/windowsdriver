@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using windowsdriver.items;
 
 class WindowExecution : AtsExecution
 {
@@ -39,7 +40,8 @@ class WindowExecution : AtsExecution
         Close = 7,
         Url = 8,
         Keys = 9,
-        State = 10
+        State = 10,
+        IEToFront = 11
     };
 
     private readonly DesktopWindow window;
@@ -52,15 +54,12 @@ class WindowExecution : AtsExecution
 
     private readonly string folderPath;
 
-    private readonly List<DesktopWindow> ieWindows;
-
-    public WindowExecution(int type, string[] commandsData, ActionKeyboard keyboard, List<DesktopWindow> ieWindows, VisualRecorder recorder) : base()
+    public WindowExecution(int type, string[] commandsData, ActionKeyboard keyboard, List<IEWindow> ieWindows, VisualRecorder recorder) : base()
     {
         this.type = (WindowType)type;
         this.keyboard = keyboard;
-        this.ieWindows = ieWindows;
 
-        if (this.type == WindowType.Close || this.type == WindowType.Handle || this.type == WindowType.ToFront || this.type == WindowType.State || this.type == WindowType.Keys)
+        if (this.type == WindowType.Close || this.type == WindowType.Handle || this.type == WindowType.State || this.type == WindowType.Keys)
         {
             int.TryParse(commandsData[0], out int handle);
             window = DesktopWindow.GetWindowByHandle(handle);
@@ -73,10 +72,32 @@ class WindowExecution : AtsExecution
             {
                 this.keys = commandsData[1];
             }
-            else if (this.type == WindowType.ToFront)
+        }
+        else if (this.type == WindowType.IEToFront)
+        {
+            int.TryParse(commandsData[0], out int index);
+            response.Data = new DesktopData[] { new DesktopData("index", IEWindow.SetWindowToFront(index, ieWindows)) };
+        }
+        else if (this.type == WindowType.ToFront)
+        {
+            if (commandsData.Length > 1)
             {
+                int.TryParse(commandsData[0], out int handle);
                 int.TryParse(commandsData[1], out pid);
+
+                window = DesktopWindow.GetWindowByHandle(handle);
                 recorder.CurrentPid = pid;
+            }
+            else
+            {
+                int.TryParse(commandsData[0], out pid);
+                recorder.CurrentPid = pid;
+
+                List<DesktopWindow> windows = DesktopWindow.GetOrderedWindowsByPid(pid);
+                if (windows.Count > 0)
+                {
+                    window = windows[0];
+                }
             }
         }
         else if (this.type == WindowType.Url)
@@ -97,7 +118,8 @@ class WindowExecution : AtsExecution
                     response.setError(errorCode, "directory not found : " + fname);
                 }
             }
-            catch (Exception) {
+            catch (Exception)
+            {
                 response.setError(errorCode, "directory path not valid : " + fname);
             }
 
@@ -131,19 +153,19 @@ class WindowExecution : AtsExecution
     {
         List<DesktopWindow> wins = DesktopWindow.GetOrderedWindowsByPid(pid);
 
-        if (ieWindows != null && ieWindows.Count > 0 && ieWindows[0].Pid == pid)
+        /*if (ieWindows != null && ieWindows.Count > 0 && ieWindows[0].Pid == pid)
         {
             List<DesktopWindow> reorderedList = new List<DesktopWindow>();
-            foreach (DesktopWindow ieWin in ieWindows)
+            foreach (WindowRef ieWin in ieWindows)
             {
-                DesktopWindow reordered = wins.Find(w => w.Handle == ieWin.Handle);
+                DesktopWindow reordered = wins.Find(w => w.Handle == ieWin.Handle.ToInt32());
                 if (reordered != null)
                 {
                     reorderedList.Add(reordered);
                 }
             }
             return reorderedList.ToArray();
-        }
+        }*/
 
         return wins.ToArray();
     }
@@ -168,14 +190,7 @@ class WindowExecution : AtsExecution
                 break;
             case WindowType.List:
 
-                try
-                {
-                    response.Windows = GetWindowsList();
-                }
-                catch (Exception e)
-                {
-                    response.setError(errorCode, e.Message);
-                }
+                response.Windows = GetWindowsList();
                 break;
 
             case WindowType.Move:
@@ -206,8 +221,8 @@ class WindowExecution : AtsExecution
 
                 if (folderPath != null && window != null)
                 {
-                       window.ToFront();
-                        keyboard.addressBar(folderPath);
+                    window.ToFront();
+                    keyboard.addressBar(folderPath);
                 }
 
                 break;
@@ -245,9 +260,9 @@ class WindowExecution : AtsExecution
                     window.ToFront();
                 }
                 keyboard.rootKeys(keys.ToLower());
-                
+
                 break;
-                
+
             default:
                 if (window != null)
                 {

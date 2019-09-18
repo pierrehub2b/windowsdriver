@@ -28,8 +28,8 @@ public class DesktopData
     [DataMember(Name = "value")]
     public string value { get; set; }
 
-    public DesktopData(){}
-    
+    public DesktopData() { }
+
     public DesktopData(string name, string value)
     {
         this.name = name;

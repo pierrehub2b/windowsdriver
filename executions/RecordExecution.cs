@@ -75,7 +75,7 @@ class RecordExecution : AtsExecution
                     freeSpace = drive.AvailableFreeSpace;
                 }
                 catch (Exception) { }
-                
+
                 if (freeSpace > 100000000)
                 {
                     try
@@ -113,7 +113,7 @@ class RecordExecution : AtsExecution
                 else
                 {
                     response.ErrorCode = -50;
-                    response.ErrorMessage = "Not enough space available on disk : " + (freeSpace/1024/1024) + " Mo";
+                    response.ErrorMessage = "Not enough space available on disk : " + (freeSpace / 1024 / 1024) + " Mo";
                 }
             }
             else if (recordType == RecordType.Create)

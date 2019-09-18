@@ -101,6 +101,6 @@ class DriverExecution : AtsExecution
             Process proc = Process.GetProcessById(pid);
             proc.Kill();
         }
-        catch (ArgumentException){}
+        catch (ArgumentException) { }
     }
 }
