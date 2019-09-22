@@ -300,6 +300,21 @@ public class AtsElement
 
         if (expandCollapse)
         {
+            
+        }
+    }
+
+    internal void SelectValue(string value)
+    {
+        bool expandCollapse = ExpandElement();
+
+        if (Element.Patterns.Value.IsSupported)
+        {
+            Element.Patterns.Value.Pattern.SetValue(value);
+        }
+
+        if (expandCollapse)
+        {
             Element.Patterns.ExpandCollapse.Pattern.Collapse();
         }
     }
@@ -307,23 +322,26 @@ public class AtsElement
     private bool ExpandElement()
     {
         Element.FocusNative();
-        
-        AutomationElement dropDown = Element.FindFirstChild(
-            new OrCondition(
-                Element.ConditionFactory.ByControlType(ControlType.Button), 
-                Element.ConditionFactory.ByControlType(ControlType.SplitButton)));
-
-        if (dropDown != null)
-        {
-            Mouse.Position = dropDown.GetClickablePoint();
-            Mouse.LeftClick();
-        }
-
+ 
         if (Element.Patterns.ExpandCollapse.IsSupported)
         {
             Element.Patterns.ExpandCollapse.Pattern.Expand();
             return true;
         }
+        else
+        {
+            AutomationElement dropDown = Element.FindFirstChild(
+                        new OrCondition(
+                            Element.ConditionFactory.ByControlType(ControlType.Button),
+                            Element.ConditionFactory.ByControlType(ControlType.SplitButton)));
+
+            if (dropDown != null)
+            {
+                Mouse.Position = dropDown.GetClickablePoint();
+                Mouse.LeftClick();
+            }
+        }
+
         return false;
     }
 
@@ -609,6 +627,7 @@ public class AtsElement
                     }
                     break;
                 case IsSelected:
+
                     if (patternValues.SelectionItem.IsSupported)
                     {
                         properties.Add(new DesktopData(propertyName, patternValues.SelectionItem.Pattern.IsSelected));

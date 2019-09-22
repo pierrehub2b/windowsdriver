@@ -259,6 +259,10 @@ class ElementExecution : AtsExecution
                 int.TryParse(value, out int index);
                 element.SelectIndex(index);
             }
+            else if ("value".Equals(type))
+            {
+                element.SelectValue(value);
+            }
             else
             {
                 element.SelectText(value, regexp);
