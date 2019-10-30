@@ -17,10 +17,9 @@ specific language governing permissions and limitations
 under the License.
  */
 
-using System.Collections.Generic;
 using System.Net;
 using System.Runtime.Serialization;
-using windowsdriver.items;
+using windowsdriver.actions;
 
 class DesktopRequest
 {
@@ -41,7 +40,7 @@ class DesktopRequest
         execution = new AtsExecution(errorCode, atsAgent, message);
     }
 
-    public DesktopRequest(int cmdType, int cmdSubType, string[] cmdData, ActionMouse mouse, ActionKeyboard keyboard, VisualRecorder recorder, DesktopData[] capabilities, List<IEWindow> ieWindows)
+    public DesktopRequest(int cmdType, int cmdSubType, string[] cmdData, ActionKeyboard keyboard, VisualRecorder recorder, DesktopData[] capabilities, ActionIEWindow ie)
     {
         CommandType type = (CommandType)cmdType;
 
@@ -51,7 +50,7 @@ class DesktopRequest
         }
         else if (type == CommandType.Mouse)
         {
-            execution = new MouseExecution(cmdSubType, cmdData, mouse);
+            execution = new MouseExecution(cmdSubType, cmdData);
         }
         else if (type == CommandType.Keyboard)
         {
@@ -59,7 +58,7 @@ class DesktopRequest
         }
         else if (type == CommandType.Window)
         {
-            execution = new WindowExecution(cmdSubType, cmdData, keyboard, ieWindows, recorder);
+            execution = new WindowExecution(cmdSubType, cmdData, keyboard, ie, recorder);
         }
         else if (type == CommandType.Record)
         {

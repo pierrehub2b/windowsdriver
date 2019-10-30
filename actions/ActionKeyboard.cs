@@ -17,51 +17,37 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using FlaUI.Core.Input;
+using FlaUI.Core.WindowsAPI;
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
-using WindowsInput;
-using WindowsInput.Native;
 
 class ActionKeyboard
 {
-    private static Regex keyRegexp = new Regex(@"\$key\((.*)\)");
-    private InputSimulator simulator;
+    private static readonly Regex keyRegexp = new Regex(@"\$key\((.*)\)");
 
-    public ActionKeyboard()
+    internal void SendKeysData(string data)
     {
-        this.simulator = new InputSimulator();
+        PasteText(Base64Decode(data));
     }
 
-    internal void sendKeys(string data)
+    internal void Clear()
     {
-        pasteText(Base64Decode(data));
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+        Keyboard.Type(VirtualKeyShort.BACK);
     }
 
-    internal void clear()
+    internal void AddressBar(string folder)
     {
-        simulator.Keyboard.KeyDown(VirtualKeyCode.CONTROL);
-        simulator.Keyboard.KeyPress(VirtualKeyCode.VK_A);
-        simulator.Keyboard.KeyUp(VirtualKeyCode.CONTROL);
-
-        simulator.Keyboard.KeyPress(VirtualKeyCode.BACK);
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_L);
+        PasteText(folder);
+        Keyboard.Type(VirtualKeyShort.RETURN);
     }
 
-    internal void addressBar(string folder)
-    {
-        simulator.Keyboard.KeyDown(VirtualKeyCode.CONTROL);
-        simulator.Keyboard.KeyPress(VirtualKeyCode.VK_L);
-        simulator.Keyboard.KeyUp(VirtualKeyCode.CONTROL);
-
-        pasteText(folder);
-
-        simulator.Keyboard.KeyDown(VirtualKeyCode.RETURN);
-        simulator.Keyboard.KeyUp(VirtualKeyCode.RETURN);
-    }
-
-    internal void rootKeys(string keys)
+    internal void RootKeys(string keys)
     {
         bool isSpecialKey = false;
         foreach (Match match in keyRegexp.Matches(keys))
@@ -92,27 +78,27 @@ class ActionKeyboard
         }
     }
 
-    internal void down(string code)
+    internal void Down(string code)
     {
         if ("33".Equals(code))//ctrl key
         {
-            simulator.Keyboard.KeyDown(VirtualKeyCode.CONTROL);
+            Keyboard.Pressing(VirtualKeyShort.CONTROL);
         }
         else if ("46".Equals(code))//shift key
         {
-            simulator.Keyboard.KeyDown(VirtualKeyCode.SHIFT);
+            Keyboard.Pressing(VirtualKeyShort.SHIFT);
         }
     }
 
-    internal void release(string code)
+    internal void Release(string code)
     {
         if ("33".Equals(code))//ctrl key
         {
-            simulator.Keyboard.KeyUp(VirtualKeyCode.CONTROL);
+            Keyboard.Release(VirtualKeyShort.CONTROL);
         }
         else if ("46".Equals(code))//shift key
         {
-            simulator.Keyboard.KeyUp(VirtualKeyCode.SHIFT);
+            Keyboard.Release(VirtualKeyShort.SHIFT);
         }
     }
 
@@ -122,18 +108,23 @@ class ActionKeyboard
         return Encoding.UTF8.GetString(base64EncodedBytes);
     }
 
-    private void pasteText(string text)
+    private void PasteText(string text)
     {
-        if (text.Length > 0)
+       if (text.Length > 0)
         {
-            Thread thread = new Thread(() => Clipboard.SetText(text));
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
+            if (text.StartsWith("$KEY-"))
+            {
+                SendKeys.SendWait("{" + text.Substring(5) + "}");
+            }
+            else
+            {
+                Thread thread = new Thread(() => Clipboard.SetText(text));
+                thread.SetApartmentState(ApartmentState.STA);
+                thread.Start();
+                thread.Join();
 
-            simulator.Keyboard.KeyDown(VirtualKeyCode.CONTROL);
-            simulator.Keyboard.KeyPress(VirtualKeyCode.VK_V);
-            simulator.Keyboard.KeyUp(VirtualKeyCode.CONTROL);
+                Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
+            }
         }
     }
 }

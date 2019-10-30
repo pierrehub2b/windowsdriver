@@ -27,8 +27,7 @@ public class WebServer
 
     private readonly HttpListener listener;
     private readonly Func<HttpListenerContext, bool> _responderMethod;
-
-
+    
     public WebServer(int port, Func<HttpListenerContext, bool> method)
     {
         this.listener = new HttpListener();

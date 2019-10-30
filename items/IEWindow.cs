@@ -1,10 +1,30 @@
-﻿using FlaUI.Core.AutomationElements;
+﻿/*
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+ */
+
+using FlaUI.Core.AutomationElements;
 using FlaUI.Core.AutomationElements.Infrastructure;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.EventHandlers;
 using FlaUI.Core.Identifiers;
 using System;
 using System.Collections.Generic;
+using windowsdriver.actions;
 
 namespace windowsdriver.items
 {
@@ -14,13 +34,17 @@ namespace windowsdriver.items
         public IntPtr Handle { get; set; }
 
         private readonly Window window;
-        private readonly List<TabItem> openedTabs = new List<TabItem>();
 
         private int tabsCount = 0;
 
-        public IEWindow(Window win, List<IEWindow> ieWindows)
+        private readonly string id;
+
+        private readonly List<IETab> tabs = new List<IETab>();
+
+        public IEWindow(Window win, ActionIEWindow ie)
         {
             window = win;
+            id = Guid.NewGuid().ToString();
 
             Pid = window.Properties.ProcessId;
             Handle = window.Properties.NativeWindowHandle;
@@ -31,11 +55,12 @@ namespace windowsdriver.items
             closeEvent = window.RegisterEvent(closeEventId, TreeScope.Element, (w, tp) =>
             {
                 w.RemoveAutomationEventHandler(closeEventId, closeEvent);
-                ieWindows.Remove(this);
+                Array.ForEach(tabs.ToArray(), r => RemoveTab(r));
+                ie.RemoveWindow(id);
             });
 
             AutomationElement tab = window.FindFirst(TreeScope.Descendants, window.ConditionFactory.ByControlType(ControlType.Tab));
-            AddTab(tab.FindFirstChild(tab.ConditionFactory.ByControlType(ControlType.TabItem)).AsTabItem());
+            AddTab(tab.FindFirstChild(tab.ConditionFactory.ByControlType(ControlType.TabItem)).AsTabItem(), this, id);
 
             var eventHandler = tab.RegisterStructureChangedEvent(TreeScope.Children, (element, type, arg3) =>
             {
@@ -47,7 +72,7 @@ namespace windowsdriver.items
                     {
                         if (type.Equals(StructureChangeType.ChildAdded))
                         {
-                            AddTab(element.AsTabItem());
+                            AddTab(element.AsTabItem(), this, id);
                         }
                         else if (type.Equals(StructureChangeType.ChildRemoved))
                         {
@@ -58,54 +83,49 @@ namespace windowsdriver.items
             });
         }
 
-        private void AddTab(TabItem tab)
+        internal void AddTab(TabItem item, IEWindow window, string windowId)
         {
-            if (!openedTabs.Contains(tab))
+            foreach (IETab tab in tabs)
             {
-                openedTabs.Add(tab);
+                if (tab.EqualsTab(item))
+                {
+                    return;
+                }
             }
+            tabs.Add(new IETab(item, window, windowId));
         }
 
-        private void RemoveTab(AutomationElement[] tabItems)
+        internal void RemoveTab(AutomationElement[] listTabs)
         {
-            foreach (TabItem item in openedTabs)
+            foreach (IETab tab in tabs)
             {
-                if (Array.FindIndex(tabItems, i => i.Equals(item)) < 0)
+                if (Array.FindIndex(listTabs, e => tab.EqualsTab(e)) < 0)
                 {
-                    openedTabs.Remove(item);
+                    RemoveTab(tab);
                     break;
                 }
             }
         }
 
-        public int CheckToFront(int index)
+        private void RemoveTab(IETab tab)
         {
-            if(index >= openedTabs.Count)
-            {
-                return index - openedTabs.Count;
-            }
+            tabs.Remove(tab);
+        }
 
+        public bool EqualsWindowId(string id)
+        {
+            return this.id.Equals(id);
+        }
+
+        public void ToFront()
+        {
             window.SetForeground();
             window.FocusNative();
-
-            openedTabs[index].Click();
-
-            return -1;
         }
-        
-        public static int SetWindowToFront(int index, List<IEWindow> ieWindows)
+
+        public void Close()
         {
-            int winIndex = 0;
-            foreach(IEWindow win in ieWindows)
-            {
-                index = win.CheckToFront(index);
-                if(index == -1)
-                {
-                    return winIndex;
-                }
-                winIndex++;
-            }
-            return -1;
+            window.Close();
         }
     }
 }

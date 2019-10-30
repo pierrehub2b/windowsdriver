@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using windowsdriver.actions;
 using windowsdriver.items;
 
 class WindowExecution : AtsExecution
@@ -41,7 +42,8 @@ class WindowExecution : AtsExecution
         Url = 8,
         Keys = 9,
         State = 10,
-        IEToFront = 11
+        SwitchIE = 11,
+        CloseIE = 12
     };
 
     private readonly DesktopWindow window;
@@ -54,7 +56,7 @@ class WindowExecution : AtsExecution
 
     private readonly string folderPath;
 
-    public WindowExecution(int type, string[] commandsData, ActionKeyboard keyboard, List<IEWindow> ieWindows, VisualRecorder recorder) : base()
+    public WindowExecution(int type, string[] commandsData, ActionKeyboard keyboard, ActionIEWindow ie, VisualRecorder recorder) : base()
     {
         this.type = (WindowType)type;
         this.keyboard = keyboard;
@@ -73,10 +75,14 @@ class WindowExecution : AtsExecution
                 this.keys = commandsData[1];
             }
         }
-        else if (this.type == WindowType.IEToFront)
+        else if (this.type == WindowType.SwitchIE)
         {
             int.TryParse(commandsData[0], out int index);
-            response.Data = new DesktopData[] { new DesktopData("index", IEWindow.SetWindowToFront(index, ieWindows)) };
+            response.Data = new DesktopData[] { new DesktopData("index", ie.SetWindowToFront(index))};
+        }
+        else if (this.type == WindowType.CloseIE)
+        {
+             response.Data = new DesktopData[] { new DesktopData("index", ie.CloseWindow()) };
         }
         else if (this.type == WindowType.ToFront)
         {
@@ -222,7 +228,7 @@ class WindowExecution : AtsExecution
                 if (folderPath != null && window != null)
                 {
                     window.ToFront();
-                    keyboard.addressBar(folderPath);
+                    keyboard.AddressBar(folderPath);
                 }
 
                 break;
@@ -259,7 +265,7 @@ class WindowExecution : AtsExecution
                 {
                     window.ToFront();
                 }
-                keyboard.rootKeys(keys.ToLower());
+                keyboard.RootKeys(keys.ToLower());
 
                 break;
 

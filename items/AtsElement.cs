@@ -66,14 +66,18 @@ public class AtsElement
 
     public virtual void Dispose()
     {
-        this.Element = null;
+        Element.BasicAutomationElement.Automation.UnregisterAllEvents();
+        Element.BasicAutomationElement.Automation.Dispose();
+        
+        Element = null;
+        Attributes = null;
     }
 
     public AtsElement(AutomationElement elem, string tag)
     {
-        this.Id = Guid.NewGuid().ToString();
-        this.Element = elem;
-        this.Tag = tag;
+        Id = Guid.NewGuid().ToString();
+        Element = elem;
+        Tag = tag;
 
         UpdateBounding(elem);
     }
@@ -372,7 +376,7 @@ public class AtsElement
 
     //-----------------------------------------------------------------------------------------------------
 
-    internal List<AtsElement> GetElements(string tag, string[] attributes)
+    internal AtsElement[] GetElements(string tag, string[] attributes)
     {
         List<AtsElement> listElements = new List<AtsElement>
         {
@@ -408,7 +412,9 @@ public class AtsElement
             });
         }
 
-        return listElements;
+        Array.Clear(uiElements, 0, uiElements.Length);
+
+        return listElements.ToArray();
     }
 
     //-----------------------------------------------------------------------------------------------------------------------
@@ -441,7 +447,15 @@ public class AtsElement
                 Properties.FillPatternStyle,
                 Properties.AnnotationTypeName,
                 Properties.Author,
-                Properties.DateTime };
+                Properties.DateTime,
+   Properties.ChildId,
+ Properties.Description,
+Properties.Help,
+    Properties.BoundingX,
+    Properties.BoundingY,
+    Properties.BoundingWidth,
+    Properties.BoundingHeight,
+    Properties.BoundingRectangle};
 
     private static readonly string[] propertiesGrid = new List<string>(propertiesBase) { Properties.RowCount, Properties.ColumnCount }.ToArray();
 
@@ -534,6 +548,14 @@ public class AtsElement
         public const string DateTime = "DateTime";
         public const string ColumnCount = "ColumnCount";
         public const string RowCount = "RowCount";
+        public const string ChildId = "ChildId";
+        public const string Description = "Description";
+        public const string Help = "Help";
+        public const string BoundingX = "BoundingX";
+        public const string BoundingY = "BoundingY";
+        public const string BoundingWidth = "BoundingWidth";
+        public const string BoundingHeight = "BoundingHeight";
+        public const string BoundingRectangle = "BoundingRectangle";
 
         public static DesktopData[] AddProperties(string[] attributes, bool isPassword, AutomationElement element)
         {
@@ -555,7 +577,49 @@ public class AtsElement
             switch (propertyName)
             {
                 case Name:
-                    CheckProperty(propertyName, propertyValues.Name, properties);
+
+                    string value = "";
+                    if (propertyValues.Name.IsSupported)
+                    {
+                        value = propertyValues.Name.ValueOrDefault;
+                    }
+
+                    if(value.Length == 0)
+                    {
+                        if (patternValues.LegacyIAccessible.IsSupported)
+                        {
+                            value = patternValues.LegacyIAccessible.Pattern.Name;
+                        }
+                    }
+                    properties.Add(new DesktopData(propertyName, value));
+
+                    break;
+                case BoundingX:
+                case BoundingY:
+                case BoundingWidth:
+                case BoundingHeight:
+                case BoundingRectangle:
+                    Rectangle rect = element.BoundingRectangle;
+                     if (BoundingRectangle.Equals(propertyName))
+                    {
+                        properties.Add(new DesktopData(BoundingRectangle, rect.X + "," + rect.Y + "," + rect.Width + "," + rect.Height));
+                    }
+                    else if (BoundingX.Equals(propertyName))
+                    {
+                        properties.Add(new DesktopData(BoundingX, rect.X));
+                    }
+                    else if (BoundingY.Equals(propertyName))
+                    {
+                        properties.Add(new DesktopData(BoundingY, rect.Y));
+                    }
+                    else if (BoundingWidth.Equals(propertyName))
+                    {
+                        properties.Add(new DesktopData(BoundingWidth, rect.Width));
+                    }
+                    else if (BoundingHeight.Equals(propertyName))
+                    {
+                        properties.Add(new DesktopData(BoundingHeight, rect.Height));
+                    }
                     break;
                 case AutomationId:
                     CheckProperty(propertyName, propertyValues.AutomationId, properties);
@@ -589,6 +653,12 @@ public class AtsElement
                     break;
                 case IsPassword:
                     CheckProperty(propertyName, propertyValues.IsPassword, properties);
+                    break;
+                case RowCount:
+                    properties.Add(new DesktopData(propertyName, element.AsGrid().RowCount));
+                    break;
+                case ColumnCount:
+                    properties.Add(new DesktopData(propertyName, element.AsGrid().ColumnCount));
                     break;
                 case Text:
                     if (patternValues.Text.IsSupported)
@@ -676,28 +746,40 @@ public class AtsElement
                     }
                     break;
                 case AnnotationTypeName:
-                    if (patternValues.Annotation.IsSupported)
+                    if (patternValues.Annotation.IsSupported && patternValues.Annotation.Pattern.AnnotationTypeName.IsSupported)
                     {
                         properties.Add(new DesktopData(propertyName, patternValues.Annotation.Pattern.AnnotationTypeName));
                     }
                     break;
                 case Author:
-                    if (patternValues.Annotation.IsSupported)
+                    if (patternValues.Annotation.IsSupported && patternValues.Annotation.Pattern.Author.IsSupported)
                     {
                         properties.Add(new DesktopData(propertyName, patternValues.Annotation.Pattern.Author));
                     }
                     break;
                 case DateTime:
-                    if (patternValues.Annotation.IsSupported)
+                    if (patternValues.Annotation.IsSupported && patternValues.Annotation.Pattern.DateTime.IsSupported)
                     {
                         properties.Add(new DesktopData(propertyName, patternValues.Annotation.Pattern.DateTime));
                     }
                     break;
-                case RowCount:
-                    properties.Add(new DesktopData(propertyName, element.AsGrid().RowCount));
+                case ChildId:
+                    if (patternValues.LegacyIAccessible.IsSupported && patternValues.LegacyIAccessible.Pattern.ChildId.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patternValues.LegacyIAccessible.Pattern.ChildId));
+                    }
                     break;
-                case ColumnCount:
-                    properties.Add(new DesktopData(propertyName, element.AsGrid().ColumnCount));
+                case Description:
+                    if (patternValues.LegacyIAccessible.IsSupported && patternValues.LegacyIAccessible.Pattern.Description.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patternValues.LegacyIAccessible.Pattern.Description));
+                    }
+                    break;
+                case Help:
+                    if (patternValues.LegacyIAccessible.IsSupported && patternValues.LegacyIAccessible.Pattern.Help.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patternValues.LegacyIAccessible.Pattern.Help));
+                    }
                     break;
             }
         }

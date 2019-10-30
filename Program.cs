@@ -30,7 +30,7 @@ using System.Management;
 using System.Net;
 using System.Net.Sockets;
 using System.Windows.Forms;
-using windowsdriver.items;
+using windowsdriver.actions;
 
 // State object for reading client data asynchronously
 public class StateObject
@@ -57,6 +57,17 @@ public static class CachedElement
         return newElement;
     }
 
+    public static void ClearElements()
+    {
+        /*foreach (var kvp in cached)
+        {
+            if (cached.TryRemove(kvp.Key, out AtsElement elem))
+            {
+                elem.Dispose();
+            }
+        }*/
+    }
+
     public static void AddCachedElement(AtsElement elem)
     {
         cached.TryAdd(elem.Id, elem);
@@ -72,17 +83,6 @@ public static class CachedElement
     /*public static void removeCachedElement(AtsElement element)
     {
         cached.TryRemove(element.Id, out element);
-    }
-
-    public static void clearCachedElements()
-    {
-        foreach (var kvp in cached)
-        {
-            if (cached.TryRemove(kvp.Key, out AtsElement elem))
-            {
-                elem.dispose();
-            }
-        }
     }*/
 }
 
@@ -92,19 +92,17 @@ public class DesktopDriver
     private static readonly DesktopData[] capabilities = GetCapabilities();
 
     private static readonly ActionKeyboard keyboard = new ActionKeyboard();
-    private static readonly ActionMouse mouse = new ActionMouse();
     private static readonly VisualRecorder recorder = new VisualRecorder();
+    private static readonly ActionIEWindow ie = new ActionIEWindow();
 
-    private static readonly List<IEWindow> ieWindows = new List<IEWindow>();
-
-    public static int Main(String[] args)
+   public static int Main(String[] args)
     {
         UIA3Automation uia3 = new UIA3Automation();
         var eventHandler = uia3.GetDesktop().RegisterStructureChangedEvent(TreeScope.Children, (element, type, arg3) =>
         {
             if (type.Equals(StructureChangeType.ChildAdded) && element.Properties.ClassName.IsSupported && "IEFrame".Equals(element.ClassName))
             {
-                ieWindows.Add(new IEWindow(element.AsWindow(), ieWindows));
+                ie.AddWindow(element.AsWindow());
             }
         });
 
@@ -147,7 +145,7 @@ public class DesktopDriver
             {
                 postData = reader.ReadToEnd();
             }
-            req = new DesktopRequest(t0, t1, postData.Split('\n'), mouse, keyboard, recorder, capabilities, ieWindows);
+            req = new DesktopRequest(t0, t1, postData.Split('\n'), keyboard, recorder, capabilities, ie);
         }
         else
         {
@@ -165,7 +163,7 @@ public class DesktopDriver
         {
             new DesktopData("MachineName", Environment.MachineName),
             new DesktopData("DriverVersion", System.Reflection.Assembly.GetEntryAssembly().GetName().Version.ToString()),
-            new DesktopData("DotNetVersion", Environment.Version.ToString()),
+            new DesktopData("DotNetVersion", GetFrameworkVersion().ToString()),
             new DesktopData("ScreenResolution", Screen.PrimaryScreen.Bounds.Width.ToString() + "x" + Screen.PrimaryScreen.Bounds.Height.ToString()),
             new DesktopData("Version", Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseId", "").ToString())
         };
@@ -192,5 +190,47 @@ public class DesktopDriver
         osData.Add(new DesktopData("CpuCores", "" + (uint)cpu["NumberOfCores"]));
 
         return osData.ToArray();
+    }
+
+    private static Version GetFrameworkVersion()
+    {
+        using (RegistryKey ndpKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full"))
+        {
+            if (ndpKey != null)
+            {
+                int value = (int)(ndpKey.GetValue("Release") ?? 0);
+                if (value >= 528040)
+                    return new Version(4, 8, 0);
+
+                if (value >= 461808)
+                    return new Version(4, 7, 2);
+
+                if (value >= 461308)
+                    return new Version(4, 7, 1);
+
+                if (value >= 460798)
+                    return new Version(4, 7, 0);
+
+                if (value >= 394802)
+                    return new Version(4, 6, 2);
+
+                if (value >= 394254)
+                    return new Version(4, 6, 1);
+
+                if (value >= 393295)
+                    return new Version(4, 6, 0);
+
+                if (value >= 379893)
+                    return new Version(4, 5, 2);
+
+                if (value >= 378675)
+                    return new Version(4, 5, 1);
+
+                if (value >= 378389)
+                    return new Version(4, 5, 0);
+            }
+        }
+
+        return new Version(0, 0, 0);
     }
 }

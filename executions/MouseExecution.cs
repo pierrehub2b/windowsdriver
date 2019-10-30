@@ -17,6 +17,8 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using FlaUI.Core.Input;
+using FlaUI.Core.Shapes;
 using System.Net;
 
 class MouseExecution : AtsExecution
@@ -36,14 +38,11 @@ class MouseExecution : AtsExecution
         Wheel = 7
     };
 
-    private readonly ActionMouse action;
-
     private readonly int[] move;
     private readonly int wheelDelta = 0;
 
-    public MouseExecution(int type, string[] commandsData, ActionMouse action) : base()
+    public MouseExecution(int type, string[] commandsData) : base()
     {
-        this.action = action;
         this.type = (MouseType)type;
 
         if (commandsData.Length > 1)
@@ -66,7 +65,7 @@ class MouseExecution : AtsExecution
 
                 if (move != null)
                 {
-                    action.mouseMove(move[0], move[1]);
+                    Mouse.Position = new Point(move[0], move[1]);
                 }
                 else
                 {
@@ -76,37 +75,37 @@ class MouseExecution : AtsExecution
 
             case MouseType.Click:
 
-                action.click();
+                Mouse.Click(MouseButton.Left);
                 break;
 
             case MouseType.DoubleClick:
 
-                action.doubleClick();
+                Mouse.DoubleClick(MouseButton.Right);
                 break;
 
             case MouseType.RightClick:
 
-                action.rightClick();
+                Mouse.Click(MouseButton.Right);
                 break;
 
             case MouseType.MiddleClick:
 
-                action.middleClick();
+                Mouse.Click(MouseButton.Middle);
                 break;
 
             case MouseType.Down:
 
-                action.down();
+                Mouse.Down(MouseButton.Left);
                 break;
 
             case MouseType.Release:
 
-                action.release();
+                Mouse.Up(MouseButton.Left);
                 break;
 
             case MouseType.Wheel:
 
-                action.wheel(wheelDelta);
+                Mouse.Scroll(-wheelDelta/100);
                 break;
 
             default:

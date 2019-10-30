@@ -8,7 +8,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>windowsdriver</RootNamespace>
     <AssemblyName>windowsdriver</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
@@ -48,6 +48,7 @@
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <ManifestCertificateThumbprint>80BB7D7864EAF4AC278DFE3C705EAF8141D16067</ManifestCertificateThumbprint>
@@ -110,12 +111,9 @@
     <Reference Include="UIAutomationClient" />
     <Reference Include="UIAutomationTypes" />
     <Reference Include="WindowsBase" />
-    <Reference Include="WindowsInput, Version=1.0.4.0, Culture=neutral, PublicKeyToken=9b287f7dc5073cad, processorArchitecture=MSIL">
-      <HintPath>packages\InputSimulator.1.0.4.0\lib\net20\WindowsInput.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="actions\ActionMouse.cs" />
+    <Compile Include="actions\ActionIEWindow.cs" />
     <Compile Include="items\AtsElement.cs" />
     <Compile Include="items\DesktopWindow.cs" />
     <Compile Include="actions\ActionKeyboard.cs" />
@@ -126,6 +124,7 @@
     <Compile Include="executions\MouseExecution.cs" />
     <Compile Include="executions\DriverExecution.cs" />
     <Compile Include="executions\WindowExecution.cs" />
+    <Compile Include="items\IETab.cs" />
     <Compile Include="items\IEWindow.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

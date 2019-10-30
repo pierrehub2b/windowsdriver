@@ -47,4 +47,10 @@ public class DesktopData
         this.value = ":" + value;
     }
 
+    public DesktopData(string name, double value)
+    {
+        this.name = name;
+        this.value = ":" + value;
+    }
+
 }

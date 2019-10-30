@@ -48,6 +48,7 @@ class ElementExecution : AtsExecution
                 int.TryParse(commandsData[0], out int handle);
                 if (handle > 0)
                 {
+                    CachedElement.ClearElements();
                     executor = new FindExecutor(response, handle, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray());
                     return;
                 }
@@ -152,14 +153,15 @@ class ElementExecution : AtsExecution
 
         public override void Run()
         {
-            List<AtsElement> elements = new List<AtsElement>();
             DesktopWindow window = DesktopWindow.GetWindowByHandle(handle);
             if (window != null)
             {
-                elements.AddRange(window.GetElements(tag, attributes));
+                response.Elements = window.GetElements(tag, attributes);
             }
-
-            response.Elements = elements.ToArray();
+            else
+            {
+                response.Elements = new AtsElement[0];
+            }
         }
     }
     private class FromPointExecutor : Executor
@@ -204,7 +206,7 @@ class ElementExecution : AtsExecution
 
         public override void Run()
         {
-            response.Elements = element.GetElements(tag, attributes).ToArray();
+            response.Elements = element.GetElements(tag, attributes);
         }
     }
 
@@ -227,7 +229,16 @@ class ElementExecution : AtsExecution
             }
             else
             {
-                response.Data = new DesktopData[] { element.GetProperty(propertyName) };
+                DesktopData prop = element.GetProperty(propertyName);
+                if(prop == null)
+                {
+                    response.Data = new DesktopData[] {};
+                }
+                else
+                {
+                    response.Data = new DesktopData[] { prop };
+                }
+
             }
         }
     }

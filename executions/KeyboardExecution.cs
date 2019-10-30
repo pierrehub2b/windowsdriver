@@ -21,9 +21,9 @@ using System.Net;
 
 class KeyboardExecution : AtsExecution
 {
-    private static int errorCode = -6;
+    private static readonly int errorCode = -6;
+    private readonly KeyType type;
 
-    private KeyType type;
     private enum KeyType
     {
         Clear = 0,
@@ -50,21 +50,21 @@ class KeyboardExecution : AtsExecution
     {
         if (type == KeyType.Clear)
         {
-            action.clear();
+            action.Clear();
         }
         else if (data != null)
         {
             if (type == KeyType.Enter)
             {
-                action.sendKeys(data);
+                action.SendKeysData(data);
             }
             else if (type == KeyType.Down)
             {
-                action.down(data);
+                action.Down(data);
             }
             else if (type == KeyType.Release)
             {
-                action.release(data);
+                action.Release(data);
             }
             else
             {
