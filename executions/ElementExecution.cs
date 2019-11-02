@@ -32,7 +32,8 @@ class ElementExecution : AtsExecution
         Find = 2,
         Attributes = 3,
         Select = 4,
-        FromPoint = 5
+        FromPoint = 5,
+        Script = 6
     };
 
     private readonly Executor executor;
@@ -88,6 +89,14 @@ class ElementExecution : AtsExecution
                         executor = new AttributesExecutor(response, element, null);
                     }
                     return;
+                }
+                else if (elemType == ElementType.Script)
+                {
+                    if (commandsData.Length > 1)
+                    {
+                        executor = new ScriptExecutor(response, element, commandsData[1]);
+                        return;
+                    }
                 }
                 else if (commandsData.Length > 1)
                 {
@@ -171,6 +180,7 @@ class ElementExecution : AtsExecution
         public override void Run()
         {
             UIA3Automation ui3 = new UIA3Automation();
+
             AtsElement elem = new AtsElement(ui3.FromPoint(Mouse.Position));
 
             response.Elements = new AtsElement[1] { elem };
@@ -229,16 +239,31 @@ class ElementExecution : AtsExecution
             }
             else
             {
-                DesktopData prop = element.GetProperty(propertyName);
-                if(prop == null)
-                {
-                    response.Data = new DesktopData[] {};
-                }
-                else
-                {
-                    response.Data = new DesktopData[] { prop };
-                }
+                response.Data = element.GetProperty(propertyName);
+            }
+        }
+    }
 
+    private class ScriptExecutor : ElementExecutor
+    {
+        private readonly string script;
+
+        public ScriptExecutor(DesktopResponse response, AtsElement element, string script) : base(response, element)
+        {
+            this.script = script;
+        }
+
+        public override void Run()
+        {
+            element.LoadProperties();
+
+            if (script == null || script.Length == 0)
+            {
+                response.Data = new DesktopData[0];
+            }
+            else
+            {
+                response.Data = element.ExecuteScript(script);
             }
         }
     }

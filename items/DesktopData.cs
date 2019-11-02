@@ -23,34 +23,32 @@ using System.Runtime.Serialization;
 public class DesktopData
 {
     [DataMember(Name = "name")]
-    public string name { get; set; }
+    public string Name;
 
     [DataMember(Name = "value")]
-    public string value { get; set; }
+    public string Value;
 
-    public DesktopData() { }
-
-    public DesktopData(string name, string value)
-    {
-        this.name = name;
-        this.value = ":" + value;
+    public DesktopData(string name) {
+        Name = name;
+        Value = ":";
     }
 
-    public DesktopData(string name, bool value)
+    public DesktopData(string name, string value) : this(name)
     {
-        this.name = name;
-        this.value = ":" + value;
-    }
-    public DesktopData(string name, int value)
-    {
-        this.name = name;
-        this.value = ":" + value;
+        Value += value;
     }
 
-    public DesktopData(string name, double value)
+    public DesktopData(string name, bool value) : this(name)
     {
-        this.name = name;
-        this.value = ":" + value;
+        Value += value;
+    }
+    public DesktopData(string name, int value) : this(name)
+    {
+        Value += value;
     }
 
+    public DesktopData(string name, double value) : this(name)
+    {
+        Value += value;
+    }
 }

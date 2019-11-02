@@ -32,8 +32,8 @@ class KeyboardExecution : AtsExecution
         Release = 3
     };
 
-    private ActionKeyboard action;
-    private string data;
+    private readonly ActionKeyboard action;
+    private readonly string data;
 
     public KeyboardExecution(int type, string[] commandsData, ActionKeyboard action) : base()
     {

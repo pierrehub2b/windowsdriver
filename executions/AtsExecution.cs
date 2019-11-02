@@ -25,11 +25,10 @@ using System.Net;
 class AtsExecution
 {
     private static readonly DataContractAmfSerializer AmfSerializer = new DataContractAmfSerializer(typeof(DesktopResponse), new[] { typeof(DesktopData), typeof(AtsElement), typeof(DesktopWindow) });
-    protected DesktopResponse response;
+    protected DesktopResponse response = new DesktopResponse();
 
     public AtsExecution()
     {
-        response = new DesktopResponse();
     }
 
     public AtsExecution(int error, bool atsAgent, string message)

@@ -49,7 +49,7 @@ class RecordExecution : AtsExecution
         else if (recordType == RecordType.Download)
         {
             response.type = 1;
-            response.atsvFilePath = recorder.getDownloadFile();
+            response.atsvFilePath = recorder.GetDownloadFile();
         }
 
         if (commandsData.Length > 0)
@@ -105,8 +105,7 @@ class RecordExecution : AtsExecution
 
                     response.atsvFilePath = tempFolder + "\\" + fullName;
 
-                    int videoQuality = 2;
-                    int.TryParse(commandsData[6], out videoQuality);
+                    int.TryParse(commandsData[6], out int videoQuality);
 
                     recorder.Start(tempFolder, id, fullName, description, author, groups, prereq, videoQuality, commandsData[7]);
                 }
@@ -120,11 +119,9 @@ class RecordExecution : AtsExecution
             {
                 string actionType = commandsData[0];
 
-                int line = 0;
-                int.TryParse(commandsData[1], out line);
+                int.TryParse(commandsData[1], out int line);
 
-                long timeLine = 0;
-                long.TryParse(commandsData[2], out timeLine);
+                long.TryParse(commandsData[2], out long timeLine);
 
                 string channelName = commandsData[3];
 
@@ -144,8 +141,7 @@ class RecordExecution : AtsExecution
                 double.TryParse(commandsData[2], out screenRect[2]);
                 double.TryParse(commandsData[3], out screenRect[3]);
 
-                bool isRef = false;
-                bool.TryParse(commandsData[4], out isRef);
+                bool.TryParse(commandsData[4], out bool isRef);
 
                 recorder.AddImage(screenRect, isRef);
             }
@@ -159,11 +155,9 @@ class RecordExecution : AtsExecution
             }
             else if (recordType == RecordType.Status)
             {
-                int error = 0;
-                int.TryParse(commandsData[0], out error);
+                int.TryParse(commandsData[0], out int error);
 
-                long duration = 0;
-                long.TryParse(commandsData[1], out duration);
+                long.TryParse(commandsData[1], out long duration);
 
                 recorder.Status(error, duration);
             }
@@ -175,11 +169,9 @@ class RecordExecution : AtsExecution
                 double.TryParse(commandsData[2], out elementBound[2]);
                 double.TryParse(commandsData[3], out elementBound[3]);
 
-                long searchDuration = 0;
-                long.TryParse(commandsData[4], out searchDuration);
+                long.TryParse(commandsData[4], out long searchDuration);
 
-                int numElements = 0;
-                int.TryParse(commandsData[5], out numElements);
+                int.TryParse(commandsData[5], out int numElements);
 
                 string criterias = "";
                 if (commandsData.Length > 6)

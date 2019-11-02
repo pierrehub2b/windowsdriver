@@ -28,39 +28,38 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 [DataContract(Name = "com.ats.element.AtsElement")]
 public class AtsElement
 {
     [DataMember(Name = "id")]
-    public string Id { get; set; }
+    public string Id;
 
     [DataMember(Name = "tag")]
-    public string Tag { get; set; }
+    public string Tag;
 
     [DataMember(Name = "x")]
-    public double X { get; set; }
+    public double X;
 
     [DataMember(Name = "y")]
-    public double Y { get; set; }
+    public double Y;
 
     [DataMember(Name = "width")]
-    public double Width { get; set; }
+    public double Width;
 
     [DataMember(Name = "height")]
-    public double Height { get; set; }
+    public double Height;
 
     [DataMember(Name = "visible")]
-    public Boolean Visible { get; set; }
+    public Boolean Visible;
 
     [DataMember(Name = "password")]
-    public Boolean Password { get; set; }
+    public Boolean Password;
 
     [DataMember(Name = "attributes")]
-    public DesktopData[] Attributes { get; set; }
+    public DesktopData[] Attributes;
 
-    public AutomationElement Element { get; set; }
+    public AutomationElement Element;
 
     //private readonly string innerText = "";
 
@@ -73,20 +72,36 @@ public class AtsElement
         Attributes = null;
     }
 
+    ~AtsElement()
+    {
+        Dispose();
+    }
+
     public AtsElement(AutomationElement elem, string tag)
     {
         Id = Guid.NewGuid().ToString();
         Element = elem;
         Tag = tag;
+        Attributes = new DesktopData[0];
 
         UpdateBounding(elem);
     }
 
-    public AtsElement(AutomationElement elem)
+    public AtsElement(string tag, AutomationElement elem, string[] attributes) : this(tag, elem)
+    {
+        this.Attributes = Properties.AddProperties(attributes, Password, Element).ToArray();
+    }
+   
+    public AtsElement(AutomationElement elem) : this(GetTag(elem), elem)
+    {
+    }
+    
+    public AtsElement(string tag, AutomationElement elem)
     {
         this.Id = Guid.NewGuid().ToString();
+        this.Tag = tag;
         this.Element = elem;
-
+        
         if (elem.Properties.IsOffscreen.IsSupported)
         {
             this.Visible = !elem.Properties.IsOffscreen.Value;
@@ -105,21 +120,6 @@ public class AtsElement
             this.Password = false;
         }
 
-        if (elem.Properties.ControlType.IsSupported)
-        {
-            this.Tag = elem.Properties.ControlType.ValueOrDefault.ToString();
-        }
-
-        if (string.IsNullOrEmpty(this.Tag) && elem.Properties.ClassName.IsSupported)
-        {
-            this.Tag = elem.Properties.ClassName;
-        }
-
-        if (this.Tag == null)
-        {
-            this.Tag = "*";
-        }
-
         UpdateBounding(elem);
     }
 
@@ -135,11 +135,6 @@ public class AtsElement
         this.Y = rec.Y;
         this.Width = rec.Width;
         this.Height = rec.Height;
-    }
-
-    internal bool IsTag(string value)
-    {
-        return Tag.Equals(value);
     }
 
     internal void SelectIndex(int index)
@@ -374,6 +369,29 @@ public class AtsElement
         item.Click();
     }
 
+    public static string GetTag(AutomationElement elem)
+    {
+        string tag;
+        if (elem.Properties.ControlType.IsSupported)
+        {
+            tag = elem.Properties.ControlType.ValueOrDefault.ToString();
+            if (!string.IsNullOrEmpty(tag))
+            {
+                return tag;
+            }
+        }
+
+        if (elem.Properties.ClassName.IsSupported)
+        {
+            tag = elem.Properties.ClassName;
+            if (!string.IsNullOrEmpty(tag))
+            {
+                return tag;
+            }
+        }
+        return "*";
+    }
+
     //-----------------------------------------------------------------------------------------------------
 
     internal AtsElement[] GetElements(string tag, string[] attributes)
@@ -384,32 +402,54 @@ public class AtsElement
         };
 
         AutomationElement[] uiElements = Element.FindAllDescendants();
+
         if ("*".Equals(tag) || tag.Length == 0)
         {
-            foreach (AutomationElement element in uiElements)
+            if (attributes.Length > 0)
             {
-                listElements.Add(CachedElement.CreateCachedElement(element));
-            }
-        }
-        else
-        {
-            foreach (AutomationElement element in uiElements)
-            {
-                AtsElement atsElement = new AtsElement(element);
-                if (atsElement.IsTag(tag))
+                foreach (AutomationElement element in uiElements)
                 {
+                    AtsElement atsElement = new AtsElement("*", element, attributes);
                     CachedElement.AddCachedElement(atsElement);
                     listElements.Add(atsElement);
                 }
             }
-        }
-
-        if (attributes.Length > 0)
-        {
-            Parallel.ForEach<AtsElement>(listElements, elem =>
+            else
             {
-                elem.LoadProperties(attributes);
-            });
+                foreach (AutomationElement element in uiElements)
+                {
+                    listElements.Add(CachedElement.CreateCachedElement(element));
+                }
+            }
+        }
+        else
+        {
+            if (attributes.Length > 0)
+            {
+                foreach (AutomationElement element in uiElements)
+                {
+                    string elemTag = GetTag(element);
+                    if (elemTag.Equals(tag))
+                    {
+                        AtsElement atsElement = new AtsElement(elemTag, element, attributes);
+                        CachedElement.AddCachedElement(atsElement);
+                        listElements.Add(atsElement);
+                    }
+                }
+            }
+            else
+            {
+                foreach (AutomationElement element in uiElements)
+                {
+                    string elemTag = GetTag(element);
+                    if (elemTag.Equals(tag))
+                    {
+                        AtsElement atsElement = new AtsElement(elemTag, element);
+                        CachedElement.AddCachedElement(atsElement);
+                        listElements.Add(atsElement);
+                    }
+                }
+            }
         }
 
         Array.Clear(uiElements, 0, uiElements.Length);
@@ -448,14 +488,14 @@ public class AtsElement
                 Properties.AnnotationTypeName,
                 Properties.Author,
                 Properties.DateTime,
-   Properties.ChildId,
- Properties.Description,
-Properties.Help,
-    Properties.BoundingX,
-    Properties.BoundingY,
-    Properties.BoundingWidth,
-    Properties.BoundingHeight,
-    Properties.BoundingRectangle};
+                Properties.ChildId,
+                Properties.Description,
+                Properties.Help,
+                Properties.BoundingX,
+                Properties.BoundingY,
+                Properties.BoundingWidth,
+                Properties.BoundingHeight,
+                Properties.BoundingRectangle};
 
     private static readonly string[] propertiesGrid = new List<string>(propertiesBase) { Properties.RowCount, Properties.ColumnCount }.ToArray();
 
@@ -463,29 +503,33 @@ Properties.Help,
     {
         if ("Grid".Equals(Tag))
         {
-            Attributes = Properties.AddProperties(propertiesGrid, Password, Element);
+            Attributes = Properties.AddProperties(propertiesGrid, Password, Element).ToArray();
         }
         else
         {
-            Attributes = Properties.AddProperties(propertiesBase, Password, Element);
+            Attributes = Properties.AddProperties(propertiesBase, Password, Element).ToArray();
         }
     }
 
-    internal DesktopData GetProperty(string name)
+    internal DesktopData[] GetProperty(string name)
     {
         foreach (DesktopData data in Attributes)
         {
-            if (data.name.Equals(name))
+            if (data.Name.Equals(name))
             {
-                return data;
+                return new DesktopData[] { data };
             }
         }
-        return null;
+        return new DesktopData[0];
     }
 
-    public void LoadProperties(string[] attributes)
+    internal DesktopData[] ExecuteScript(string script)
     {
-        this.Attributes = Properties.AddProperties(attributes, Password, Element);
+        if (script.StartsWith("Invoke()", StringComparison.OrdinalIgnoreCase) && Element.Patterns.Invoke.IsSupported)
+        {
+            Element.Patterns.Invoke.Pattern.Invoke();
+        }
+        return new DesktopData[0];
     }
 
     /*public void AddInnerText(string value)
@@ -557,16 +601,16 @@ Properties.Help,
         public const string BoundingHeight = "BoundingHeight";
         public const string BoundingRectangle = "BoundingRectangle";
 
-        public static DesktopData[] AddProperties(string[] attributes, bool isPassword, AutomationElement element)
+        public static List<DesktopData> AddProperties(string[] attributes, bool isPassword, AutomationElement element)
         {
             List<DesktopData> result = new List<DesktopData>();
 
-            Parallel.ForEach<string>(attributes, a =>
+            foreach (string a in attributes)
             {
                 AddProperty(a, isPassword, element, result);
-            });
+            }
 
-            return result.ToArray();
+            return result;
         }
 
         public static void AddProperty(string propertyName, bool isPassword, AutomationElement element, List<DesktopData> properties)

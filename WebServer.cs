@@ -61,7 +61,7 @@ public class WebServer
                         catch (Exception e)
                         {
                             DesktopRequest req = new DesktopRequest(-99, atsAgent, "error -> " + e.StackTrace.ToString());
-                            isRunning = req.execute(ctx);
+                            isRunning = req.Execute(ctx);
                         }
 
                     }, listener.GetContext());

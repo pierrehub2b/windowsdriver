@@ -132,7 +132,7 @@ public class DesktopDriver
 
     public static bool SendResponse(HttpListenerContext listener)
     {
-        DesktopRequest req = null;
+        DesktopRequest req;
 
         string[] cmdType = listener.Request.RawUrl.Substring(1).Split('/');
         if (cmdType.Length > 1)
@@ -152,7 +152,7 @@ public class DesktopDriver
             req = new DesktopRequest(-2, listener.Request.UserAgent.Equals("AtsDesktopDriver"), "wrong number of url parameters");
         }
 
-        return req.execute(listener);
+        return req.Execute(listener);
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -181,6 +181,7 @@ public class DesktopDriver
         osData.Add(new DesktopData("BuildNumber", (string)os["BuildNumber"]));
         osData.Add(new DesktopData("Name", (string)os["Caption"]));
         osData.Add(new DesktopData("CountryCode", (string)os["CountryCode"]));
+        os.Dispose();
 
         ManagementObject cpu = new ManagementObjectSearcher("select * from Win32_Processor").Get().Cast<ManagementObject>().First();
         osData.Add(new DesktopData("CpuSocket", (string)cpu["SocketDesignation"]));
@@ -188,6 +189,7 @@ public class DesktopDriver
         osData.Add(new DesktopData("CpuArchitecture", "" + (ushort)cpu["Architecture"]));
         osData.Add(new DesktopData("CpuMaxClockSpeed", (uint)cpu["MaxClockSpeed"] + " Mhz"));
         osData.Add(new DesktopData("CpuCores", "" + (uint)cpu["NumberOfCores"]));
+        cpu.Dispose();
 
         return osData.ToArray();
     }

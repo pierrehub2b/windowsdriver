@@ -44,7 +44,7 @@ public class VisualElement
         }
     }
 
-    public void updatePosition(string hpos, string hposValue, string vpos, string vposValue)
+    public void UpdatePosition(string hpos, string hposValue, string vpos, string vposValue)
     {
         if (hpos != string.Empty)
         {
@@ -60,22 +60,22 @@ public class VisualElement
     }
 
     [DataMember(Name = "bound")]
-    public TestBound Bound { get; set; }
+    public TestBound Bound;
 
     [DataMember(Name = "criterias")]
-    public string Criterias { get; set; }
+    public string Criterias;
 
     [DataMember(Name = "foundElements")]
-    public int FoundElements { get; set; }
+    public int FoundElements;
 
     [DataMember(Name = "searchDuration")]
-    public double SearchDuration { get; set; }
+    public double SearchDuration;
 
     [DataMember(Name = "tag")]
-    public string Tag { get; set; }
+    public string Tag;
 
     [DataMember(Name = "hpos")]
-    public string Hpos { get; set; }
+    public string Hpos;
 
     [DataMember(Name = "hposValue")]
     public int HposValue
@@ -85,7 +85,7 @@ public class VisualElement
     }
 
     [DataMember(Name = "vpos")]
-    public string Vpos { get; set; }
+    public string Vpos;
 
     [DataMember(Name = "vposValue")]
     public int VposValue

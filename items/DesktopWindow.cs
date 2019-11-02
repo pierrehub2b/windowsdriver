@@ -30,10 +30,10 @@ using System.Threading.Tasks;
 public class DesktopWindow : AtsElement
 {
     [DataMember(Name = "pid")]
-    public int Pid { get; set; }
+    public int Pid;
 
     [DataMember(Name = "handle")]
-    public int Handle { get; set; }
+    public int Handle;
 
     private const string MAXIMIZE = "maximize";
     private const string REDUCE = "reduce";
@@ -252,7 +252,7 @@ public class DesktopWindow : AtsElement
 
         foreach (AutomationElement window in windows)
         {
-            if (window.Properties.Name.IsSupported && window.Name.Contains(title))
+            if (window.Properties.Name.IsSupported && window.Name.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return CachedElement.GetCachedWindow(window);
             }
@@ -267,7 +267,7 @@ public class DesktopWindow : AtsElement
             AutomationElement[] windowChildren = window.FindAllChildren();
             foreach (AutomationElement windowChild in windows)
             {
-                if (windowChild.Properties.Name.IsSupported && windowChild.Name.Contains(title))
+                if (windowChild.Properties.Name.IsSupported && windowChild.Name.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     return CachedElement.GetCachedWindow(windowChild);
                 }

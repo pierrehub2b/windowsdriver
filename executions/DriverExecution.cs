@@ -24,7 +24,7 @@ using System.Management;
 
 class DriverExecution : AtsExecution
 {
-    private static int errorCode = -4;
+    private static readonly int errorCode = -4;
 
     private enum DriverType
     {
@@ -67,8 +67,7 @@ class DriverExecution : AtsExecution
         }
         else if (type == DriverType.Process)
         {
-            int pid = -1;
-            int.TryParse(commandsData[0], out pid);
+            int.TryParse(commandsData[0], out int pid);
             if (pid > 0)
             {
                 KillProcessAndChildren(pid);

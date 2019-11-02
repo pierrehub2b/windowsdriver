@@ -24,7 +24,7 @@ using System.Runtime.Serialization;
 [DataContract(Name = "com.ats.recorder.VisualAction")]
 public class VisualAction
 {
-    private List<byte[]> imagesList;
+    private readonly List<byte[]> imagesList;
 
     public VisualAction()
     {
@@ -53,7 +53,7 @@ public class VisualAction
 
     }
 
-    public void addImage(VisualRecorder recorder, double[] channelBound, bool isRef)
+    public void AddImage(VisualRecorder recorder, double[] channelBound, bool isRef)
     {
         byte[] cap = recorder.Capture(channelBound);
 
@@ -87,13 +87,13 @@ public class VisualAction
     }
 
     [DataMember(Name = "channelName")]
-    public string ChannelName { get; set; }
+    public string ChannelName;
 
     [DataMember(Name = "data")]
-    public string Data { get; set; }
+    public string Data;
 
     [DataMember(Name = "element")]
-    public VisualElement Element { get; set; }
+    public VisualElement Element;
 
     [DataMember(Name = "images")]
     public byte[][] Images
@@ -103,44 +103,44 @@ public class VisualAction
     }
 
     [DataMember(Name = "imageType")]
-    public string ImageType { get; set; }
+    public string ImageType;
 
     [DataMember(Name = "index")]
-    public int Index { get; set; }
+    public int Index;
 
     [DataMember(Name = "error")]
-    public int Error { get; set; }
+    public int Error;
 
     [DataMember(Name = "duration")]
-    public long Duration { get; set; }
+    public long Duration;
 
     [DataMember(Name = "line")]
-    public int Line { get; set; }
+    public int Line;
 
     [DataMember(Name = "timeLine")]
-    public long TimeLine { get; set; }
+    public long TimeLine;
 
     [DataMember(Name = "type")]
-    public string Type { get; set; }
+    public string Type;
 
     [DataMember(Name = "value")]
-    public string Value { get; set; }
+    public string Value;
 
     [DataMember(Name = "channelBound")]
-    public TestBound ChannelBound { get; set; }
+    public TestBound ChannelBound;
 
     [DataMember(Name = "imageRef")]
-    public int ImageRef { get; set; }
+    public int ImageRef;
 
     [DataMember(Name = "cpu")]
-    public double Cpu { get; set; }
+    public double Cpu;
 
     [DataMember(Name = "ram")]
-    public double Ram { get; set; }
+    public double Ram;
 
     [DataMember(Name = "netSent")]
-    public double NetSent { get; set; }
+    public double NetSent;
 
     [DataMember(Name = "netReceived")]
-    public double NetReceived { get; set; }
+    public double NetReceived;
 }

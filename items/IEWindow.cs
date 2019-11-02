@@ -30,8 +30,8 @@ namespace windowsdriver.items
 {
     class IEWindow
     {
-        public int Pid { get; set; }
-        public IntPtr Handle { get; set; }
+        public int Pid;
+        public IntPtr Handle;
 
         private readonly Window window;
 

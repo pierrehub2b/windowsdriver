@@ -59,8 +59,8 @@ public class VisualRecorder
     private ImageCodecInfo animationEncoder;
     private EncoderParameters animationEncoderParameters;
 
-    private ImageCodecInfo maxQualityEncoder;
-    private EncoderParameters maxQualityEncoderParameters;
+    private readonly ImageCodecInfo maxQualityEncoder;
+    private readonly EncoderParameters maxQualityEncoderParameters;
 
     private string imageType;
 
@@ -253,7 +253,7 @@ public class VisualRecorder
         }
     }
 
-    public string getDownloadFile()
+    public string GetDownloadFile()
     {
         if (visualStream != null)
         {
@@ -275,7 +275,7 @@ public class VisualRecorder
 
     internal void AddImage(double[] screenRect, bool isRef)
     {
-        currentAction.addImage(this, screenRect, isRef);
+        currentAction.AddImage(this, screenRect, isRef);
     }
 
     internal void AddValue(string v)
@@ -310,7 +310,7 @@ public class VisualRecorder
     {
         if (currentAction.Element != null)
         {
-            currentAction.Element.updatePosition(hpos, hposValue, vpos, vposValue);
+            currentAction.Element.UpdatePosition(hpos, hposValue, vpos, vposValue);
         }
     }
 
