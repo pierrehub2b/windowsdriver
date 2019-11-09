@@ -80,7 +80,7 @@ class MouseExecution : AtsExecution
 
             case MouseType.DoubleClick:
 
-                Mouse.DoubleClick(MouseButton.Right);
+                Mouse.DoubleClick(MouseButton.Left);
                 break;
 
             case MouseType.RightClick:

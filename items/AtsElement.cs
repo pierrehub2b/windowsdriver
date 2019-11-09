@@ -65,9 +65,6 @@ public class AtsElement
 
     public virtual void Dispose()
     {
-        Element.BasicAutomationElement.Automation.UnregisterAllEvents();
-        Element.BasicAutomationElement.Automation.Dispose();
-        
         Element = null;
         Attributes = null;
     }
@@ -622,6 +619,7 @@ public class AtsElement
             {
                 case Name:
 
+                    element.SetForeground();
                     string value = "";
                     if (propertyValues.Name.IsSupported)
                     {
@@ -718,6 +716,10 @@ public class AtsElement
                     else if (patternValues.Value.IsSupported)
                     {
                         properties.Add(new DesktopData(propertyName, patternValues.Value.Pattern.Value.ValueOrDefault));
+                    }
+                    else if (patternValues.LegacyIAccessible.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patternValues.LegacyIAccessible.Pattern.Value.ValueOrDefault));
                     }
                     break;
                 case IsReadOnly:

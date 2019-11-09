@@ -76,7 +76,7 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>cert.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>cert.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Accessibility" />
@@ -140,7 +140,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="cert.pfx" />
+    <None Include="cert.snk" />
     <None Include="packages.config" />
     <None Include="Properties\app.manifest" />
   </ItemGroup>
