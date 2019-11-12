@@ -95,6 +95,12 @@ public class DesktopWindow : AtsElement
         //TODO if needed
     }
 
+    internal new void Focus()
+    {
+        Element.SetForeground();
+        base.Focus();
+    }
+
     internal void ToFront()
     {
         if (isWindow)

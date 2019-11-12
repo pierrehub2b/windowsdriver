@@ -24,7 +24,6 @@ using System.Net;
 
 class ElementExecution : AtsExecution
 {
-    private readonly ElementType elemType;
     private enum ElementType
     {
         Childs = 0,
@@ -40,7 +39,7 @@ class ElementExecution : AtsExecution
 
     public ElementExecution(int type, string[] commandsData) : base()
     {
-        elemType = (ElementType)type;
+        ElementType elemType = (ElementType)type;
 
         if (elemType == ElementType.Find)
         {
@@ -49,7 +48,6 @@ class ElementExecution : AtsExecution
                 int.TryParse(commandsData[0], out int handle);
                 if (handle > 0)
                 {
-                    CachedElement.ClearElements();
                     executor = new FindExecutor(response, handle, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray());
                     return;
                 }
@@ -165,6 +163,7 @@ class ElementExecution : AtsExecution
             DesktopWindow window = DesktopWindow.GetWindowByHandle(handle);
             if (window != null)
             {
+                window.Focus();
                 response.Elements = window.GetElements(tag, attributes);
             }
             else
@@ -199,7 +198,12 @@ class ElementExecution : AtsExecution
 
         public override void Run()
         {
-            response.Elements = element.GetParents().ToArray();
+            response.Elements = element.GetParents();
+            Dispose();
+        }
+
+        public void Dispose() {
+            element = null;
         }
     }
 
@@ -241,6 +245,8 @@ class ElementExecution : AtsExecution
             {
                 response.Data = element.GetProperty(propertyName);
             }
+
+            Dispose();
         }
     }
 
@@ -265,6 +271,8 @@ class ElementExecution : AtsExecution
             {
                 response.Data = element.ExecuteScript(script);
             }
+
+            Dispose();
         }
     }
 

@@ -22,6 +22,7 @@ using FlaUI.Core.AutomationElements;
 using FlaUI.Core.AutomationElements.Infrastructure;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
+using FlaUI.Core.Exceptions;
 using FlaUI.Core.Input;
 using FlaUI.Core.Shapes;
 using System;
@@ -37,6 +38,9 @@ public class AtsElement
 
     [DataMember(Name = "tag")]
     public string Tag;
+
+    [DataMember(Name = "clickable")]
+    public bool Clickable;
 
     [DataMember(Name = "x")]
     public double X;
@@ -86,11 +90,16 @@ public class AtsElement
 
     public AtsElement(string tag, AutomationElement elem, string[] attributes) : this(tag, elem)
     {
-        this.Attributes = Properties.AddProperties(attributes, Password, Element).ToArray();
+        Attributes = Properties.AddProperties(attributes, Password, ref Element);
     }
    
     public AtsElement(AutomationElement elem) : this(GetTag(elem), elem)
     {
+    }
+
+    public AtsElement(AutomationElement elem, bool clic) : this(elem)
+    {
+        Clickable = clic;
     }
     
     public AtsElement(string tag, AutomationElement elem)
@@ -388,7 +397,13 @@ public class AtsElement
         }
         return "*";
     }
-
+    
+    internal void Focus()
+    {
+        Element.Focus();
+        Element.FocusNative();
+    }
+    
     //-----------------------------------------------------------------------------------------------------
 
     internal AtsElement[] GetElements(string tag, string[] attributes)
@@ -415,7 +430,18 @@ public class AtsElement
             {
                 foreach (AutomationElement element in uiElements)
                 {
-                    listElements.Add(CachedElement.CreateCachedElement(element));
+                    //bool clickable = element.TryGetClickablePoint(out Point pt);
+                    bool focusable = true;
+/*                    try
+                    {
+          
+                    }
+                    catch (Exception)
+                    {
+                        focusable = false;
+                    }*/
+                                       
+                    listElements.Add(CachedElement.CreateCachedElement(element, focusable));
                 }
             }
         }
@@ -500,11 +526,11 @@ public class AtsElement
     {
         if ("Grid".Equals(Tag))
         {
-            Attributes = Properties.AddProperties(propertiesGrid, Password, Element).ToArray();
+            Attributes = Properties.AddProperties(propertiesGrid, Password, ref Element);
         }
         else
         {
-            Attributes = Properties.AddProperties(propertiesBase, Password, Element).ToArray();
+            Attributes = Properties.AddProperties(propertiesBase, Password, ref Element);
         }
     }
 
@@ -537,7 +563,7 @@ public class AtsElement
     //-----------------------------------------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------------------------------------
 
-    internal List<AtsElement> GetParents()
+    internal AtsElement[] GetParents()
     {
         LoadProperties();
 
@@ -555,7 +581,7 @@ public class AtsElement
 
         //TODO get full innertext
 
-        return parents;
+        return parents.ToArray();
     }
 
     private static class Properties
@@ -598,51 +624,32 @@ public class AtsElement
         public const string BoundingHeight = "BoundingHeight";
         public const string BoundingRectangle = "BoundingRectangle";
 
-        public static List<DesktopData> AddProperties(string[] attributes, bool isPassword, AutomationElement element)
+        public static DesktopData[] AddProperties(string[] attributes, bool isPassword, ref AutomationElement element)
         {
             List<DesktopData> result = new List<DesktopData>();
 
-            foreach (string a in attributes)
-            {
-                AddProperty(a, isPassword, element, result);
-            }
-
-            return result;
-        }
-
-        public static void AddProperty(string propertyName, bool isPassword, AutomationElement element, List<DesktopData> properties)
-        {
             AutomationElementPropertyValues propertyValues = element.Properties;
             AutomationElementPatternValuesBase patternValues = element.Patterns;
 
+            foreach (string a in attributes)
+            {
+                AddProperty(a, isPassword, element, propertyValues, patternValues, ref result);
+            }
+
+            return result.ToArray();
+        }
+
+        public static void AddProperty(string propertyName, bool isPassword, AutomationElement element, AutomationElementPropertyValues propertyValues, AutomationElementPatternValuesBase patternValues, ref List<DesktopData> properties)
+        {
             switch (propertyName)
             {
-                case Name:
-
-                    element.SetForeground();
-                    string value = "";
-                    if (propertyValues.Name.IsSupported)
-                    {
-                        value = propertyValues.Name.ValueOrDefault;
-                    }
-
-                    if(value.Length == 0)
-                    {
-                        if (patternValues.LegacyIAccessible.IsSupported)
-                        {
-                            value = patternValues.LegacyIAccessible.Pattern.Name;
-                        }
-                    }
-                    properties.Add(new DesktopData(propertyName, value));
-
-                    break;
                 case BoundingX:
                 case BoundingY:
                 case BoundingWidth:
                 case BoundingHeight:
                 case BoundingRectangle:
                     Rectangle rect = element.BoundingRectangle;
-                     if (BoundingRectangle.Equals(propertyName))
+                    if (BoundingRectangle.Equals(propertyName))
                     {
                         properties.Add(new DesktopData(BoundingRectangle, rect.X + "," + rect.Y + "," + rect.Width + "," + rect.Height));
                     }
@@ -663,38 +670,51 @@ public class AtsElement
                         properties.Add(new DesktopData(BoundingHeight, rect.Height));
                     }
                     break;
+                case Name:
+                    string value = "";
+                    if (propertyValues.Name.IsSupported)
+                    {
+                        value = propertyValues.Name.Value;
+                    }
+
+                    if (value == null && patternValues.LegacyIAccessible.IsSupported)
+                    {
+                        value = patternValues.LegacyIAccessible.Pattern.Name.Value;
+                    }
+                    properties.Add(new DesktopData(propertyName, value));
+                    break;
                 case AutomationId:
-                    CheckProperty(propertyName, propertyValues.AutomationId, properties);
+                    CheckProperty(propertyName, propertyValues.AutomationId, ref properties);
                     break;
                 case ClassName:
-                    CheckProperty(propertyName, propertyValues.ClassName, properties);
+                    CheckProperty(propertyName, propertyValues.ClassName, ref properties);
                     break;
                 case HelpText:
-                    CheckProperty(propertyName, propertyValues.HelpText, properties);
+                    CheckProperty(propertyName, propertyValues.HelpText, ref properties);
                     break;
                 case ItemStatus:
-                    CheckProperty(propertyName, propertyValues.ItemStatus, properties);
+                    CheckProperty(propertyName, propertyValues.ItemStatus, ref properties);
                     break;
                 case ItemType:
-                    CheckProperty(propertyName, propertyValues.ItemType, properties);
+                    CheckProperty(propertyName, propertyValues.ItemType, ref properties);
                     break;
                 case AriaRole:
-                    CheckProperty(propertyName, propertyValues.AriaRole, properties);
+                    CheckProperty(propertyName, propertyValues.AriaRole, ref properties);
                     break;
                 case AriaProperties:
-                    CheckProperty(propertyName, propertyValues.AriaProperties, properties);
+                    CheckProperty(propertyName, propertyValues.AriaProperties, ref properties);
                     break;
                 case AcceleratorKey:
-                    CheckProperty(propertyName, propertyValues.AcceleratorKey, properties);
+                    CheckProperty(propertyName, propertyValues.AcceleratorKey, ref properties);
                     break;
                 case AccessKey:
-                    CheckProperty(propertyName, propertyValues.AccessKey, properties);
+                    CheckProperty(propertyName, propertyValues.AccessKey, ref properties);
                     break;
                 case IsEnabled:
                     properties.Add(new DesktopData(propertyName, isPassword));
                     break;
                 case IsPassword:
-                    CheckProperty(propertyName, propertyValues.IsPassword, properties);
+                    CheckProperty(propertyName, propertyValues.IsPassword, ref properties);
                     break;
                 case RowCount:
                     properties.Add(new DesktopData(propertyName, element.AsGrid().RowCount));
@@ -703,7 +723,11 @@ public class AtsElement
                     properties.Add(new DesktopData(propertyName, element.AsGrid().ColumnCount));
                     break;
                 case Text:
-                    if (patternValues.Text.IsSupported)
+                    if (patternValues.Text2.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, patternValues.Text2.Pattern.DocumentRange.GetText(999999999)));
+                    }
+                    else if (patternValues.Text.IsSupported)
                     {
                         properties.Add(new DesktopData(propertyName, patternValues.Text.Pattern.DocumentRange.GetText(999999999)));
                     }
@@ -830,7 +854,7 @@ public class AtsElement
             }
         }
 
-        private static void CheckProperty(string name, AutomationProperty<bool> property, List<DesktopData> properties)
+        private static void CheckProperty(string name, AutomationProperty<bool> property, ref List<DesktopData> properties)
         {
             if (property.IsSupported)
             {
@@ -838,7 +862,7 @@ public class AtsElement
             }
         }
 
-        private static void CheckProperty(string name, AutomationProperty<string> property, List<DesktopData> properties)
+        private static void CheckProperty(string name, AutomationProperty<string> property, ref List<DesktopData> properties)
         {
             if (property.IsSupported)
             {

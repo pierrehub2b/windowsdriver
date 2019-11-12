@@ -44,11 +44,12 @@ public class WebServer
 
     public void Run()
     {
-        while (isRunning)
-        {
-            try
-            {
-                while (listener.IsListening)
+        //while (isRunning)
+        //{
+            //try
+            //{
+                //while (listener.IsListening)
+                while (isRunning)
                 {
                     ThreadPool.QueueUserWorkItem((c) =>
                     {
@@ -66,9 +67,9 @@ public class WebServer
 
                     }, listener.GetContext());
                 }
-            }
-            catch { } // suppress any exceptions
-        }
+            //}
+            //catch { } // suppress any exceptions
+        //}
     }
 
     public void Stop()

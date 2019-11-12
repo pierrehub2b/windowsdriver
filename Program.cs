@@ -57,6 +57,13 @@ public static class CachedElement
         return newElement;
     }
 
+    public static AtsElement CreateCachedElement(AutomationElement elem, bool clickable)
+    {
+        AtsElement newElement = CreateCachedElement(elem);
+        newElement.Clickable = clickable;
+        return newElement;
+    }
+       
     public static void ClearElements()
     {
         /*foreach (var kvp in cached)
@@ -105,6 +112,20 @@ public class DesktopDriver
                 ie.AddWindow(element.AsWindow());
             }
         });
+
+
+
+      /*AutomationElement elem =  uia3.FromPoint(new FlaUI.Core.Shapes.Point(50, 70));
+        PropertyId[] props = elem.GetSupportedPropertiesDirect();
+
+        foreach (PropertyId prop in props)
+        {
+            string propName = prop.Name;
+        }
+
+        AutomationElementPropertyValues props2 = elem.Properties;
+        string name = props2.Name;*/
+
 
         int defaultPort = DefaultPort;
         for (int i = 0; i < args.Length; i++)
