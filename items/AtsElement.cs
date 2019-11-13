@@ -22,7 +22,6 @@ using FlaUI.Core.AutomationElements;
 using FlaUI.Core.AutomationElements.Infrastructure;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
-using FlaUI.Core.Exceptions;
 using FlaUI.Core.Input;
 using FlaUI.Core.Shapes;
 using System;
@@ -104,26 +103,26 @@ public class AtsElement
     
     public AtsElement(string tag, AutomationElement elem)
     {
-        this.Id = Guid.NewGuid().ToString();
-        this.Tag = tag;
-        this.Element = elem;
+        Id = Guid.NewGuid().ToString();
+        Tag = tag;
+        Element = elem;
         
         if (elem.Properties.IsOffscreen.IsSupported)
         {
-            this.Visible = !elem.Properties.IsOffscreen.Value;
+            Visible = !elem.Properties.IsOffscreen.Value;
         }
         else
         {
-            this.Visible = true;
+            Visible = true;
         }
 
         if (elem.Properties.IsPassword.IsSupported)
         {
-            this.Password = elem.Properties.IsPassword.Value;
+            Password = elem.Properties.IsPassword.Value;
         }
         else
         {
-            this.Password = false;
+            Password = false;
         }
 
         UpdateBounding(elem);
@@ -137,10 +136,10 @@ public class AtsElement
             rec = elem.Properties.BoundingRectangle;
         }
 
-        this.X = rec.X;
-        this.Y = rec.Y;
-        this.Width = rec.Width;
-        this.Height = rec.Height;
+        X = rec.X;
+        Y = rec.Y;
+        Width = rec.Width;
+        Height = rec.Height;
     }
 
     internal void SelectIndex(int index)
@@ -431,17 +430,7 @@ public class AtsElement
                 foreach (AutomationElement element in uiElements)
                 {
                     //bool clickable = element.TryGetClickablePoint(out Point pt);
-                    bool focusable = true;
-/*                    try
-                    {
-          
-                    }
-                    catch (Exception)
-                    {
-                        focusable = false;
-                    }*/
-                                       
-                    listElements.Add(CachedElement.CreateCachedElement(element, focusable));
+                    listElements.Add(CachedElement.CreateCachedElement(element, true));
                 }
             }
         }
