@@ -28,17 +28,8 @@ using System.IO;
 using System.Linq;
 using System.Management;
 using System.Net;
-using System.Net.Sockets;
 using System.Windows.Forms;
 using windowsdriver.actions;
-
-// State object for reading client data asynchronously
-public class StateObject
-{
-    public Socket workSocket = null;
-    public const int BufferSize = 512;
-    public byte[] buffer = new byte[BufferSize];
-}
 
 public static class CachedElement
 {
@@ -86,11 +77,6 @@ public static class CachedElement
         cached.TryAdd(window.Id, window);
         return window;
     }
-
-    /*public static void removeCachedElement(AtsElement element)
-    {
-        cached.TryRemove(element.Id, out element);
-    }*/
 }
 
 public class DesktopDriver
@@ -112,20 +98,6 @@ public class DesktopDriver
                 ie.AddWindow(element.AsWindow());
             }
         });
-
-
-
-      /*AutomationElement elem =  uia3.FromPoint(new FlaUI.Core.Shapes.Point(50, 70));
-        PropertyId[] props = elem.GetSupportedPropertiesDirect();
-
-        foreach (PropertyId prop in props)
-        {
-            string propName = prop.Name;
-        }
-
-        AutomationElementPropertyValues props2 = elem.Properties;
-        string name = props2.Name;*/
-
 
         int defaultPort = DefaultPort;
         for (int i = 0; i < args.Length; i++)

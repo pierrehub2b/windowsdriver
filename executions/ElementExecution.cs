@@ -32,7 +32,8 @@ class ElementExecution : AtsExecution
         Attributes = 3,
         Select = 4,
         FromPoint = 5,
-        Script = 6
+        Script = 6,
+        Root = 7
     };
 
     private readonly Executor executor;
@@ -74,6 +75,11 @@ class ElementExecution : AtsExecution
                 if (elemType == ElementType.Parents)
                 {
                     executor = new ElementExecutor(response, element);
+                    return;
+                }
+                else if (elemType == ElementType.Root)
+                {
+                    executor = new ChildsExecutor(response, element, "*", new string[0]);
                     return;
                 }
                 else if (elemType == ElementType.Attributes)

@@ -23,7 +23,7 @@ using System.Threading;
 
 public class WebServer
 {
-    public Boolean isRunning = true;
+    private Boolean isRunning = true;
 
     private readonly HttpListener listener;
     private readonly Func<HttpListenerContext, bool> _responderMethod;
@@ -44,32 +44,24 @@ public class WebServer
 
     public void Run()
     {
-        //while (isRunning)
-        //{
-            //try
-            //{
-                //while (listener.IsListening)
-                while (isRunning)
+        while (isRunning)
+        {
+            ThreadPool.QueueUserWorkItem((c) =>
+            {
+                var ctx = c as HttpListenerContext;
+                bool atsAgent = ctx.Request.UserAgent.Equals("AtsDesktopDriver");
+                try
                 {
-                    ThreadPool.QueueUserWorkItem((c) =>
-                    {
-                        var ctx = c as HttpListenerContext;
-                        bool atsAgent = ctx.Request.UserAgent.Equals("AtsDesktopDriver");
-                        try
-                        {
-                            _responderMethod(ctx);
-                        }
-                        catch (Exception e)
-                        {
-                            DesktopRequest req = new DesktopRequest(-99, atsAgent, "error -> " + e.StackTrace.ToString());
-                            isRunning = req.Execute(ctx);
-                        }
-
-                    }, listener.GetContext());
+                    _responderMethod(ctx);
                 }
-            //}
-            //catch { } // suppress any exceptions
-        //}
+                catch (Exception e)
+                {
+                    DesktopRequest req = new DesktopRequest(-99, atsAgent, "error -> " + e.StackTrace.ToString());
+                    isRunning = req.Execute(ctx);
+                }
+
+            }, listener.GetContext());
+        }
     }
 
     public void Stop()
