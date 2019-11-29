@@ -33,6 +33,8 @@ using System.Text;
 public class VisualAction
 {
     private readonly List<byte[]> imagesList;
+    private int mobileWidth = 1;
+    private int mobileHeight = 1;
 
     public VisualAction()
     {
@@ -61,10 +63,13 @@ public class VisualAction
             using (var streamImg = new MemoryStream(bytes, 0, bytes.Length))
             {
                 Image image = Image.FromStream(streamImg);
+                mobileWidth = image.Width;
+                mobileHeight = image.Height;
                 return ImageToByteArray(image);
             }
         }
     }
+
     public byte[] ImageToByteArray(Image image)
     {
         using (var ms = new MemoryStream())
@@ -96,14 +101,23 @@ public class VisualAction
 
     }
 
-    public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) : this()
+    public VisualAction(string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) : this()
     {
         this.Type = type;
         this.Line = line;
         this.TimeLine = timeLine;
         this.ChannelName = channelName;
-        this.ChannelBound = new TestBound(channelBound);
         this.imagesList.Add(GetScreenshot(url));
+
+        double ratioWidth = channelBound[2] / mobileWidth;
+        double ratioHeight = channelBound[3] / mobileHeight;
+
+        channelBound[0] = channelBound[0] * ratioWidth;
+        channelBound[1] = channelBound[1] * ratioHeight;
+        channelBound[2] = channelBound[2] * ratioWidth;
+        channelBound[3] = channelBound[3] * ratioHeight;
+
+        this.ChannelBound = new TestBound(channelBound);
         this.ImageType = imageType;
         this.ImageRef = 0;
         /*try
@@ -132,7 +146,7 @@ public class VisualAction
 
         imagesList.Add(cap);
     }
-    public void AddImage(string url, bool isRef)
+    public void AddImage(VisualRecorder recorder, string url, bool isRef)
     {
         byte[] data = GetScreenshot(url);
         if (isRef)

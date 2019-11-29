@@ -276,7 +276,7 @@ public class VisualRecorder
     internal void CreateMobile(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound, string url)
     {
         Flush();
-        currentAction = new VisualAction(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
+        currentAction = new VisualAction(actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
     }
 
     internal void AddImage(double[] screenRect, bool isRef)
@@ -286,7 +286,7 @@ public class VisualRecorder
 
     internal void AddImage(string url, bool isRef)
     {
-        currentAction.AddImage(url, isRef);
+        currentAction.AddImage(this, url, isRef);
     }
 
     internal void AddValue(string v)
