@@ -17,8 +17,8 @@ specific language governing permissions and limitations
 under the License.
  */
 
-using System.Collections.Generic;
 using FlaUI.Core.AutomationElements;
+using System.Collections.Generic;
 using windowsdriver.items;
 
 namespace windowsdriver.actions

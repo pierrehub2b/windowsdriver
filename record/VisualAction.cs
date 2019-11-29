@@ -17,9 +17,17 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Linq;
+using System.Net;
 using System.Runtime.Serialization;
+using System.Text;
 
 [DataContract(Name = "com.ats.recorder.VisualAction")]
 public class VisualAction
@@ -32,6 +40,41 @@ public class VisualAction
         this.Error = 0;
     }
 
+    public byte[] GetScreenshot(string uri)
+    {
+        HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
+        httpWebRequest.ContentType = "application/json";
+        httpWebRequest.Method = "POST";
+
+        using (StreamWriter writer = new StreamWriter(httpWebRequest.GetRequestStream()))
+        {
+            writer.WriteLine("screenshot");
+        }
+
+
+        WebResponse response = httpWebRequest.GetResponse();
+        using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+        {
+            var dataReceived = reader.ReadToEnd();
+            string s = JObject.Parse(dataReceived)["imgdata"].ToString();
+            byte[] bytes = Convert.FromBase64String(s);
+            using (var streamImg = new MemoryStream(bytes, 0, bytes.Length))
+            {
+                Image image = Image.FromStream(streamImg);
+                return ImageToByteArray(image);
+            }
+        }
+    }
+    public byte[] ImageToByteArray(Image image)
+    {
+        using (var ms = new MemoryStream())
+        {
+            image.Save(ms, image.RawFormat);
+            return ms.ToArray();
+        }
+    }
+
+
     public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived) : this()
     {
         this.Type = type;
@@ -40,6 +83,27 @@ public class VisualAction
         this.ChannelName = channelName;
         this.ChannelBound = new TestBound(channelBound);
         this.imagesList.Add(recorder.Capture(channelBound));
+        this.ImageType = imageType;
+        this.ImageRef = 0;
+        /*try
+        {
+            this.Cpu = (int)cpu.NextValue() / Environment.ProcessorCount;
+            this.Ram = ram.RawValue / 1024;
+            this.NetSent = Convert.ToDouble(netSent);
+            this.NetReceived = Convert.ToDouble(netReceived);
+        }
+        catch { }*/
+
+    }
+
+    public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) : this()
+    {
+        this.Type = type;
+        this.Line = line;
+        this.TimeLine = timeLine;
+        this.ChannelName = channelName;
+        this.ChannelBound = new TestBound(channelBound);
+        this.imagesList.Add(GetScreenshot(url));
         this.ImageType = imageType;
         this.ImageRef = 0;
         /*try
@@ -68,6 +132,16 @@ public class VisualAction
 
         imagesList.Add(cap);
     }
+    public void AddImage(string url, bool isRef)
+    {
+        byte[] data = GetScreenshot(url);
+        if (isRef)
+        {
+            imagesList.Clear();
+        }
+        imagesList.Add(data);
+    }
+
 
     public bool Equality(byte[] a1, byte[] b1)
     {

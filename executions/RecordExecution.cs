@@ -17,8 +17,10 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
+using System.Net;
 
 class RecordExecution : AtsExecution
 {
@@ -34,7 +36,9 @@ class RecordExecution : AtsExecution
         Status = 7,
         Element = 8,
         Position = 9,
-        Download = 10
+        Download = 10,
+        ImageMobile = 11,
+        CreateMobile = 12
     };
 
     public RecordExecution(int type, string[] commandsData, VisualRecorder recorder) : base()
@@ -133,6 +137,24 @@ class RecordExecution : AtsExecution
 
                 recorder.Create(actionType, line, timeLine, channelName, channelDimmension);
             }
+            else if (recordType == RecordType.CreateMobile)
+            {
+                string actionType = commandsData[0];
+
+                int.TryParse(commandsData[1], out int line);
+
+                long.TryParse(commandsData[2], out long timeLine);
+
+                string channelName = commandsData[3];
+
+                double[] channelDimmension = new double[] { 0, 0, 1, 1 };
+                double.TryParse(commandsData[4], out channelDimmension[0]);
+                double.TryParse(commandsData[5], out channelDimmension[1]);
+                double.TryParse(commandsData[6], out channelDimmension[2]);
+                double.TryParse(commandsData[7], out channelDimmension[3]);
+
+                recorder.CreateMobile(actionType, line, timeLine, channelName, channelDimmension, commandsData[8]);
+            }
             else if (recordType == RecordType.Image)
             {
                 double[] screenRect = new double[] { 0, 0, 1, 1 };
@@ -144,6 +166,11 @@ class RecordExecution : AtsExecution
                 bool.TryParse(commandsData[4], out bool isRef);
 
                 recorder.AddImage(screenRect, isRef);
+            }
+            else if (recordType == RecordType.ImageMobile)
+            {
+                bool.TryParse(commandsData[1], out bool isRef);
+                recorder.AddImage(commandsData[0], isRef);
             }
             else if (recordType == RecordType.Value)
             {
