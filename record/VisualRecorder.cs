@@ -93,30 +93,6 @@ public class VisualRecorder
             if (value != currentPid)
             {
                 currentPid = value;
-                //string processName = GetInstanceName(value);
-
-                //string instance = GetInstanceNameForProcessId(value);
-                //cpuCounter = new PerformanceCounter("Process", "% Processor Time", instance);
-
-                //cpuCounter = new PerformanceCounter("Processor", "% Processor Time", processName);
-                //ramCounter.InstanceName = processName;
-
-                /*string processName = GetPerformanceCounterProcessName(value);
-                if (processName != null)
-                {
-                    //cpuCounter.Close(); cpuCounter.Dispose();
-                    // cpuCounter = new PerformanceCounter("Process", "% Processor Time", processName, true);
-                    cpuCounter.InstanceName = GetInstanceName(value);
-
-                    ramCounter.Close(); ramCounter.Dispose();
-                     ramCounter = new PerformanceCounter("Process", "Working Set - Private", processName, true);
-
-                    //networkBytesSent.Close();
-                    //networkBytesSent = new PerformanceCounter("Network Interface", "Bytes Sent/sec", processName, true);
-
-                    //networkBytesReceived.Close();
-                    //networkBytesReceived = new PerformanceCounter("Network Interface", "Bytes Received/sec", processName, true);
-                }*/
             }
         }
     }
@@ -286,7 +262,7 @@ public class VisualRecorder
 
     internal void AddImage(string url, bool isRef)
     {
-        currentAction.AddImage(this, url, isRef);
+        currentAction.AddImage(url, isRef);
     }
 
     internal void AddValue(string v)

@@ -158,30 +158,6 @@ public class DesktopWindow : AtsElement
         }
     }
 
-    //-----------------------------------------------------------------------------------------------------------------------------------------------
-    // find windows
-    //-----------------------------------------------------------------------------------------------------------------------------------------------
-
-    /*     private static List<int> GetChildProcesses(int parentId){
-
-    List<int> result = new List<int>
-    {
-        parentId
-    };
-
-    var query = "Select * From Win32_Process Where ParentProcessId = " + parentId;
-
-    ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
-    ManagementObjectCollection processList = searcher.Get();
-
-    foreach (ManagementBaseObject proc in processList)
-    {
-        result.Add(Convert.ToInt32(proc.GetPropertyValue("ProcessId")));
-    }
-
-    return result;
-}*/
-
     public static List<DesktopWindow> GetOrderedWindowsByPid(int pid)
     {
         List<DesktopWindow> windowsList = new List<DesktopWindow>();
