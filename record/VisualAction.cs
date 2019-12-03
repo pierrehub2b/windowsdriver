@@ -40,7 +40,7 @@ public class VisualAction
         this.Error = 0;
     }
 
-    public byte[] GetScreenshot(string uri)
+    public byte[] GetScreenshot(string uri, double[] channelBound)
     {
         HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
         httpWebRequest.ContentType = "application/json";
@@ -53,8 +53,10 @@ public class VisualAction
 
         WebResponse response = httpWebRequest.GetResponse();
         Stream dataStream = response.GetResponseStream();
-        var bytes = ReadFully(dataStream);
-        return bytes;
+        var img = Image.FromStream(dataStream);
+        Bitmap fullSizeBitmap = new Bitmap(img, new Size((int)channelBound[2], (int)channelBound[3]));
+        ImageConverter converter = new ImageConverter();
+        return (byte[])converter.ConvertTo(fullSizeBitmap, typeof(byte[]));
     }
 
     public static byte[] ReadFully(Stream input)
@@ -84,7 +86,9 @@ public class VisualAction
         this.Line = line;
         this.TimeLine = timeLine;
         this.ChannelName = channelName;
-        this.imagesList.Add(GetScreenshot(url));
+
+        var bytes = GetScreenshot(url, channelBound);
+        this.imagesList.Add(bytes);
         this.ChannelBound = new TestBound(channelBound);
         this.ImageType = imageType;
         this.ImageRef = 0;
@@ -101,9 +105,9 @@ public class VisualAction
         imagesList.Add(cap);
     }
     
-    public void AddImage(string url, bool isRef)
+    public void AddImage(string url, double[] channelBound, bool isRef)
     {
-        byte[] data = GetScreenshot(url);
+        byte[] data = GetScreenshot(url, channelBound);
         if (isRef)
         {
             imagesList.Clear();
