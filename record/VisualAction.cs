@@ -33,8 +33,6 @@ using System.Text;
 public class VisualAction
 {
     private readonly List<byte[]> imagesList;
-    private int mobileWidth = 1;
-    private int mobileHeight = 1;
 
     public VisualAction()
     {
@@ -53,32 +51,20 @@ public class VisualAction
             writer.WriteLine("screenshot");
         }
 
-
         WebResponse response = httpWebRequest.GetResponse();
-        using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-        {
-            var dataReceived = reader.ReadToEnd();
-            string s = JObject.Parse(dataReceived)["imgdata"].ToString();
-            byte[] bytes = Convert.FromBase64String(s);
-            using (var streamImg = new MemoryStream(bytes, 0, bytes.Length))
-            {
-                Image image = Image.FromStream(streamImg);
-                mobileWidth = image.Width;
-                mobileHeight = image.Height;
-                return ImageToByteArray(image);
-            }
-        }
+        Stream dataStream = response.GetResponseStream();
+        var bytes = ReadFully(dataStream);
+        return bytes;
     }
 
-    public byte[] ImageToByteArray(Image image)
+    public static byte[] ReadFully(Stream input)
     {
-        using (var ms = new MemoryStream())
+        using (MemoryStream ms = new MemoryStream())
         {
-            image.Save(ms, image.RawFormat);
+            input.CopyTo(ms);
             return ms.ToArray();
         }
     }
-
 
     public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived) : this()
     {
@@ -90,15 +76,6 @@ public class VisualAction
         this.imagesList.Add(recorder.Capture(channelBound));
         this.ImageType = imageType;
         this.ImageRef = 0;
-        /*try
-        {
-            this.Cpu = (int)cpu.NextValue() / Environment.ProcessorCount;
-            this.Ram = ram.RawValue / 1024;
-            this.NetSent = Convert.ToDouble(netSent);
-            this.NetReceived = Convert.ToDouble(netReceived);
-        }
-        catch { }*/
-
     }
 
     public VisualAction(string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) : this()
@@ -108,37 +85,14 @@ public class VisualAction
         this.TimeLine = timeLine;
         this.ChannelName = channelName;
         this.imagesList.Add(GetScreenshot(url));
-
-        double ratioWidth = channelBound[2] / mobileWidth;
-        double ratioHeight = channelBound[3] / mobileHeight;
-
-        channelBound[0] = channelBound[0] * ratioWidth;
-        channelBound[1] = channelBound[1] * ratioHeight;
-        channelBound[2] = channelBound[2] * ratioWidth;
-        channelBound[3] = channelBound[3] * ratioHeight;
-
         this.ChannelBound = new TestBound(channelBound);
         this.ImageType = imageType;
         this.ImageRef = 0;
-        /*try
-        {
-            this.Cpu = (int)cpu.NextValue() / Environment.ProcessorCount;
-            this.Ram = ram.RawValue / 1024;
-            this.NetSent = Convert.ToDouble(netSent);
-            this.NetReceived = Convert.ToDouble(netReceived);
-        }
-        catch { }*/
-
     }
 
     public void AddImage(VisualRecorder recorder, double[] channelBound, bool isRef)
     {
         byte[] cap = recorder.Capture(channelBound);
-
-        /*if (!Equality(cap, imagesList.Last())) {
-            imagesList.Add(cap);
-        }*/
-
         if (isRef)
         {
             imagesList.Clear();
@@ -146,7 +100,8 @@ public class VisualAction
 
         imagesList.Add(cap);
     }
-    public void AddImage(VisualRecorder recorder, string url, bool isRef)
+    
+    public void AddImage(string url, bool isRef)
     {
         byte[] data = GetScreenshot(url);
         if (isRef)
@@ -155,7 +110,6 @@ public class VisualAction
         }
         imagesList.Add(data);
     }
-
 
     public bool Equality(byte[] a1, byte[] b1)
     {
