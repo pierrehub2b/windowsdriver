@@ -38,22 +38,19 @@ class MouseExecution : AtsExecution
         Wheel = 7
     };
 
-    private readonly int[] move;
-    private readonly int wheelDelta = 0;
+    private readonly int data0 = 0;
+    private readonly int data1 = 0;
 
     public MouseExecution(int type, string[] commandsData) : base()
     {
         this.type = (MouseType)type;
-
-        if (commandsData.Length > 1)
+        if (commandsData.Length > 0)
         {
-            move = new int[] { 0, 0 };
-            int.TryParse(commandsData[0], out move[0]);
-            int.TryParse(commandsData[1], out move[1]);
-        }
-        else if (commandsData.Length > 0)
-        {
-            int.TryParse(commandsData[0], out wheelDelta);
+            int.TryParse(commandsData[0], out data0);
+            if (commandsData.Length > 1)
+            {
+                int.TryParse(commandsData[1], out data1);
+            }
         }
     }
 
@@ -63,14 +60,9 @@ class MouseExecution : AtsExecution
         {
             case MouseType.Move:
 
-                if (move != null)
-                {
-                    Mouse.Position = new Point(move[0], move[1]);
-                }
-                else
-                {
-                    response.setError(errorCode, "move data command error");
-                }
+                Mouse.Position = new Point(data0 - 1, data1 - 1);
+                Mouse.MoveTo(data0 + 1, data1 + 1);
+
                 break;
 
             case MouseType.Click:
@@ -105,7 +97,7 @@ class MouseExecution : AtsExecution
 
             case MouseType.Wheel:
 
-                Mouse.Scroll(-wheelDelta/100);
+                Mouse.Scroll(-data0 / 100);
                 break;
 
             default:

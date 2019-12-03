@@ -61,6 +61,8 @@ public class DesktopWindow : AtsElement
         }
 
         this.isWindow = elem.Patterns.Window.IsSupported;
+
+        CachedElement.AddCachedElement(this);
     }
 
     internal void Resize(int w, int h)
@@ -107,10 +109,7 @@ public class DesktopWindow : AtsElement
         {
             double w = Element.AsWindow().ActualWidth;
             double h = Element.AsWindow().ActualHeight;
-
-            Element.AsWindow().SetForeground();
-            Element.AsWindow().FocusNative();
-
+                       
             if (isMaximized)
             {
                 Element.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Maximized);
@@ -124,6 +123,10 @@ public class DesktopWindow : AtsElement
             {
                 Resize(Convert.ToInt32(w), Convert.ToInt32(h));
             }
+
+            Element.AsWindow().SetForeground();
+            Element.AsWindow().Focus();
+            Element.AsWindow().FocusNative();
         }
     }
 
@@ -202,7 +205,7 @@ public class DesktopWindow : AtsElement
             UIA3Automation ui3 = new UIA3Automation();
             AutomationElement[] winChildren = ui3.GetDesktop().FindAllChildren(w => w.ByProcessId(pid));
 
-            Parallel.ForEach<AutomationElement>(winChildren, win =>
+            foreach (AutomationElement win in winChildren)
             {
                 if (win.ControlType == ControlType.Window)
                 {
@@ -212,7 +215,7 @@ public class DesktopWindow : AtsElement
                 {
                     windowsList.Add(CachedElement.GetCachedWindow(win));
                 }
-            });
+            }
 
             ui3.Dispose();
         }

@@ -106,6 +106,7 @@ class ElementExecution : AtsExecution
                 {
                     if (elemType == ElementType.Childs)
                     {
+                        element.TryExpand();
                         executor = new ChildsExecutor(response, element, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray());
                         return;
                     }

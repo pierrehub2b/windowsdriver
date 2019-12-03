@@ -130,7 +130,7 @@ public class AtsElement
 
     private void UpdateBounding(AutomationElement elem)
     {
-        Rectangle rec = new Rectangle(0.0, 0.0, 9999999.0, 9999999.0);
+        Rectangle rec = new Rectangle(0.0, 0.0, 9999.99, 9999.99);
         if (elem.Properties.BoundingRectangle.IsSupported)
         {
             rec = elem.Properties.BoundingRectangle;
@@ -140,6 +140,16 @@ public class AtsElement
         Y = rec.Y;
         Width = rec.Width;
         Height = rec.Height;
+    }
+    
+    internal bool TryExpand()
+    {
+        if (Element.Patterns.ExpandCollapse.IsSupported)
+        {
+            Element.Patterns.ExpandCollapse.Pattern.Expand();
+            return true;
+        }
+        return false;
     }
 
     internal void SelectIndex(int index)
