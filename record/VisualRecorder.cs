@@ -260,9 +260,9 @@ public class VisualRecorder
         currentAction.AddImage(this, screenRect, isRef);
     }
 
-    internal void AddImage(string url, bool isRef)
+    internal void AddImage(string url, double[] screenRect, bool isRef)
     {
-        currentAction.AddImage(url, isRef);
+        currentAction.AddImage(url, screenRect, isRef);
     }
 
     internal void AddValue(string v)

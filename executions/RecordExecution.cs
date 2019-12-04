@@ -39,6 +39,9 @@ class RecordExecution : AtsExecution
         CreateMobile = 12
     };
 
+    private double mobileWidth = 1;
+    private double mobileHeight = 1;
+
     public RecordExecution(int type, string[] commandsData, VisualRecorder recorder) : base()
     {
         RecordType recordType = (RecordType)type;
@@ -167,8 +170,14 @@ class RecordExecution : AtsExecution
             }
             else if (recordType == RecordType.ImageMobile)
             {
-                bool.TryParse(commandsData[1], out bool isRef);
-                recorder.AddImage(commandsData[0], isRef);
+                double[] screenRect = new double[] { 0, 0, 1, 1 };
+                double.TryParse(commandsData[0], out screenRect[0]);
+                double.TryParse(commandsData[1], out screenRect[1]);
+                double.TryParse(commandsData[2], out screenRect[2]);
+                double.TryParse(commandsData[3], out screenRect[3]);
+
+                bool.TryParse(commandsData[4], out bool isRef);
+                recorder.AddImage(commandsData[5], screenRect, isRef);
             }
             else if (recordType == RecordType.Value)
             {
