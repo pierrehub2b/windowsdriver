@@ -27,7 +27,7 @@ public class WebServer
 
     private readonly HttpListener listener;
     private readonly Func<HttpListenerContext, bool> _responderMethod;
-    
+
     public WebServer(int port, Func<HttpListenerContext, bool> method)
     {
         this.listener = new HttpListener();
@@ -46,21 +46,21 @@ public class WebServer
     {
         while (isRunning)
         {
-            ThreadPool.QueueUserWorkItem((c) =>
-            {
-                var ctx = c as HttpListenerContext;
-                bool atsAgent = ctx.Request.UserAgent.Equals("AtsDesktopDriver");
-                try
-                {
-                    _responderMethod(ctx);
-                }
-                catch (Exception e)
-                {
-                    DesktopRequest req = new DesktopRequest(-99, atsAgent, "error -> " + e.StackTrace.ToString());
-                    isRunning = req.Execute(ctx);
-                }
+            _ = ThreadPool.QueueUserWorkItem((c) =>
+              {
+                  var ctx = c as HttpListenerContext;
+                  bool atsAgent = ctx.Request.UserAgent.Equals("AtsDesktopDriver");
+                  try
+                  {
+                      _responderMethod(ctx);
+                  }
+                  catch (Exception e)
+                  {
+                      DesktopRequest req = new DesktopRequest(-99, atsAgent, "error -> " + e.StackTrace.ToString());
+                      isRunning = req.Execute(ctx);
+                  }
 
-            }, listener.GetContext());
+              }, listener.GetContext());
         }
     }
 

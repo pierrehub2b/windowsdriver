@@ -266,7 +266,7 @@ public class VisualRecorder
                     visualStream = new BufferedStream(new FileStream(AtsvFilePath, FileMode.Create));
                     currentAction = new VisualReport(id, fullName, description, author, groups, prereq, videoQuality, started);
                 }
-                catch (IOException) { }
+                finally { }
             }
         }
     }
@@ -309,7 +309,7 @@ public class VisualRecorder
 
     internal void AddValue(string v)
     {
-        if (v != string.Empty)
+        if (!string.IsNullOrEmpty(v))
         {
             currentAction.Value = v;
         }
@@ -318,7 +318,7 @@ public class VisualRecorder
     internal void AddData(string v1, string v2)
     {
         AddValue(v1);
-        if (v2 != string.Empty)
+        if (!string.IsNullOrEmpty(v2))
         {
             currentAction.Data = v2;
         }

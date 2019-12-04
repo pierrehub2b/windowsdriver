@@ -22,17 +22,13 @@ using FlaUI.Core.AutomationElements;
 using FlaUI.Core.AutomationElements.Infrastructure;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
-using FlaUI.Core.Identifiers;
 using FlaUI.Core.Input;
 using FlaUI.Core.Shapes;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 [DataContract(Name = "com.ats.element.AtsElement")]
 public class AtsElement
@@ -96,7 +92,7 @@ public class AtsElement
     {
         Attributes = Properties.AddProperties(attributes, Password, ref Element);
     }
-   
+
     public AtsElement(AutomationElement elem) : this(GetTag(elem), elem)
     {
     }
@@ -105,13 +101,13 @@ public class AtsElement
     {
         Clickable = clic;
     }
-    
+
     public AtsElement(string tag, AutomationElement elem)
     {
         Id = Guid.NewGuid().ToString();
         Tag = tag;
         Element = elem;
-        
+
         if (elem.Properties.IsOffscreen.IsSupported)
         {
             Visible = !elem.Properties.IsOffscreen.Value;
@@ -146,7 +142,7 @@ public class AtsElement
         Width = rec.Width;
         Height = rec.Height;
     }
-    
+
     internal bool TryExpand()
     {
         if (Element.Patterns.ExpandCollapse.IsSupported)
@@ -183,7 +179,7 @@ public class AtsElement
             if (list != null)
             {
                 AutomationElement[] listItems = list.FindAllChildren();
-                if(listItems.Length > index)
+                if (listItems.Length > index)
                 {
                     SelectListItem(listItems[index]);
                 }
@@ -191,15 +187,15 @@ public class AtsElement
             else
             {
                 AutomationElement listItem = Element.Automation.GetDesktop().FindFirst(
-                    TreeScope.Children, 
+                    TreeScope.Children,
                     new AndCondition(
-                        Element.ConditionFactory.ByControlType(ControlType.Pane), 
+                        Element.ConditionFactory.ByControlType(ControlType.Pane),
                         Element.ConditionFactory.ByClassName(Element.ClassName)));
-                
-                if(listItem != null)
+
+                if (listItem != null)
                 {
                     AutomationElement[] items = listItem.FindAllChildren();
-                    if(items.Length > index)
+                    if (items.Length > index)
                     {
                         ClickListItem(items[index]);
                     }
@@ -249,7 +245,7 @@ public class AtsElement
         else
         {
             AutomationElement list = Element.FindFirstChild(Element.ConditionFactory.ByControlType(ControlType.List));
-            if(list != null)
+            if (list != null)
             {
                 AutomationElement[] listItems = list.FindAllChildren();
                 if (regexp)
@@ -319,7 +315,7 @@ public class AtsElement
 
         if (expandCollapse)
         {
-            
+
         }
     }
 
@@ -341,7 +337,7 @@ public class AtsElement
     private bool ExpandElement()
     {
         Element.FocusNative();
- 
+
         if (Element.Patterns.ExpandCollapse.IsSupported)
         {
             Element.Patterns.ExpandCollapse.Pattern.Expand();
@@ -391,19 +387,19 @@ public class AtsElement
 
     public static string GetTag(AutomationElement elem)
     {
-        if(elem.Properties.ControlType.TryGetValue(out ControlType type))
+        if (elem.Properties.ControlType.TryGetValue(out ControlType type))
         {
             return type.ToString();
         }
         return "*";
     }
-    
+
     internal void Focus()
     {
         Element.Focus();
         Element.FocusNative();
     }
-    
+
     //-----------------------------------------------------------------------------------------------------
 
     internal AtsElement[] GetElements(string tag, string[] attributes)
@@ -432,7 +428,7 @@ public class AtsElement
                         {
                             searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(Element.ConditionFactory, new[] { attributeData[1] }));
                         }
-                        catch (Exception) { }
+                        finally {}
                     }
                     newAttributes[loop] = attributeData[0];
                     loop++;
@@ -442,8 +438,7 @@ public class AtsElement
                 foreach (AutomationElement element in uiElements)
                 {
                     AtsElement atsElement = new AtsElement("*", element, newAttributes);
-                    CachedElement.AddCachedElement(atsElement);
-                    listElements.Add(atsElement);
+                    CachedElement.AddCachedElement(listElements, atsElement);
                 }
                 Array.Clear(uiElements, 0, uiElements.Length);
             }
@@ -463,21 +458,21 @@ public class AtsElement
             if (attributes.Length > 0)
             {
                 AndCondition searchCondition = new AndCondition();
-                
+
                 string[] newAttributes = new string[attributes.Length];
                 int loop = 0;
 
                 foreach (string attribute in attributes)
                 {
                     string[] attributeData = attribute.Split('\t');
-                    if(attributeData.Length == 2)
+                    if (attributeData.Length == 2)
                     {
                         MethodInfo byMethod = Element.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
                         try
                         {
                             searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(Element.ConditionFactory, new[] { attributeData[1] }));
                         }
-                        catch (Exception) { }
+                        finally { }
                     }
                     newAttributes[loop] = attributeData[0];
                     loop++;
@@ -493,7 +488,6 @@ public class AtsElement
                 }
                 Array.Clear(uiElements, 0, uiElements.Length);
             }
-
             else
             {
                 AutomationElement[] uiElements = Element.FindAllDescendants();

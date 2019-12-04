@@ -46,7 +46,7 @@ class ElementExecution : AtsExecution
         {
             if (commandsData.Length > 1)
             {
-                int.TryParse(commandsData[0], out int handle);
+                _ = int.TryParse(commandsData[0], out int handle);
                 if (handle > 0)
                 {
                     executor = new FindExecutor(response, handle, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray());
@@ -209,7 +209,8 @@ class ElementExecution : AtsExecution
             Dispose();
         }
 
-        public void Dispose() {
+        public void Dispose()
+        {
             element = null;
         }
     }
@@ -300,14 +301,14 @@ class ElementExecution : AtsExecution
         {
             this.type = type;
             this.value = value;
-            bool.TryParse(regexp, out this.regexp);
+            _ = bool.TryParse(regexp, out this.regexp);
         }
 
         public override void Run()
         {
             if ("index".Equals(type))
             {
-                int.TryParse(value, out int index);
+                _ = int.TryParse(value, out int index);
                 element.SelectIndex(index);
             }
             else if ("value".Equals(type))

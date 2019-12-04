@@ -36,27 +36,27 @@ public class VisualReport : VisualAction
         this.TotalMemory = HardwareInfo.GetPhysicalMemory();
         this.OsInfo = HardwareInfo.GetOSInformation();
 
-        if (id != string.Empty)
+        if (!string.IsNullOrEmpty(id)) 
         {
             this.Id = id;
         }
 
-        if (author != string.Empty)
+        if (!string.IsNullOrEmpty(author))
         {
             this.Author = author;
         }
 
-        if (description != string.Empty)
+        if (!string.IsNullOrEmpty(description))
         {
             this.Description = description;
         }
 
-        if (groups != string.Empty)
+        if (!string.IsNullOrEmpty(groups))
         {
             this.Groups = groups;
         }
 
-        if (prereq != string.Empty)
+        if (!string.IsNullOrEmpty(prereq))
         {
             this.Prerequisite = prereq;
         }

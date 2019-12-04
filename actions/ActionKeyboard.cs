@@ -57,19 +57,7 @@ class ActionKeyboard
             {
                 SendKeys.SendWait("{" + match.Groups[1].ToString().ToUpper() + "}");
             }
-            catch (Exception) { }
-
-            /*VirtualKeyCode code;
-            if (Enum.TryParse<VirtualKeyCode>(match.Groups[1].ToString().ToUpper(), out code))
-            {
-                //simulator.Keyboard.KeyPress(code);
-                try
-                {
-                    SendKeys.SendWait(code);
-                }
-                catch (Exception){}
-
-            }*/
+            finally { }
         }
 
         if (!isSpecialKey)
@@ -110,7 +98,7 @@ class ActionKeyboard
 
     private void PasteText(string text)
     {
-       if (text.Length > 0)
+        if (text.Length > 0)
         {
             if (text.StartsWith("$KEY-"))
             {
