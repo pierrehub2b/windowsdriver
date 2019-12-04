@@ -51,7 +51,7 @@ public static class CachedElement
         newElement.Clickable = clickable;
         return newElement;
     }
-       
+
     public static void ClearElements()
     {
         /*foreach (var kvp in cached)
@@ -82,7 +82,7 @@ public static class CachedElement
     }
 }
 
-public class DesktopDriver
+public static class DesktopDriver
 {
     public const int DefaultPort = 9988;
     private static readonly DesktopData[] capabilities = GetCapabilities();
@@ -90,7 +90,7 @@ public class DesktopDriver
     private static readonly ActionKeyboard keyboard = new ActionKeyboard();
     private static readonly VisualRecorder recorder = new VisualRecorder();
 
-   public static int Main(String[] args)
+    public static int Main(String[] args)
     {
         int defaultPort = DefaultPort;
         for (int i = 0; i < args.Length; i++)
@@ -100,7 +100,7 @@ public class DesktopDriver
                 String[] dataPort = args[i].Split('=');
                 if (dataPort.Length >= 2)
                 {
-                    int.TryParse(dataPort[1], out defaultPort);
+                    _ = int.TryParse(dataPort[1], out defaultPort);
                     if (defaultPort < 1025 || defaultPort > IPEndPoint.MaxPort)
                     {
                         defaultPort = DefaultPort;
@@ -123,8 +123,8 @@ public class DesktopDriver
         string[] cmdType = listener.Request.RawUrl.Substring(1).Split('/');
         if (cmdType.Length > 1)
         {
-            int.TryParse(cmdType[0], out int t0);
-            int.TryParse(cmdType[1], out int t1);
+            _ = int.TryParse(cmdType[0], out int t0);
+            _ = int.TryParse(cmdType[1], out int t1);
 
             string postData = "";
             using (var reader = new StreamReader(listener.Request.InputStream, listener.Request.ContentEncoding))

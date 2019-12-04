@@ -95,9 +95,9 @@ public class DesktopWindow : AtsElement
             if (isIE)
             {
                 AutomationElement[] tabs = Element.FindAll(TreeScope.Descendants, Element.ConditionFactory.ByControlType(ControlType.TabItem));
-                if(tabs.Length > 1)
+                if (tabs.Length > 1)
                 {
-                    for(int i = tabs.Length-1; i > 0; i--)
+                    for (int i = tabs.Length - 1; i > 0; i--)
                     {
                         AutomationElement tab = tabs[i];
                         tab.Patterns.SelectionItem.Pattern.Select();
@@ -108,7 +108,7 @@ public class DesktopWindow : AtsElement
                         }
                     }
                 }
-           }
+            }
             Element.AsWindow().Close();
         }
         Dispose();
@@ -131,7 +131,7 @@ public class DesktopWindow : AtsElement
         {
             double w = Element.AsWindow().ActualWidth;
             double h = Element.AsWindow().ActualHeight;
-                       
+
             if (isMaximized)
             {
                 Element.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Maximized);

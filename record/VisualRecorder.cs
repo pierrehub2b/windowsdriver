@@ -120,7 +120,7 @@ public class VisualRecorder
         return Capture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters);
     }
 
-    public byte[] Capture(int x, int y, int w, int h, ImageCodecInfo encoder, EncoderParameters encoderParameters)
+    public static byte[] Capture(int x, int y, int w, int h, ImageCodecInfo encoder, EncoderParameters encoderParameters)
     {
         IntPtr hdcSrc = GetDC(GetDesktopWindow());
         IntPtr hdcDest = CreateCompatibleDC(hdcSrc);
@@ -224,7 +224,7 @@ public class VisualRecorder
                     visualStream = new BufferedStream(new FileStream(AtsvFilePath, FileMode.Create));
                     currentAction = new VisualReport(id, fullName, description, author, groups, prereq, videoQuality, started);
                 }
-                catch (IOException) { }
+                finally { }
             }
         }
     }
@@ -267,7 +267,7 @@ public class VisualRecorder
 
     internal void AddValue(string v)
     {
-        if (v != string.Empty)
+        if (!string.IsNullOrEmpty(v))
         {
             currentAction.Value = v;
         }
@@ -276,7 +276,7 @@ public class VisualRecorder
     internal void AddData(string v1, string v2)
     {
         AddValue(v1);
-        if (v2 != string.Empty)
+        if (!string.IsNullOrEmpty(v2))
         {
             currentAction.Data = v2;
         }

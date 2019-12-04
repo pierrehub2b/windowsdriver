@@ -20,11 +20,12 @@ under the License.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Management;
 
 class DriverExecution : AtsExecution
 {
-    private static readonly int errorCode = -4;
+    private const int errorCode = -4;
 
     private enum DriverType
     {
@@ -55,7 +56,7 @@ class DriverExecution : AtsExecution
                     data.Add(new DesktopData("ApplicationBuildVersion", string.Format("{0}", versInfo.FilePrivatePart)));
                     response.Data = data.ToArray();
                 }
-                catch (Exception)
+                catch (FileNotFoundException)
                 {
                     response.setError(errorCode, "file path is not valid or not found : " + applicationPath);
                 }
@@ -67,11 +68,11 @@ class DriverExecution : AtsExecution
         }
         else if (type == DriverType.CloseWindows)
         {
-            int.TryParse(commandsData[0], out int pid);
+            _ = int.TryParse(commandsData[0], out int pid);
             if (pid > 0)
             {
                 List<DesktopWindow> wins = DesktopWindow.GetOrderedWindowsByPid(pid);
-                foreach(DesktopWindow win in wins)
+                foreach (DesktopWindow win in wins)
                 {
                     win.Close();
                 }
@@ -104,6 +105,8 @@ class DriverExecution : AtsExecution
             Process proc = Process.GetProcessById(pid);
             proc.Kill();
         }
-        catch (ArgumentException) { }
+        finally { }
+
+        searcher.Dispose();
     }
 }

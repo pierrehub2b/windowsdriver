@@ -28,7 +28,8 @@ public class DesktopData
     [DataMember(Name = "value")]
     public string Value;
 
-    public DesktopData(string name) {
+    public DesktopData(string name)
+    {
         Name = name;
         Value = ":";
     }

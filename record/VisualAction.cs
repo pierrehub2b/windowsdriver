@@ -19,6 +19,7 @@ under the License.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Runtime.Serialization;
@@ -98,7 +99,7 @@ public class VisualAction
 
         imagesList.Add(cap);
     }
-    
+
     public void AddImage(string url, double[] channelBound, bool isRef)
     {
         byte[] data = GetScreenshot(url, channelBound);

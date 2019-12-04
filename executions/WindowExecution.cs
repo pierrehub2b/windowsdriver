@@ -24,7 +24,7 @@ using System.Net;
 
 class WindowExecution : AtsExecution
 {
-    private static readonly int errorCode = -7;
+    private const int errorCode = -7;
 
     private readonly WindowType type;
     private enum WindowType
@@ -59,7 +59,7 @@ class WindowExecution : AtsExecution
 
         if (this.type == WindowType.Close || this.type == WindowType.Handle || this.type == WindowType.State || this.type == WindowType.Keys)
         {
-            int.TryParse(commandsData[0], out int handle);
+            _ = int.TryParse(commandsData[0], out int handle);
             window = DesktopWindow.GetWindowByHandle(handle);
 
             if (this.type == WindowType.State)
@@ -75,15 +75,15 @@ class WindowExecution : AtsExecution
         {
             if (commandsData.Length > 1)
             {
-                int.TryParse(commandsData[0], out int handle);
-                int.TryParse(commandsData[1], out pid);
+                _ = int.TryParse(commandsData[0], out int handle);
+                _ = int.TryParse(commandsData[1], out pid);
 
                 window = DesktopWindow.GetWindowByHandle(handle);
                 recorder.CurrentPid = pid;
             }
             else
             {
-                int.TryParse(commandsData[0], out pid);
+                _ = int.TryParse(commandsData[0], out pid);
                 recorder.CurrentPid = pid;
 
                 List<DesktopWindow> windows = DesktopWindow.GetOrderedWindowsByPid(pid);
@@ -95,7 +95,7 @@ class WindowExecution : AtsExecution
         }
         else if (this.type == WindowType.Url)
         {
-            int.TryParse(commandsData[0], out int handle);
+            _ = int.TryParse(commandsData[0], out int handle);
             window = DesktopWindow.GetWindowByHandle(handle);
 
             string fname = Environment.ExpandEnvironmentVariables(commandsData[1]);
@@ -123,20 +123,20 @@ class WindowExecution : AtsExecution
         }
         else if (this.type == WindowType.List)
         {
-            int.TryParse(commandsData[0], out pid);
+            _ = int.TryParse(commandsData[0], out pid);
         }
         else if (this.type == WindowType.Switch)
         {
-            int.TryParse(commandsData[0], out int handle);
+            _ = int.TryParse(commandsData[0], out int handle);
             window = DesktopWindow.GetWindowByHandle(handle);
         }
         else if (this.type == WindowType.Move || this.type == WindowType.Resize)
         {
             bounds = new int[] { 0, 0 };
 
-            int.TryParse(commandsData[0], out int handle);
-            int.TryParse(commandsData[1], out bounds[0]);
-            int.TryParse(commandsData[2], out bounds[1]);
+            _ = int.TryParse(commandsData[0], out int handle);
+            _ = int.TryParse(commandsData[1], out bounds[0]);
+            _ = int.TryParse(commandsData[2], out bounds[1]);
 
             window = DesktopWindow.GetWindowByHandle(handle);
         }
@@ -144,23 +144,7 @@ class WindowExecution : AtsExecution
 
     private DesktopWindow[] GetWindowsList()
     {
-        List<DesktopWindow> wins = DesktopWindow.GetOrderedWindowsByPid(pid);
-
-        /*if (ieWindows != null && ieWindows.Count > 0 && ieWindows[0].Pid == pid)
-        {
-            List<DesktopWindow> reorderedList = new List<DesktopWindow>();
-            foreach (WindowRef ieWin in ieWindows)
-            {
-                DesktopWindow reordered = wins.Find(w => w.Handle == ieWin.Handle.ToInt32());
-                if (reordered != null)
-                {
-                    reorderedList.Add(reordered);
-                }
-            }
-            return reorderedList.ToArray();
-        }*/
-
-        return wins.ToArray();
+        return DesktopWindow.GetOrderedWindowsByPid(pid).ToArray();
     }
 
     public override bool Run(HttpListenerContext context)
