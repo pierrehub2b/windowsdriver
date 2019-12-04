@@ -30,7 +30,7 @@ class DriverExecution : AtsExecution
     {
         Capabilities = 0,
         Application = 1,
-        Process = 2,
+        CloseWindows = 2,
         Close = 3
     };
 
@@ -65,12 +65,16 @@ class DriverExecution : AtsExecution
                 response.setError(errorCode, "no application path data");
             }
         }
-        else if (type == DriverType.Process)
+        else if (type == DriverType.CloseWindows)
         {
             int.TryParse(commandsData[0], out int pid);
             if (pid > 0)
             {
-                KillProcessAndChildren(pid);
+                List<DesktopWindow> wins = DesktopWindow.GetOrderedWindowsByPid(pid);
+                foreach(DesktopWindow win in wins)
+                {
+                    win.Close();
+                }
             }
             else
             {

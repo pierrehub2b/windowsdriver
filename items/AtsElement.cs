@@ -22,12 +22,17 @@ using FlaUI.Core.AutomationElements;
 using FlaUI.Core.AutomationElements.Infrastructure;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
+using FlaUI.Core.Identifiers;
 using FlaUI.Core.Input;
 using FlaUI.Core.Shapes;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 [DataContract(Name = "com.ats.element.AtsElement")]
 public class AtsElement
@@ -386,23 +391,9 @@ public class AtsElement
 
     public static string GetTag(AutomationElement elem)
     {
-        string tag;
-        if (elem.Properties.ControlType.IsSupported)
+        if(elem.Properties.ControlType.TryGetValue(out ControlType type))
         {
-            tag = elem.Properties.ControlType.ValueOrDefault.ToString();
-            if (!string.IsNullOrEmpty(tag))
-            {
-                return tag;
-            }
-        }
-
-        if (elem.Properties.ClassName.IsSupported)
-        {
-            tag = elem.Properties.ClassName;
-            if (!string.IsNullOrEmpty(tag))
-            {
-                return tag;
-            }
+            return type.ToString();
         }
         return "*";
     }
@@ -422,45 +413,91 @@ public class AtsElement
             this
         };
 
-        AutomationElement[] uiElements = Element.FindAllDescendants();
-
         if ("*".Equals(tag) || tag.Length == 0)
         {
             if (attributes.Length > 0)
             {
+                AndCondition searchCondition = new AndCondition();
+
+                string[] newAttributes = new string[attributes.Length];
+                int loop = 0;
+
+                foreach (string attribute in attributes)
+                {
+                    string[] attributeData = attribute.Split('\t');
+                    if (attributeData.Length == 2)
+                    {
+                        MethodInfo byMethod = Element.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
+                        try
+                        {
+                            searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(Element.ConditionFactory, new[] { attributeData[1] }));
+                        }
+                        catch (Exception) { }
+                    }
+                    newAttributes[loop] = attributeData[0];
+                    loop++;
+                }
+
+                AutomationElement[] uiElements = Element.FindAllDescendants(searchCondition);
                 foreach (AutomationElement element in uiElements)
                 {
-                    AtsElement atsElement = new AtsElement("*", element, attributes);
+                    AtsElement atsElement = new AtsElement("*", element, newAttributes);
                     CachedElement.AddCachedElement(atsElement);
                     listElements.Add(atsElement);
                 }
+                Array.Clear(uiElements, 0, uiElements.Length);
             }
             else
             {
+                AutomationElement[] uiElements = Element.FindAllDescendants();
                 foreach (AutomationElement element in uiElements)
                 {
                     //bool clickable = element.TryGetClickablePoint(out Point pt);
                     listElements.Add(CachedElement.CreateCachedElement(element, true));
                 }
+                Array.Clear(uiElements, 0, uiElements.Length);
             }
         }
         else
         {
             if (attributes.Length > 0)
             {
+                AndCondition searchCondition = new AndCondition();
+                
+                string[] newAttributes = new string[attributes.Length];
+                int loop = 0;
+
+                foreach (string attribute in attributes)
+                {
+                    string[] attributeData = attribute.Split('\t');
+                    if(attributeData.Length == 2)
+                    {
+                        MethodInfo byMethod = Element.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
+                        try
+                        {
+                            searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(Element.ConditionFactory, new[] { attributeData[1] }));
+                        }
+                        catch (Exception) { }
+                    }
+                    newAttributes[loop] = attributeData[0];
+                    loop++;
+                }
+
+                AutomationElement[] uiElements = Element.FindAllDescendants(searchCondition);
                 foreach (AutomationElement element in uiElements)
                 {
-                    string elemTag = GetTag(element);
-                    if (elemTag.Equals(tag))
+                    if (tag.Equals(GetTag(element)))
                     {
-                        AtsElement atsElement = new AtsElement(elemTag, element, attributes);
-                        CachedElement.AddCachedElement(atsElement);
-                        listElements.Add(atsElement);
+                        CachedElement.AddCachedElement(listElements, new AtsElement(tag, element, newAttributes));
                     }
                 }
+                Array.Clear(uiElements, 0, uiElements.Length);
             }
+
             else
             {
+                AutomationElement[] uiElements = Element.FindAllDescendants();
+
                 foreach (AutomationElement element in uiElements)
                 {
                     string elemTag = GetTag(element);
@@ -471,10 +508,10 @@ public class AtsElement
                         listElements.Add(atsElement);
                     }
                 }
+
+                Array.Clear(uiElements, 0, uiElements.Length);
             }
         }
-
-        Array.Clear(uiElements, 0, uiElements.Length);
 
         return listElements.ToArray();
     }

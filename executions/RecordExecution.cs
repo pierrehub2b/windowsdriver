@@ -17,10 +17,8 @@ specific language governing permissions and limitations
 under the License.
  */
 
-using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
-using System.Net;
 
 class RecordExecution : AtsExecution
 {

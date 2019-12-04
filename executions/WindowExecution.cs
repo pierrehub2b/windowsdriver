@@ -21,7 +21,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using windowsdriver.actions;
 
 class WindowExecution : AtsExecution
 {
@@ -40,9 +39,7 @@ class WindowExecution : AtsExecution
         Close = 7,
         Url = 8,
         Keys = 9,
-        State = 10,
-        SwitchIE = 11,
-        CloseIE = 12
+        State = 10
     };
 
     private readonly DesktopWindow window;
@@ -55,7 +52,7 @@ class WindowExecution : AtsExecution
 
     private readonly string folderPath;
 
-    public WindowExecution(int type, string[] commandsData, ActionKeyboard keyboard, ActionIEWindow ie, VisualRecorder recorder) : base()
+    public WindowExecution(int type, string[] commandsData, ActionKeyboard keyboard, VisualRecorder recorder) : base()
     {
         this.type = (WindowType)type;
         this.keyboard = keyboard;
@@ -73,15 +70,6 @@ class WindowExecution : AtsExecution
             {
                 this.keys = commandsData[1];
             }
-        }
-        else if (this.type == WindowType.SwitchIE)
-        {
-            int.TryParse(commandsData[0], out int index);
-            response.Data = new DesktopData[] { new DesktopData("index", ie.SetWindowToFront(index))};
-        }
-        else if (this.type == WindowType.CloseIE)
-        {
-             response.Data = new DesktopData[] { new DesktopData("index", ie.CloseWindow()) };
         }
         else if (this.type == WindowType.ToFront)
         {

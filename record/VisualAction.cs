@@ -17,17 +17,11 @@ specific language governing permissions and limitations
 under the License.
  */
 
-using Newtonsoft.Json.Linq;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Runtime.Serialization;
-using System.Text;
 
 [DataContract(Name = "com.ats.recorder.VisualAction")]
 public class VisualAction

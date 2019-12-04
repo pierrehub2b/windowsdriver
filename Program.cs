@@ -18,8 +18,6 @@ under the License.
  */
 
 using FlaUI.Core.AutomationElements.Infrastructure;
-using FlaUI.Core.Definitions;
-using FlaUI.UIA3;
 using Microsoft.Win32;
 using System;
 using System.Collections.Concurrent;
@@ -29,7 +27,6 @@ using System.Linq;
 using System.Management;
 using System.Net;
 using System.Windows.Forms;
-using windowsdriver.actions;
 
 public static class CachedElement
 {
@@ -71,6 +68,12 @@ public static class CachedElement
         cached.TryAdd(elem.Id, elem);
     }
 
+    public static void AddCachedElement(List<AtsElement> list, AtsElement elem)
+    {
+        cached.TryAdd(elem.Id, elem);
+        list.Add(elem);
+    }
+
     public static DesktopWindow GetCachedWindow(AutomationElement elem)
     {
         DesktopWindow window = new DesktopWindow(elem);
@@ -86,19 +89,9 @@ public class DesktopDriver
 
     private static readonly ActionKeyboard keyboard = new ActionKeyboard();
     private static readonly VisualRecorder recorder = new VisualRecorder();
-    private static readonly ActionIEWindow ie = new ActionIEWindow();
 
    public static int Main(String[] args)
     {
-        UIA3Automation uia3 = new UIA3Automation();
-        var eventHandler = uia3.GetDesktop().RegisterStructureChangedEvent(TreeScope.Children, (element, type, arg3) =>
-        {
-            if (type.Equals(StructureChangeType.ChildAdded) && element.Properties.ClassName.IsSupported && "IEFrame".Equals(element.ClassName))
-            {
-                ie.AddWindow(element.AsWindow());
-            }
-        });
-
         int defaultPort = DefaultPort;
         for (int i = 0; i < args.Length; i++)
         {
@@ -138,7 +131,7 @@ public class DesktopDriver
             {
                 postData = reader.ReadToEnd();
             }
-            req = new DesktopRequest(t0, t1, postData.Split('\n'), keyboard, recorder, capabilities, ie);
+            req = new DesktopRequest(t0, t1, postData.Split('\n'), keyboard, recorder, capabilities);
         }
         else
         {

@@ -24,7 +24,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Serialization;
-using System.Threading.Tasks;
 
 [DataContract(Name = "com.ats.executor.drivers.desktop.DesktopWindow")]
 public class DesktopWindow : AtsElement
@@ -43,6 +42,7 @@ public class DesktopWindow : AtsElement
     private readonly bool canMove = false;
     private readonly bool canResize = false;
     private readonly bool isWindow = false;
+    private readonly bool isIE = false;
 
     private bool isMaximized = false;
 
@@ -60,7 +60,12 @@ public class DesktopWindow : AtsElement
             this.canResize = elem.Patterns.Transform.Pattern.CanResize;
         }
 
-        this.isWindow = elem.Patterns.Window.IsSupported;
+        if (elem.Patterns.Window.IsSupported)
+        {
+            isWindow = true;
+            elem.Properties.ClassName.TryGetValue(out string className);
+            isIE = "IEFrame".Equals(className);
+        }
 
         CachedElement.AddCachedElement(this);
     }
@@ -87,6 +92,23 @@ public class DesktopWindow : AtsElement
     {
         if (isWindow)
         {
+            if (isIE)
+            {
+                AutomationElement[] tabs = Element.FindAll(TreeScope.Descendants, Element.ConditionFactory.ByControlType(ControlType.TabItem));
+                if(tabs.Length > 1)
+                {
+                    for(int i = tabs.Length-1; i > 0; i--)
+                    {
+                        AutomationElement tab = tabs[i];
+                        tab.Patterns.SelectionItem.Pattern.Select();
+                        AutomationElement closeButton = tab.FindFirstChild(tab.ConditionFactory.ByControlType(ControlType.Button));
+                        if (closeButton != null)
+                        {
+                            closeButton.Click();
+                        }
+                    }
+                }
+           }
             Element.AsWindow().Close();
         }
         Dispose();
