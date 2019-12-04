@@ -19,6 +19,7 @@ under the License.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Runtime.Serialization;
@@ -34,7 +35,7 @@ public class VisualAction
         this.Error = 0;
     }
 
-    public byte[] GetScreenshot(string uri, double[] channelBound)
+    public Bitmap GetScreenshot(string uri, double[] channelBound)
     {
         HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
         httpWebRequest.ContentType = "application/json";
@@ -48,18 +49,7 @@ public class VisualAction
         WebResponse response = httpWebRequest.GetResponse();
         Stream dataStream = response.GetResponseStream();
         var img = Image.FromStream(dataStream);
-        Bitmap fullSizeBitmap = new Bitmap(img, new Size((int)channelBound[2], (int)channelBound[3]));
-        ImageConverter converter = new ImageConverter();
-        return (byte[])converter.ConvertTo(fullSizeBitmap, typeof(byte[]));
-    }
-
-    public static byte[] ReadFully(Stream input)
-    {
-        using (MemoryStream ms = new MemoryStream())
-        {
-            input.CopyTo(ms);
-            return ms.ToArray();
-        }
+        return new Bitmap(img, new Size((int)channelBound[2], (int)channelBound[3]));
     }
 
     public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived) : this()
@@ -74,15 +64,13 @@ public class VisualAction
         this.ImageRef = 0;
     }
 
-    public VisualAction(string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) : this()
+    public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) : this()
     {
         this.Type = type;
         this.Line = line;
         this.TimeLine = timeLine;
         this.ChannelName = channelName;
-
-        var bytes = GetScreenshot(url, channelBound);
-        this.imagesList.Add(bytes);
+        this.imagesList.Add(recorder.Capture(channelBound, GetScreenshot(url, channelBound)));
         this.ChannelBound = new TestBound(channelBound);
         this.ImageType = imageType;
         this.ImageRef = 0;
@@ -99,14 +87,13 @@ public class VisualAction
         imagesList.Add(cap);
     }
     
-    public void AddImage(string url, double[] channelBound, bool isRef)
+    public void AddImage(VisualRecorder recorder, string url, double[] channelBound, bool isRef)
     {
-        byte[] data = GetScreenshot(url, channelBound);
         if (isRef)
         {
             imagesList.Clear();
         }
-        imagesList.Add(data);
+        imagesList.Add(recorder.Capture(channelBound, GetScreenshot(url, channelBound)));
     }
 
     public bool Equality(byte[] a1, byte[] b1)

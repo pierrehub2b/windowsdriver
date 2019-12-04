@@ -120,6 +120,16 @@ public class VisualRecorder
         return Capture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters);
     }
 
+    public byte[] Capture(int x, int y, int w, int h, Bitmap img)
+    {
+        return Capture(x, y, w, h, maxQualityEncoder, maxQualityEncoderParameters, img);
+    }
+
+    public byte[] Capture(double[] bound, Bitmap img)
+    {
+        return Capture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters, img);
+    }
+
     public byte[] Capture(int x, int y, int w, int h, ImageCodecInfo encoder, EncoderParameters encoderParameters)
     {
         IntPtr hdcSrc = GetDC(GetDesktopWindow());
@@ -137,6 +147,38 @@ public class VisualRecorder
 
             Bitmap bitmap;
             using (bitmap = Image.FromHbitmap(hBitmap))
+            {
+                DeleteObject(hBitmap);
+                GC.Collect();
+
+                MemoryStream imageStream;
+                using (imageStream = new MemoryStream())
+                {
+                    bitmap.Save(imageStream, encoder, encoderParameters);
+                }
+                return imageStream.ToArray();
+            }
+        }
+        return null;
+    }
+
+    public byte[] Capture(int x, int y, int w, int h, ImageCodecInfo encoder, EncoderParameters encoderParameters, Bitmap img)
+    {
+        IntPtr hdcSrc = GetDC(GetDesktopWindow());
+        IntPtr hdcDest = CreateCompatibleDC(hdcSrc);
+        IntPtr hBitmap = CreateCompatibleBitmap(hdcSrc, w, h);
+
+        if (hBitmap != IntPtr.Zero)
+        {
+            IntPtr hOld = (IntPtr)SelectObject(hdcDest, hBitmap);
+
+            BitBlt(hdcDest, 0, 0, w, h, hdcSrc, x, y, SRCCOPY);
+            SelectObject(hdcDest, hOld);
+
+            DeleteDC(hdcDest);
+
+            Bitmap bitmap;
+            using (bitmap = img)
             {
                 DeleteObject(hBitmap);
                 GC.Collect();
@@ -252,7 +294,7 @@ public class VisualRecorder
     internal void CreateMobile(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound, string url)
     {
         Flush();
-        currentAction = new VisualAction(actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
+        currentAction = new VisualAction(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
     }
 
     internal void AddImage(double[] screenRect, bool isRef)
@@ -262,7 +304,7 @@ public class VisualRecorder
 
     internal void AddImage(string url, double[] screenRect, bool isRef)
     {
-        currentAction.AddImage(url, screenRect, isRef);
+        currentAction.AddImage(this, url, screenRect, isRef);
     }
 
     internal void AddValue(string v)
