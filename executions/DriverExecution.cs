@@ -50,11 +50,13 @@ class DriverExecution : AtsExecution
                 string applicationPath = commandsData[0];
                 try
                 {
-                    List<DesktopData> data = new List<DesktopData>();
-                    var versInfo = FileVersionInfo.GetVersionInfo(applicationPath);
-                    data.Add(new DesktopData("ApplicationVersion", string.Format("V{0}.{1}.{2}", versInfo.FileMajorPart, versInfo.FileMinorPart, versInfo.FileBuildPart)));
-                    data.Add(new DesktopData("ApplicationBuildVersion", string.Format("{0}", versInfo.FilePrivatePart)));
-                    response.Data = data.ToArray();
+                    FileVersionInfo versInfo = FileVersionInfo.GetVersionInfo(applicationPath);
+
+                    response.Data = new DesktopData[3];
+                    response.Data[0] = new DesktopData("ApplicationVersion", string.Format("{0}", versInfo.ProductVersion));
+                    response.Data[1] = new DesktopData("ApplicationBuildVersion", string.Format("{0}", versInfo.ProductBuildPart));
+                    response.Data[2] = new DesktopData("ApplicationName", string.Format("{0}", versInfo.ProductName));
+
                 }
                 catch (FileNotFoundException)
                 {
@@ -105,7 +107,7 @@ class DriverExecution : AtsExecution
             Process proc = Process.GetProcessById(pid);
             proc.Kill();
         }
-        finally { }
+        catch { }
 
         searcher.Dispose();
     }

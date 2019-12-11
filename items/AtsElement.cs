@@ -28,6 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 [DataContract(Name = "com.ats.element.AtsElement")]
@@ -472,7 +473,7 @@ public class AtsElement
                         {
                             searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(Element.ConditionFactory, new[] { attributeData[1] }));
                         }
-                        finally { }
+                        catch { }
                     }
                     newAttributes[loop] = attributeData[0];
                     loop++;
@@ -681,7 +682,8 @@ public class AtsElement
                     Rectangle rect = element.BoundingRectangle;
                     if (BoundingRectangle.Equals(propertyName))
                     {
-                        properties.Add(new DesktopData(BoundingRectangle, rect.X + "," + rect.Y + "," + rect.Width + "," + rect.Height));
+                        StringBuilder sb = new StringBuilder().Append(rect.X).Append(",").Append(rect.Y).Append(",").Append(rect.Width).Append(",").Append(rect.Height);
+                        properties.Add(new DesktopData(BoundingRectangle, sb.ToString()));
                     }
                     else if (BoundingX.Equals(propertyName))
                     {

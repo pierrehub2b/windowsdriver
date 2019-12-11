@@ -266,7 +266,7 @@ public class VisualRecorder
                     visualStream = new BufferedStream(new FileStream(AtsvFilePath, FileMode.Create));
                     currentAction = new VisualReport(id, fullName, description, author, groups, prereq, videoQuality, started);
                 }
-                finally { }
+                catch { }
             }
         }
     }
