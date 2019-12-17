@@ -17,7 +17,7 @@ specific language governing permissions and limitations
 under the License.
  */
 
-using FlaUI.Core.AutomationElements.Infrastructure;
+using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
 using FlaUI.UIA3;
 using System;
