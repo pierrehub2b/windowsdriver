@@ -70,8 +70,8 @@ public class VisualAction
         this.Line = line;
         this.TimeLine = timeLine;
         this.ChannelName = channelName;
-        this.imagesList.Add(recorder.Capture(channelBound, GetScreenshot(url, channelBound)));
         this.ChannelBound = new TestBound(channelBound);
+        this.imagesList.Add(recorder.Capture(channelBound, GetScreenshot(url, channelBound)));
         this.ImageType = imageType;
         this.ImageRef = 0;
     }
