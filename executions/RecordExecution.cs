@@ -36,7 +36,8 @@ class RecordExecution : AtsExecution
         Position = 9,
         Download = 10,
         ImageMobile = 11,
-        CreateMobile = 12
+        CreateMobile = 12,
+        ScreenshotMobile = 13
     };
 
     public RecordExecution(int type, string[] commandsData, VisualRecorder recorder) : base()
@@ -64,6 +65,16 @@ class RecordExecution : AtsExecution
                 int.TryParse(commandsData[3], out int h))
                 {
                     response.Image = recorder.Capture(x, y, w, h);
+                }
+            }
+            else if (recordType == RecordType.ScreenshotMobile)
+            {
+                if (int.TryParse(commandsData[0], out int x) &&
+                int.TryParse(commandsData[1], out int y) &&
+                int.TryParse(commandsData[2], out int w) &&
+                int.TryParse(commandsData[3], out int h))
+                {
+                    response.Image = recorder.Capture(x, y, w, h, VisualAction.GetScreenshot(commandsData[4]));
                 }
             }
             else if (recordType == RecordType.Start)

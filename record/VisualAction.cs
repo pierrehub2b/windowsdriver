@@ -35,7 +35,7 @@ public class VisualAction
         this.Error = 0;
     }
 
-    public Bitmap GetScreenshot(string uri, double[] channelBound)
+    public static Bitmap GetScreenshot(string uri, double[] channelBound = null)
     {
         HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
         httpWebRequest.ContentType = "application/json";
@@ -49,7 +49,14 @@ public class VisualAction
         WebResponse response = httpWebRequest.GetResponse();
         Stream dataStream = response.GetResponseStream();
         var img = Image.FromStream(dataStream);
-        return new Bitmap(img, new Size((int)channelBound[2], (int)channelBound[3]));
+        if(channelBound != null)
+        {
+            return new Bitmap(img, new Size((int)channelBound[2], (int)channelBound[3]));
+        } else
+        {
+            return new Bitmap(img);
+        }
+        
     }
 
     public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived) : this()
