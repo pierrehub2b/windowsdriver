@@ -19,15 +19,15 @@ under the License.
 
 using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
-using FlaUI.Core.AutomationElements.Infrastructure;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.Input;
-using FlaUI.Core.Shapes;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 [DataContract(Name = "com.ats.element.AtsElement")]
@@ -131,7 +131,7 @@ public class AtsElement
 
     private void UpdateBounding(AutomationElement elem)
     {
-        Rectangle rec = new Rectangle(0.0, 0.0, 9999.99, 9999.99);
+        Rectangle rec = new Rectangle(0, 0, 9898, 9898);
         if (elem.Properties.BoundingRectangle.IsSupported)
         {
             rec = elem.Properties.BoundingRectangle;
@@ -409,104 +409,122 @@ public class AtsElement
             this
         };
 
-        if ("*".Equals(tag) || tag.Length == 0)
+        //---------------------------------------------------------------------
+        // try to find a dialog box
+        //---------------------------------------------------------------------
+        AutomationElement rootElement = Element;
+        AutomationElement[] children = Element.FindAllChildren();
+        if (children.Length > 1)
         {
-            if (attributes.Length > 0)
+            AutomationElement firstChild = children[0];
+            if (firstChild.Patterns.Window.IsSupported && firstChild.Patterns.LegacyIAccessible.IsSupported)
+            {
+                if (firstChild.Patterns.LegacyIAccessible.Pattern.Role.Equals(FlaUI.Core.WindowsAPI.AccessibilityRole.ROLE_SYSTEM_DIALOG))
+                {
+                    rootElement = firstChild;
+                }
+            }
+        }
+        //---------------------------------------------------------------------
+        //---------------------------------------------------------------------
+
+        int len = attributes.Length;
+        AutomationElement[] uiElements;
+
+        if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
+        {
+            if (len > 0)
             {
                 AndCondition searchCondition = new AndCondition();
 
-                string[] newAttributes = new string[attributes.Length];
-                int loop = 0;
+                string[] newAttributes = new string[len];
 
-                foreach (string attribute in attributes)
+                for (int i = 0; i < len; i++)
                 {
-                    string[] attributeData = attribute.Split('\t');
+                    string[] attributeData = attributes[i].Split('\t');
                     if (attributeData.Length == 2)
                     {
-                        MethodInfo byMethod = Element.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
+                        MethodInfo byMethod = rootElement.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
                         try
                         {
-                            searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(Element.ConditionFactory, new[] { attributeData[1] }));
+                            searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(rootElement.ConditionFactory, new[] { attributeData[1] }));
                         }
-                        finally {}
+                        catch { }
                     }
-                    newAttributes[loop] = attributeData[0];
-                    loop++;
+                    newAttributes[i] = attributeData[0];
                 }
 
-                AutomationElement[] uiElements = Element.FindAllDescendants(searchCondition);
-                foreach (AutomationElement element in uiElements)
+                uiElements = rootElement.FindAllDescendants(searchCondition);
+                len = uiElements.Length;
+
+                for (int i = 0; i < len; i++)
                 {
-                    AtsElement atsElement = new AtsElement("*", element, newAttributes);
-                    CachedElement.AddCachedElement(listElements, atsElement);
+                    CachedElement.AddCachedElement(listElements, new AtsElement("*", uiElements[i], newAttributes));
                 }
-                Array.Clear(uiElements, 0, uiElements.Length);
             }
             else
             {
-                AutomationElement[] uiElements = Element.FindAllDescendants();
-                foreach (AutomationElement element in uiElements)
+                uiElements = rootElement.FindAllDescendants();
+                len = uiElements.Length;
+
+                for (int i = 0; i < len; i++)
                 {
                     //bool clickable = element.TryGetClickablePoint(out Point pt);
-                    listElements.Add(CachedElement.CreateCachedElement(element, true));
+                    listElements.Add(CachedElement.CreateCachedElement(uiElements[i], true));
                 }
-                Array.Clear(uiElements, 0, uiElements.Length);
             }
         }
         else
         {
-            if (attributes.Length > 0)
+            if (len > 0)
             {
                 AndCondition searchCondition = new AndCondition();
+                string[] newAttributes = new string[len];
 
-                string[] newAttributes = new string[attributes.Length];
-                int loop = 0;
-
-                foreach (string attribute in attributes)
+                for(int i=0; i< len; i++)
                 {
-                    string[] attributeData = attribute.Split('\t');
+                    string[] attributeData = attributes[i].Split('\t');
                     if (attributeData.Length == 2)
                     {
-                        MethodInfo byMethod = Element.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
+                        MethodInfo byMethod = rootElement.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
                         try
                         {
-                            searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(Element.ConditionFactory, new[] { attributeData[1] }));
+                            searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(rootElement.ConditionFactory, new[] { attributeData[1] }));
                         }
-                        finally { }
+                        catch {}
                     }
-                    newAttributes[loop] = attributeData[0];
-                    loop++;
+                    newAttributes[i] = attributeData[0];
                 }
 
-                AutomationElement[] uiElements = Element.FindAllDescendants(searchCondition);
-                foreach (AutomationElement element in uiElements)
+                uiElements = rootElement.FindAllDescendants(searchCondition);
+                len = uiElements.Length;
+
+                for (int i = 0; i < len; i++)
                 {
-                    if (tag.Equals(GetTag(element)))
+                    AutomationElement element = uiElements[i];
+                    if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))
                     {
                         CachedElement.AddCachedElement(listElements, new AtsElement(tag, element, newAttributes));
                     }
                 }
-                Array.Clear(uiElements, 0, uiElements.Length);
             }
             else
             {
-                AutomationElement[] uiElements = Element.FindAllDescendants();
+                uiElements = rootElement.FindAllDescendants();
+                len = uiElements.Length;
 
-                foreach (AutomationElement element in uiElements)
+                for (int i = 0; i < len; i++)
                 {
-                    string elemTag = GetTag(element);
-                    if (elemTag.Equals(tag))
+                    AutomationElement element = uiElements[i];
+                    if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))
                     {
-                        AtsElement atsElement = new AtsElement(elemTag, element);
-                        CachedElement.AddCachedElement(atsElement);
-                        listElements.Add(atsElement);
+                        CachedElement.AddCachedElement(listElements, new AtsElement(tag, element));
                     }
                 }
-
-                Array.Clear(uiElements, 0, uiElements.Length);
             }
         }
 
+        Array.Clear(uiElements, 0, len);
         return listElements.ToArray();
     }
 
@@ -658,18 +676,18 @@ public class AtsElement
         {
             List<DesktopData> result = new List<DesktopData>();
 
-            AutomationElementPropertyValues propertyValues = element.Properties;
-            AutomationElementPatternValuesBase patternValues = element.Patterns;
+            FrameworkAutomationElementBase.IProperties propertyValues = element.Properties;
+            FrameworkAutomationElementBase.IFrameworkPatterns patternValues = element.Patterns;
 
-            foreach (string a in attributes)
+            for(int i=0; i< attributes.Length; i++)
             {
-                AddProperty(a, isPassword, element, propertyValues, patternValues, ref result);
+                AddProperty(attributes[i], isPassword, element, propertyValues, patternValues, ref result);
             }
 
             return result.ToArray();
         }
 
-        public static void AddProperty(string propertyName, bool isPassword, AutomationElement element, AutomationElementPropertyValues propertyValues, AutomationElementPatternValuesBase patternValues, ref List<DesktopData> properties)
+        public static void AddProperty(string propertyName, bool isPassword, AutomationElement element, FrameworkAutomationElementBase.IProperties propertyValues, FrameworkAutomationElementBase.IFrameworkPatterns patternValues, ref List<DesktopData> properties)
         {
             switch (propertyName)
             {
@@ -681,7 +699,8 @@ public class AtsElement
                     Rectangle rect = element.BoundingRectangle;
                     if (BoundingRectangle.Equals(propertyName))
                     {
-                        properties.Add(new DesktopData(BoundingRectangle, rect.X + "," + rect.Y + "," + rect.Width + "," + rect.Height));
+                        StringBuilder sb = new StringBuilder().Append(rect.X).Append(",").Append(rect.Y).Append(",").Append(rect.Width).Append(",").Append(rect.Height);
+                        properties.Add(new DesktopData(BoundingRectangle, sb.ToString()));
                     }
                     else if (BoundingX.Equals(propertyName))
                     {

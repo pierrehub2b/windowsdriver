@@ -17,7 +17,7 @@ specific language governing permissions and limitations
 under the License.
  */
 
-using FlaUI.Core.AutomationElements.Infrastructure;
+using FlaUI.Core.AutomationElements;
 using Microsoft.Win32;
 using System;
 using System.Collections.Concurrent;

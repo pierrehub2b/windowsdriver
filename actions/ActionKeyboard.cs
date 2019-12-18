@@ -57,7 +57,7 @@ class ActionKeyboard
             {
                 SendKeys.SendWait("{" + match.Groups[1].ToString().ToUpper() + "}");
             }
-            finally { }
+            catch { }
         }
 
         if (!isSpecialKey)

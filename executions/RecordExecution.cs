@@ -69,13 +69,13 @@ class RecordExecution : AtsExecution
             else if (recordType == RecordType.Start)
             {
                 string tempFolder = Path.GetTempPath() + "\\ats_recorder";
-                long freeSpace;
+                long freeSpace = 0;
                 try
                 {
                     DriveInfo drive = new DriveInfo(new FileInfo(tempFolder).Directory.Root.FullName);
                     freeSpace = drive.AvailableFreeSpace;
                 }
-                finally { }
+                catch { }
 
                 if (freeSpace > 100000000)
                 {
@@ -94,7 +94,7 @@ class RecordExecution : AtsExecution
                             Directory.CreateDirectory(tempFolder);
                         }
                     }
-                    finally { }
+                    catch { }
 
 
                     string id = commandsData[0];

@@ -18,7 +18,7 @@ under the License.
  */
 
 using FlaUI.Core.Input;
-using FlaUI.Core.Shapes;
+using System.Drawing;
 using System.Net;
 
 class MouseExecution : AtsExecution
