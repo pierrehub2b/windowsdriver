@@ -33,12 +33,12 @@ public class VisualElement
         this.Bound = new TestBound(bound);
         this.SearchDuration = duration;
 
-        if (tag != string.Empty)
+        if (!string.IsNullOrEmpty(tag)) 
         {
             this.Tag = tag;
         }
 
-        if (criterias != string.Empty)
+        if (!string.IsNullOrEmpty(criterias)) 
         {
             this.Criterias = criterias;
         }
@@ -46,16 +46,16 @@ public class VisualElement
 
     public void UpdatePosition(string hpos, string hposValue, string vpos, string vposValue)
     {
-        if (hpos != string.Empty)
+        if (!string.IsNullOrEmpty(hpos)) 
         {
             Hpos = hpos;
-            int.TryParse(hposValue, out _hpos);
+            _ = int.TryParse(hposValue, out _hpos);
         }
 
-        if (vpos != string.Empty)
+        if (!string.IsNullOrEmpty(vpos)) 
         {
             Vpos = vpos;
-            int.TryParse(vposValue, out _vpos);
+            _ = int.TryParse(vposValue, out _vpos);
         }
     }
 

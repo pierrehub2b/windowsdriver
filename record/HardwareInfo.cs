@@ -46,10 +46,10 @@ public static class HardwareInfo
     {
         ManagementClass mc = new ManagementClass("Win32_NetworkAdapterConfiguration");
         ManagementObjectCollection moc = mc.GetInstances();
-        string MACAddress = String.Empty;
+        string MACAddress = string.Empty;
         foreach (ManagementObject mo in moc)
         {
-            if (MACAddress == String.Empty)
+            if (string.IsNullOrEmpty(MACAddress))
             {
                 if ((bool)mo["IPEnabled"] == true) MACAddress = mo["MacAddress"].ToString();
             }

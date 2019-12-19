@@ -48,7 +48,7 @@ public class VisualRecorder
     private static extern IntPtr DeleteObject(IntPtr hDc);
 
     [DllImport("gdi32.dll")]
-    public static extern bool DeleteDC(IntPtr hDC);
+    private static extern bool DeleteDC(IntPtr hDC);
 
     private const int SRCCOPY = 0x00CC0020;
 
@@ -110,27 +110,22 @@ public class VisualRecorder
         return null;
     }
 
-    public byte[] Capture(int x, int y, int w, int h)
+    public byte[] ScreenCapture(int x, int y, int w, int h)
     {
-        return Capture(x, y, w, h, maxQualityEncoder, maxQualityEncoderParameters);
+        return ScreenCapture(x, y, w, h, maxQualityEncoder, maxQualityEncoderParameters);
     }
 
-    public byte[] Capture(double[] bound)
+    public byte[] ScreenCapture(double[] bound)
     {
-        return Capture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters);
+        return ScreenCapture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters);
     }
 
-    public byte[] Capture(int x, int y, int w, int h, Bitmap img)
+    public byte[] ScreenCapture(double[] bound, Bitmap img)
     {
-        return Capture(x, y, w, h, maxQualityEncoder, maxQualityEncoderParameters, img);
+        return ScreenCapture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters, img);
     }
 
-    public byte[] Capture(double[] bound, Bitmap img)
-    {
-        return Capture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters, img);
-    }
-
-    public byte[] Capture(int x, int y, int w, int h, ImageCodecInfo encoder, EncoderParameters encoderParameters)
+    public static byte[] ScreenCapture(int x, int y, int w, int h, ImageCodecInfo encoder, EncoderParameters encoderParameters)
     {
         IntPtr hdcSrc = GetDC(GetDesktopWindow());
         IntPtr hdcDest = CreateCompatibleDC(hdcSrc);
@@ -162,7 +157,7 @@ public class VisualRecorder
         return null;
     }
 
-    public byte[] Capture(int x, int y, int w, int h, ImageCodecInfo encoder, EncoderParameters encoderParameters, Bitmap img)
+    public static byte[] ScreenCapture(int x, int y, int w, int h, ImageCodecInfo encoder, EncoderParameters encoderParameters, Bitmap img)
     {
         IntPtr hdcSrc = GetDC(GetDesktopWindow());
         IntPtr hdcDest = CreateCompatibleDC(hdcSrc);
@@ -196,9 +191,6 @@ public class VisualRecorder
 
     internal void Stop()
     {
-        //cpuCounter.Close();
-        //ramCounter.Close();
-
         Flush();
 
         if (visualStream != null)
@@ -209,16 +201,10 @@ public class VisualRecorder
 
         visualStream = null;
         AmfSerializer = null;
-
-        //DeleteDC(hDC);
-
     }
 
     internal void Start(string folderPath, string id, string fullName, string description, string author, string groups, string prereq, int videoQuality, string started)
     {
-        //hDC = GetDC(GetDesktopWindow());
-        //hMemDC = CreateCompatibleDC(hDC);
-
         frameIndex = -1;
         startTime = DateTime.Now;
         imageType = "jpeg";

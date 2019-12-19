@@ -29,6 +29,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 [DataContract(Name = "com.ats.element.AtsElement")]
 public class AtsElement
@@ -410,19 +411,18 @@ public class AtsElement
         };
 
         //---------------------------------------------------------------------
-        // try to find a dialog box
+        // try to find a modal window
         //---------------------------------------------------------------------
         AutomationElement rootElement = Element;
         AutomationElement[] children = Element.FindAllChildren();
-        if (children.Length > 1)
+
+        for(int i= children.Length-1; i>=0; i--)
         {
-            AutomationElement firstChild = children[0];
-            if (firstChild.Patterns.Window.IsSupported && firstChild.Patterns.LegacyIAccessible.IsSupported)
+            AutomationElement child = children[i];
+            if (child.Patterns.Window.IsSupported && child.Patterns.Window.Pattern.IsModal)
             {
-                if (firstChild.Patterns.LegacyIAccessible.Pattern.Role.Equals(FlaUI.Core.WindowsAPI.AccessibilityRole.ROLE_SYSTEM_DIALOG))
-                {
-                    rootElement = firstChild;
-                }
+                rootElement = child;
+                break;
             }
         }
         //---------------------------------------------------------------------
@@ -498,8 +498,8 @@ public class AtsElement
 
                 uiElements = rootElement.FindAllDescendants(searchCondition);
                 len = uiElements.Length;
-
-                for (int i = 0; i < len; i++)
+                
+               for (int i = 0; i < len; i++)
                 {
                     AutomationElement element = uiElements[i];
                     if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))
@@ -513,7 +513,7 @@ public class AtsElement
                 uiElements = rootElement.FindAllDescendants();
                 len = uiElements.Length;
 
-                for (int i = 0; i < len; i++)
+                for (int i=0; i<len; i++)
                 {
                     AutomationElement element = uiElements[i];
                     if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))

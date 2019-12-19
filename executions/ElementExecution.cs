@@ -287,7 +287,7 @@ class ElementExecution : AtsExecution
 
     private class SelectExecutor : ElementExecutor
     {
-        private readonly bool regexp;
+        private readonly bool regexp = false;
         private readonly string type;
         private readonly string value;
 
@@ -295,7 +295,6 @@ class ElementExecution : AtsExecution
         {
             this.type = type;
             this.value = value;
-            this.regexp = false;
         }
 
         public SelectExecutor(DesktopResponse response, AtsElement element, string type, string value, string regexp) : base(response, element)

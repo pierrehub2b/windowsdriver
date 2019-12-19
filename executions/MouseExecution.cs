@@ -46,10 +46,10 @@ class MouseExecution : AtsExecution
         this.type = (MouseType)type;
         if (commandsData.Length > 0)
         {
-            int.TryParse(commandsData[0], out data0);
+            _ = int.TryParse(commandsData[0], out data0);
             if (commandsData.Length > 1)
             {
-                int.TryParse(commandsData[1], out data1);
+                _ = int.TryParse(commandsData[1], out data1);
             }
         }
     }
