@@ -163,30 +163,20 @@ public class VisualRecorder
         IntPtr hdcDest = CreateCompatibleDC(hdcSrc);
         IntPtr hBitmap = CreateCompatibleBitmap(hdcSrc, w, h);
 
-        if (hBitmap != IntPtr.Zero)
+        Bitmap bitmap;
+        var cropedImg = img.Clone(new Rectangle(x, y, w, h), img.PixelFormat);
+        using (bitmap = cropedImg)
         {
-            IntPtr hOld = (IntPtr)SelectObject(hdcDest, hBitmap);
+            DeleteObject(hBitmap);
+            GC.Collect();
 
-            BitBlt(hdcDest, 0, 0, w, h, hdcSrc, x, y, SRCCOPY);
-            SelectObject(hdcDest, hOld);
-
-            DeleteDC(hdcDest);
-
-            Bitmap bitmap;
-            using (bitmap = img)
+            MemoryStream imageStream;
+            using (imageStream = new MemoryStream())
             {
-                DeleteObject(hBitmap);
-                GC.Collect();
-
-                MemoryStream imageStream;
-                using (imageStream = new MemoryStream())
-                {
-                    bitmap.Save(imageStream, encoder, encoderParameters);
-                }
-                return imageStream.ToArray();
+                bitmap.Save(imageStream, encoder, encoderParameters);
             }
+            return imageStream.ToArray();
         }
-        return null;
     }
 
     internal void Stop()
