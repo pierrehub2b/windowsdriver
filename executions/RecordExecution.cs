@@ -73,15 +73,10 @@ class RecordExecution : AtsExecution
                 if (int.TryParse(commandsData[0], out int x) &&
                 int.TryParse(commandsData[1], out int y) &&
                 int.TryParse(commandsData[2], out int w) &&
-                int.TryParse(commandsData[3], out int h) &&
-                int.TryParse(commandsData[4], out int width) &&
-                int.TryParse(commandsData[5], out int height))
+                int.TryParse(commandsData[3], out int h))
                 {
-                    Bitmap img = VisualAction.GetScreenshot(commandsData[6], true);
-                    double ratioX = img.Width / width;
-                    double ratioY = img.Height / height;
-
-                    response.Image = recorder.ScreenCapture(Convert.ToInt32(x* ratioX), Convert.ToInt32(y * ratioY), Convert.ToInt32(w * ratioX), Convert.ToInt32(h * ratioY), img);
+                    Bitmap img = VisualAction.GetScreenshot(commandsData[4], true);
+                    response.Image = recorder.ScreenCapture(x, y, w,h, img);
                 };
             }
             else if (recordType == RecordType.Start)
