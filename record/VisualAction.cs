@@ -35,7 +35,7 @@ public class VisualAction
         this.Error = 0;
     }
 
-    private static Bitmap GetScreenshot(string uri, double[] channelBound)
+    public static Bitmap GetScreenshot(string uri, double[] channelBound = null)
     {
         HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
         httpWebRequest.ContentType = "application/json";

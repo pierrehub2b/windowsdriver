@@ -74,7 +74,7 @@ class RecordExecution : AtsExecution
                 int.TryParse(commandsData[2], out int w) &&
                 int.TryParse(commandsData[3], out int h))
                 {
-                    response.Image = recorder.Capture(x, y, w, h, VisualAction.GetScreenshot(commandsData[4]));
+                    response.Image = recorder.ScreenCapture(x, y, w, h, VisualAction.GetScreenshot(commandsData[4]));
                 }
             }
             else if (recordType == RecordType.Start)
