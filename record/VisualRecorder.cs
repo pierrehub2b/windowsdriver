@@ -110,6 +110,11 @@ public class VisualRecorder
         return null;
     }
 
+    public byte[] ScreenCapture(int x, int y, int w, int h, Bitmap img)
+    {
+        return ScreenCapture(x, y, w, h, maxQualityEncoder, maxQualityEncoderParameters, img);
+    }
+
     public byte[] ScreenCapture(int x, int y, int w, int h)
     {
         return ScreenCapture(x, y, w, h, maxQualityEncoder, maxQualityEncoderParameters);
