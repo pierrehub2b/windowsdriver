@@ -120,6 +120,11 @@ public class VisualRecorder
         return ScreenCapture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters);
     }
 
+    public byte[] ScreenCapture(int x, int y, int w, int h, Bitmap img)
+    {
+        return ScreenCapture(x, y, w, h, maxQualityEncoder, maxQualityEncoderParameters, img);
+    }
+
     public byte[] ScreenCapture(double[] bound, Bitmap img)
     {
         return ScreenCapture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters, img);
