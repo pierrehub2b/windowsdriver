@@ -18,6 +18,7 @@ under the License.
  */
 
 using System;
+using System.Drawing;
 using System.IO;
 
 class RecordExecution : AtsExecution
@@ -76,8 +77,11 @@ class RecordExecution : AtsExecution
                 int.TryParse(commandsData[4], out int width) &&
                 int.TryParse(commandsData[5], out int height))
                 {
-                    double[] bounds = new double[] { 0, 0, width, height };
-                    response.Image = recorder.ScreenCapture(x, y, w, h, VisualAction.GetScreenshot(commandsData[6], bounds));
+                    Bitmap img = VisualAction.GetScreenshot(commandsData[6], true);
+                    double ratioX = img.Width / width;
+                    double ratioY = img.Height / height;
+
+                    response.Image = recorder.ScreenCapture(Convert.ToInt32(x* ratioX), Convert.ToInt32(y * ratioY), Convert.ToInt32(w * ratioX), Convert.ToInt32(h * ratioY), img);
                 };
             }
             else if (recordType == RecordType.Start)

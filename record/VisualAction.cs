@@ -35,7 +35,7 @@ public class VisualAction
         this.Error = 0;
     }
 
-    public static Bitmap GetScreenshot(string uri, double[] channelBound)
+    public static Bitmap GetScreenshot(string uri, bool lostLess = false)
     {
         HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
         httpWebRequest.ContentType = "application/json";
@@ -44,6 +44,25 @@ public class VisualAction
         using (StreamWriter writer = new StreamWriter(httpWebRequest.GetRequestStream()))
         {
             writer.WriteLine("screenshot");
+            writer.WriteLine(lostLess);
+        }
+
+        WebResponse response = httpWebRequest.GetResponse();
+        Stream dataStream = response.GetResponseStream();
+        var img = Image.FromStream(dataStream);
+        return new Bitmap(img);
+    }
+
+    public static Bitmap GetScreenshot(string uri, double[] channelBound, bool lostLess = false)
+    {
+        HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
+        httpWebRequest.ContentType = "application/json";
+        httpWebRequest.Method = "POST";
+
+        using (StreamWriter writer = new StreamWriter(httpWebRequest.GetRequestStream()))
+        {
+            writer.WriteLine("screenshot");
+            writer.WriteLine(lostLess.ToString().ToLower());
         }
 
         WebResponse response = httpWebRequest.GetResponse();
@@ -70,7 +89,7 @@ public class VisualAction
         this.Line = line;
         this.TimeLine = timeLine;
         this.ChannelName = channelName;
-        this.imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshot(url, channelBound)));
+        this.imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshot(url, channelBound, false)));
         this.ChannelBound = new TestBound(channelBound);
         this.ImageType = imageType;
         this.ImageRef = 0;
@@ -93,7 +112,7 @@ public class VisualAction
         {
             imagesList.Clear();
         }
-        imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshot(url, channelBound)));
+        imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshot(url, channelBound, false)));
     }
 
     [DataMember(Name = "channelName")]
