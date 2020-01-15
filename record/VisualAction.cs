@@ -35,25 +35,16 @@ public class VisualAction
         this.Error = 0;
     }
 
-    public static Bitmap GetScreenshot(string uri, bool lostLess = false)
+    public static byte[] GetScreenshot(string uri)
     {
-        HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
-        httpWebRequest.ContentType = "application/json";
-        httpWebRequest.Method = "POST";
-
-        using (StreamWriter writer = new StreamWriter(httpWebRequest.GetRequestStream()))
+        using (MemoryStream ms = new MemoryStream())
         {
-            writer.WriteLine("screenshot");
-            writer.WriteLine(lostLess);
+            GetScreenshotStream(uri).CopyTo(ms);
+            return ms.ToArray();
         }
-
-        WebResponse response = httpWebRequest.GetResponse();
-        Stream dataStream = response.GetResponseStream();
-        var img = Image.FromStream(dataStream);
-        return new Bitmap(img);
     }
 
-    public static Bitmap GetScreenshot(string uri, double[] channelBound, bool lostLess = false)
+    public static Stream GetScreenshotStream(string uri)
     {
         HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
         httpWebRequest.ContentType = "application/json";
@@ -62,13 +53,17 @@ public class VisualAction
         using (StreamWriter writer = new StreamWriter(httpWebRequest.GetRequestStream()))
         {
             writer.WriteLine("screenshot");
-            writer.WriteLine(lostLess.ToString().ToLower());
+            writer.WriteLine("hires");
         }
 
         WebResponse response = httpWebRequest.GetResponse();
-        Stream dataStream = response.GetResponseStream();
-        var img = Image.FromStream(dataStream);
-        return new Bitmap(img, new Size((int)channelBound[2], (int)channelBound[3]));
+
+        return response.GetResponseStream();
+    }
+
+    public static Bitmap GetScreenshotImage(string uri)
+    {
+        return new Bitmap(GetScreenshotStream(uri));
     }
 
     public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived) : this()
@@ -89,7 +84,7 @@ public class VisualAction
         this.Line = line;
         this.TimeLine = timeLine;
         this.ChannelName = channelName;
-        this.imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshot(url, channelBound, false)));
+        this.imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshotImage(url)));
         this.ChannelBound = new TestBound(channelBound);
         this.ImageType = imageType;
         this.ImageRef = 0;
@@ -112,7 +107,7 @@ public class VisualAction
         {
             imagesList.Clear();
         }
-        imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshot(url, channelBound, false)));
+        //imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshot(url, false)));
     }
 
     [DataMember(Name = "channelName")]

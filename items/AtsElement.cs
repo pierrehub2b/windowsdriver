@@ -29,7 +29,6 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 [DataContract(Name = "com.ats.element.AtsElement")]
 public class AtsElement
@@ -96,11 +95,6 @@ public class AtsElement
 
     public AtsElement(AutomationElement elem) : this(GetTag(elem), elem)
     {
-    }
-
-    public AtsElement(AutomationElement elem, bool clic) : this(elem)
-    {
-        Clickable = clic;
     }
 
     public AtsElement(string tag, AutomationElement elem)
@@ -403,7 +397,7 @@ public class AtsElement
 
     //-----------------------------------------------------------------------------------------------------
 
-    internal AtsElement[] GetElements(string tag, string[] attributes)
+    public virtual AtsElement[] GetElements(string tag, string[] attributes)
     {
         List<AtsElement> listElements = new List<AtsElement>
         {
@@ -481,7 +475,7 @@ public class AtsElement
                 AndCondition searchCondition = new AndCondition();
                 string[] newAttributes = new string[len];
 
-                for(int i=0; i< len; i++)
+                for (int i = 0; i < len; i++)
                 {
                     string[] attributeData = attributes[i].Split('\t');
                     if (attributeData.Length == 2)
@@ -491,15 +485,15 @@ public class AtsElement
                         {
                             searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(rootElement.ConditionFactory, new[] { attributeData[1] }));
                         }
-                        catch {}
+                        catch { }
                     }
                     newAttributes[i] = attributeData[0];
                 }
 
                 uiElements = rootElement.FindAllDescendants(searchCondition);
                 len = uiElements.Length;
-                
-               for (int i = 0; i < len; i++)
+
+                for (int i = 0; i < len; i++)
                 {
                     AutomationElement element = uiElements[i];
                     if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))
@@ -533,6 +527,7 @@ public class AtsElement
 
     private static readonly string[] propertiesBase = new string[] {
                 Properties.Name,
+                Properties.NativeWindowHandle,
                 Properties.AutomationId,
                 Properties.ClassName,
                 Properties.HelpText,
@@ -635,6 +630,7 @@ public class AtsElement
     private static class Properties
     {
         public const string Name = "Name";
+        public const string NativeWindowHandle = "NativeWindowHandle";
         public const string AutomationId = "AutomationId";
         public const string ClassName = "ClassName";
         public const string HelpText = "HelpText";
@@ -732,6 +728,13 @@ public class AtsElement
                     }
                     properties.Add(new DesktopData(propertyName, value));
                     break;
+
+                case NativeWindowHandle:
+                    if (propertyValues.NativeWindowHandle.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, propertyValues.NativeWindowHandle.ToString()));
+                    }
+                    break;
                 case AutomationId:
                     CheckProperty(propertyName, propertyValues.AutomationId, ref properties);
                     break;
@@ -763,7 +766,10 @@ public class AtsElement
                     properties.Add(new DesktopData(propertyName, isPassword));
                     break;
                 case IsPassword:
-                    CheckProperty(propertyName, propertyValues.IsPassword, ref properties);
+                    if (propertyValues.IsPassword.IsSupported)
+                    {
+                        properties.Add(new DesktopData(propertyName, propertyValues.IsPassword.ValueOrDefault));
+                    }
                     break;
                 case RowCount:
                     properties.Add(new DesktopData(propertyName, element.AsGrid().RowCount));
@@ -900,14 +906,6 @@ public class AtsElement
                         properties.Add(new DesktopData(propertyName, patternValues.LegacyIAccessible.Pattern.Help));
                     }
                     break;
-            }
-        }
-
-        private static void CheckProperty(string name, AutomationProperty<bool> property, ref List<DesktopData> properties)
-        {
-            if (property.IsSupported)
-            {
-                properties.Add(new DesktopData(name, property.ValueOrDefault));
             }
         }
 

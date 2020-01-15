@@ -19,6 +19,7 @@ under the License.
 
 using System.Net;
 using System.Runtime.Serialization;
+using windowsdriver;
 
 struct DesktopRequest
 {
@@ -39,13 +40,13 @@ struct DesktopRequest
         execution = new AtsExecution(errorCode, atsAgent, message);
     }
 
-    public DesktopRequest(int cmdType, int cmdSubType, string[] cmdData, ActionKeyboard keyboard, VisualRecorder recorder, DesktopData[] capabilities)
+    public DesktopRequest(int cmdType, int cmdSubType, string[] cmdData, ActionKeyboard keyboard, VisualRecorder recorder, DesktopData[] capabilities, DesktopManager desktop)
     {
         CommandType type = (CommandType)cmdType;
 
         if (type == CommandType.Driver)
         {
-            execution = new DriverExecution(cmdSubType, cmdData, capabilities);
+            execution = new DriverExecution(cmdSubType, cmdData, capabilities, desktop);
         }
         else if (type == CommandType.Mouse)
         {
@@ -57,7 +58,7 @@ struct DesktopRequest
         }
         else if (type == CommandType.Window)
         {
-            execution = new WindowExecution(cmdSubType, cmdData, keyboard, recorder);
+            execution = new WindowExecution(cmdSubType, cmdData, keyboard, recorder, desktop);
         }
         else if (type == CommandType.Record)
         {
@@ -65,7 +66,7 @@ struct DesktopRequest
         }
         else if (type == CommandType.Element)
         {
-            execution = new ElementExecution(cmdSubType, cmdData);
+            execution = new ElementExecution(cmdSubType, cmdData, desktop);
         }
         else
         {
