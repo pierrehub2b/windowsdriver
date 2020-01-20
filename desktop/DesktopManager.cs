@@ -46,7 +46,7 @@ namespace windowsdriver
             {
                 if (child.Properties.NativeWindowHandle.IsSupported && child.Properties.ProcessId.IsSupported)
                 {
-                    AddHandle(child.Properties.NativeWindowHandle.Value.ToInt32(), child.Properties.ProcessId, child.ControlType, child);
+                    AddHandle(child.Properties.NativeWindowHandle.Value.ToInt32(), child.Properties.ProcessId, child.ControlType, child.ClassName);
                 }
             }
 
@@ -57,7 +57,7 @@ namespace windowsdriver
                     int nativeHandle = element.Properties.NativeWindowHandle.Value.ToInt32();
                     if (type.Equals(StructureChangeType.ChildAdded))
                     {
-                        AddHandle(nativeHandle, element.Properties.ProcessId, element.ControlType, element);
+                        AddHandle(nativeHandle, element.Properties.ProcessId, element.ControlType, element.ClassName);
                                                
                         UIA3AutomationEventHandler closeEvent = null;
                         closeEvent = (UIA3AutomationEventHandler)element.RegisterAutomationEvent(new EventId(20017, "WindowClosedEvent"), FlaUI.Core.Definitions.TreeScope.Element, (w, evType) =>
@@ -70,17 +70,10 @@ namespace windowsdriver
             });
         }
 
-        private void AddHandle(int key, int pid, ControlType type, AutomationElement elem)
+        private void AddHandle(int key, int pid, ControlType type, string className)
         {
             if (!handles.ContainsKey(key))
             {
-                string className = "";
-                try
-                {
-                    className = elem.ClassName;
-                }
-                catch { }
-
                 handles.Add(key, new DesktopChild(pid, type == ControlType.Pane || type == ControlType.Window, className));
             }
         }
