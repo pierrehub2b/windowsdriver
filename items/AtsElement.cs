@@ -481,11 +481,10 @@ public class AtsElement
                     if (attributeData.Length == 2)
                     {
                         MethodInfo byMethod = rootElement.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
-                        try
+                        if (byMethod != null)
                         {
-                            searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(rootElement.ConditionFactory, new[] { attributeData[1] }));
+                           searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(rootElement.ConditionFactory, new[] { attributeData[1] }));
                         }
-                        catch { }
                     }
                     newAttributes[i] = attributeData[0];
                 }
