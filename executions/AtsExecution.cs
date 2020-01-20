@@ -21,10 +21,11 @@ using DotAmf.Serialization;
 using System;
 using System.IO;
 using System.Net;
+using windowsdriver.items;
 
 class AtsExecution
 {
-    private static readonly DataContractAmfSerializer AmfSerializer = new DataContractAmfSerializer(typeof(DesktopResponse), new[] { typeof(DesktopData), typeof(AtsElement), typeof(DesktopWindow) });
+    private static readonly DataContractAmfSerializer AmfSerializer = new DataContractAmfSerializer(typeof(DesktopResponse), new[] { typeof(DesktopData), typeof(AtsElement), typeof(DesktopWindow), typeof(DesktopElement)});
     
     protected DesktopResponse response;
 

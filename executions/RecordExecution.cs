@@ -70,14 +70,7 @@ class RecordExecution : AtsExecution
             }
             else if (recordType == RecordType.ScreenshotMobile)
             {
-                if (int.TryParse(commandsData[0], out int x) &&
-                int.TryParse(commandsData[1], out int y) &&
-                int.TryParse(commandsData[2], out int w) &&
-                int.TryParse(commandsData[3], out int h))
-                {
-                    Bitmap img = VisualAction.GetScreenshot(commandsData[4], true);
-                    response.Image = recorder.ScreenCapture(x, y, w,h, img);
-                };
+                response.Image = VisualAction.GetScreenshot(commandsData[0]);
             }
             else if (recordType == RecordType.Start)
             {

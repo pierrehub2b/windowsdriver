@@ -21,6 +21,8 @@ using FlaUI.Core.Input;
 using FlaUI.UIA3;
 using System.Collections.Generic;
 using System.Net;
+using windowsdriver;
+using windowsdriver.items;
 
 class ElementExecution : AtsExecution
 {
@@ -38,7 +40,7 @@ class ElementExecution : AtsExecution
 
     private readonly Executor executor;
 
-    public ElementExecution(int type, string[] commandsData) : base()
+    public ElementExecution(int type, string[] commandsData, DesktopManager desktop) : base()
     {
         ElementType elemType = (ElementType)type;
 
@@ -49,13 +51,13 @@ class ElementExecution : AtsExecution
                 _ = int.TryParse(commandsData[0], out int handle);
                 if (handle > 0)
                 {
-                    executor = new FindExecutor(response, handle, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray());
-                    return;
+                    executor = new FindExecutor(response, desktop, handle, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray());
                 }
                 else
                 {
-                    response.setError(-72, "invalid handle value");
+                    executor = new DesktopExecutor(response, desktop);
                 }
+                return;
             }
         }
         else if (elemType == ElementType.FromPoint)
@@ -152,22 +154,39 @@ class ElementExecution : AtsExecution
         public override void Run() { }
     }
 
+    private class DesktopExecutor : Executor
+    {
+        DesktopManager desktop;
+
+        public DesktopExecutor(DesktopResponse response, DesktopManager desktop) : base(response)
+        {
+            this.desktop = desktop;
+        }
+
+        public override void Run()
+        {
+            response.Elements = desktop.GetElements("", new string[0]);
+        }
+    }
+
     private class FindExecutor : Executor
     {
         private readonly int handle;
         private readonly string tag;
         private readonly string[] attributes;
+        private readonly DesktopManager desktop;
 
-        public FindExecutor(DesktopResponse response, int handle, string tag, string[] attributes) : base(response)
+        public FindExecutor(DesktopResponse response, DesktopManager desktop, int handle, string tag, string[] attributes) : base(response)
         {
             this.handle = handle;
             this.tag = tag;
             this.attributes = attributes;
+            this.desktop = desktop;
         }
 
         public override void Run()
         {
-            DesktopWindow window = DesktopWindow.GetWindowByHandle(handle);
+            DesktopWindow window = desktop.GetWindowByHandle(handle);
             if (window != null)
             {
                 window.Focus();

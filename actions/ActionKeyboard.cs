@@ -40,10 +40,11 @@ class ActionKeyboard
         Keyboard.Type(VirtualKeyShort.BACK);
     }
 
-    internal void AddressBar(string folder)
+    internal void AddressBar(string url)
     {
         Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_L);
-        PasteText(folder);
+        Keyboard.Type(url);
+        //PasteText(url);
         Keyboard.Type(VirtualKeyShort.RETURN);
     }
 
