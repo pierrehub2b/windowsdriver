@@ -19,9 +19,10 @@ under the License.
 
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
+using FlaUI.UIA3;
 using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
-using System.Threading;
 
 [DataContract(Name = "com.ats.executor.drivers.desktop.DesktopWindow")]
 public class DesktopWindow : AtsElement
@@ -32,8 +33,6 @@ public class DesktopWindow : AtsElement
     [DataMember(Name = "handle")]
     public int Handle;
 
-    public readonly bool isIE = false;
-
     private const string MAXIMIZE = "maximize";
     private const string REDUCE = "reduce";
     private const string RESTORE = "restore";
@@ -41,21 +40,25 @@ public class DesktopWindow : AtsElement
 
     private readonly bool canMove = false;
     private readonly bool canResize = false;
-    protected bool isWindow = false;
-    
+    private readonly bool isWindow = false;
+    private readonly bool isIE = false;
+
     private bool isMaximized = false;
+
+    private static readonly UIA3Automation UiA3 = new UIA3Automation();
+    private static readonly AutomationElement Desktop = UiA3.GetDesktop();
 
     public DesktopWindow(AutomationElement elem) : base(elem, "Window")
     {
         elem.Properties.ProcessId.TryGetValue(out Pid);
 
         elem.Properties.NativeWindowHandle.TryGetValue(out IntPtr handle);
-        Handle = handle.ToInt32();
+        this.Handle = handle.ToInt32();
 
         if (elem.Patterns.Transform.IsSupported)
         {
-            canMove = elem.Patterns.Transform.Pattern.CanMove;
-            canResize = elem.Patterns.Transform.Pattern.CanResize;
+            this.canMove = elem.Patterns.Transform.Pattern.CanMove;
+            this.canResize = elem.Patterns.Transform.Pattern.CanResize;
         }
 
         if (elem.Patterns.Window.IsSupported)
@@ -68,7 +71,7 @@ public class DesktopWindow : AtsElement
         CachedElement.AddCachedElement(this);
     }
 
-    public virtual void Resize(int w, int h)
+    internal void Resize(int w, int h)
     {
         WaitIdle();
         if (canResize)
@@ -77,7 +80,7 @@ public class DesktopWindow : AtsElement
         }
     }
 
-    public virtual void Move(int x, int y)
+    internal void Move(int x, int y)
     {
         WaitIdle();
         if (canMove)
@@ -86,7 +89,7 @@ public class DesktopWindow : AtsElement
         }
     }
 
-    public virtual void Close()
+    internal void Close()
     {
         if (isWindow)
         {
@@ -99,21 +102,10 @@ public class DesktopWindow : AtsElement
                     {
                         AutomationElement tab = tabs[i];
                         tab.Patterns.SelectionItem.Pattern.Select();
-                        
-                        int maxTry = 10;
-                        while (maxTry > 0)
+                        AutomationElement closeButton = tab.FindFirstChild(tab.ConditionFactory.ByControlType(ControlType.Button));
+                        if (closeButton != null)
                         {
-                            AutomationElement closeButton = tab.FindFirstChild(tab.ConditionFactory.ByControlType(ControlType.Button));
-                            if (closeButton == null)
-                            {
-                                Thread.Sleep(350);
-                                maxTry--;
-                            }
-                            else { 
-                                closeButton.WaitUntilClickable(TimeSpan.FromMilliseconds(350.00));
-                                closeButton.AsButton().Invoke();
-                                maxTry = 0;
-                            }
+                            closeButton.Click();
                         }
                     }
                 }
@@ -190,5 +182,73 @@ public class DesktopWindow : AtsElement
                     break;
             }
         }
+    }
+
+    public static List<DesktopWindow> GetOrderedWindowsByPid(int pid)
+    {
+        List<DesktopWindow> windowsList = new List<DesktopWindow>();
+
+        AutomationElement[] windows = Desktop.FindAllChildren(w => w.ByProcessId(pid));
+
+        for(int i=0; i< windows.Length; i++)
+        {
+            AutomationElement win = windows[i];
+            if (win.ControlType == ControlType.Window)
+            {
+                windowsList.Insert(0, CachedElement.GetCachedWindow(win));
+            }
+            else if (win.ControlType == ControlType.Pane)
+            {
+                windowsList.Add(CachedElement.GetCachedWindow(win));
+            }
+        }
+
+        return windowsList;
+    }
+
+    public static DesktopWindow GetWindowByHandle(int handle)
+    {
+        if (handle > 0)
+        {
+            AutomationElement window = UiA3.FromHandle(new IntPtr(handle));
+            if (window != null)
+            {
+                return new DesktopWindow(window);
+            }
+        }
+        return null;
+    }
+
+    public static DesktopWindow GetWindowPid(string title)
+    {
+        AutomationElement[] windows = Desktop.FindAllChildren();
+
+        for(int i=0; i<windows.Length; i++)
+        {
+            AutomationElement window = windows[i];
+            if (window.Properties.Name.IsSupported && window.Name.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return CachedElement.GetCachedWindow(window);
+            }
+        }
+
+        //-------------------------------------------------------------------------------------------------
+        // second chance to find the window
+        //-------------------------------------------------------------------------------------------------
+
+        for (int i = 0; i < windows.Length; i++)
+        {
+            AutomationElement[] windowChildren = windows[i].FindAllChildren();
+            for(int j=0; j< windowChildren.Length; j++)
+            {
+                AutomationElement windowChild = windowChildren[j];
+                if (windowChild.Properties.Name.IsSupported && windowChild.Name.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return CachedElement.GetCachedWindow(windowChild);
+                }
+            }
+        }
+
+        return null;
     }
 }

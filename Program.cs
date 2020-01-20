@@ -27,7 +27,6 @@ using System.Linq;
 using System.Management;
 using System.Net;
 using System.Windows.Forms;
-using windowsdriver;
 
 public static class CachedElement
 {
@@ -91,8 +90,6 @@ public static class DesktopDriver
     private static readonly ActionKeyboard keyboard = new ActionKeyboard();
     private static readonly VisualRecorder recorder = new VisualRecorder();
 
-    private static readonly DesktopManager desktop = new DesktopManager();
-
     public static int Main(String[] args)
     {
         int defaultPort = DefaultPort;
@@ -134,7 +131,7 @@ public static class DesktopDriver
             {
                 postData = reader.ReadToEnd();
             }
-            req = new DesktopRequest(t0, t1, postData.Split('\n'), keyboard, recorder, capabilities, desktop);
+            req = new DesktopRequest(t0, t1, postData.Split('\n'), keyboard, recorder, capabilities);
         }
         else
         {
@@ -153,9 +150,7 @@ public static class DesktopDriver
             new DesktopData("MachineName", Environment.MachineName),
             new DesktopData("DriverVersion", System.Reflection.Assembly.GetEntryAssembly().GetName().Version.ToString()),
             new DesktopData("DotNetVersion", GetFrameworkVersion().ToString()),
-            new DesktopData("ScreenResolution", SystemInformation.VirtualScreen.Width.ToString() + "x" + SystemInformation.VirtualScreen.Height.ToString()),
-            new DesktopData("VirtualWidth", SystemInformation.VirtualScreen.Width.ToString()),
-            new DesktopData("VirtualHeight", SystemInformation.VirtualScreen.Height.ToString()),
+            new DesktopData("ScreenResolution", Screen.PrimaryScreen.Bounds.Width.ToString() + "x" + Screen.PrimaryScreen.Bounds.Height.ToString()),
             new DesktopData("Version", Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseId", "").ToString())
         };
 

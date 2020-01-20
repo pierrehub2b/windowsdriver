@@ -22,7 +22,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Management;
-using windowsdriver;
 
 class DriverExecution : AtsExecution
 {
@@ -36,7 +35,7 @@ class DriverExecution : AtsExecution
         Close = 3
     };
 
-    public DriverExecution(int t, string[] commandsData, DesktopData[] caps, DesktopManager desktop) : base()
+    public DriverExecution(int t, string[] commandsData, DesktopData[] caps) : base()
     {
         DriverType type = (DriverType)t;
 
@@ -74,7 +73,7 @@ class DriverExecution : AtsExecution
             _ = int.TryParse(commandsData[0], out int pid);
             if (pid > 0)
             {
-                List<DesktopWindow> wins = desktop.GetOrderedWindowsByPid(pid);
+                List<DesktopWindow> wins = DesktopWindow.GetOrderedWindowsByPid(pid);
                 foreach (DesktopWindow win in wins)
                 {
                     win.Close();
