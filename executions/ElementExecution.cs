@@ -48,24 +48,21 @@ class ElementExecution : AtsExecution
         {
             if (commandsData.Length > 1)
             {
-                string tag = commandsData[1];
-                string[] criterias = new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray();
-
                 _ = int.TryParse(commandsData[0], out int handle);
                 if (handle > 0)
                 {
-                    executor = new FindExecutor(response, desktop, handle, tag, criterias);
+                    executor = new FindExecutor(response, desktop, handle, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray());
                 }
                 else
                 {
-                    executor = new DesktopExecutor(response, desktop, tag, criterias);
+                    executor = new DesktopExecutor(response, desktop);
                 }
                 return;
             }
         }
         else if (elemType == ElementType.FromPoint)
         {
-            executor = new FromPointExecutor(response, desktop);
+            executor = new FromPointExecutor(response);
             return;
         }
         else
@@ -159,20 +156,16 @@ class ElementExecution : AtsExecution
 
     private class DesktopExecutor : Executor
     {
-        readonly DesktopManager desktop;
-        readonly string tag;
-        readonly string[] criterias;
+        DesktopManager desktop;
 
-        public DesktopExecutor(DesktopResponse response, DesktopManager desktop, string tag, string[] criterias) : base(response)
+        public DesktopExecutor(DesktopResponse response, DesktopManager desktop) : base(response)
         {
             this.desktop = desktop;
-            this.tag = tag;
-            this.criterias = criterias;
         }
 
         public override void Run()
         {
-            response.Elements = desktop.GetElements(tag, criterias);
+            response.Elements = desktop.GetElements("", new string[0]);
         }
     }
 
@@ -208,23 +201,16 @@ class ElementExecution : AtsExecution
 
     private class FromPointExecutor : Executor
     {
-        private readonly DesktopManager desktop;
-
-        public FromPointExecutor(DesktopResponse response, DesktopManager desk) : base(response) {
-            desktop = desk;
-        }
+        public FromPointExecutor(DesktopResponse response) : base(response) { }
 
         public override void Run()
         {
-            AtsElement elem = desktop.GetElementFromPoint(Mouse.Position);
-            if(elem != null)
-            {
-                response.Elements = new AtsElement[1] { elem };
-            }
-            else
-            {
-                response.Elements = new AtsElement[0];
-            }
+            UIA3Automation ui3 = new UIA3Automation();
+
+            AtsElement elem = new AtsElement(ui3.FromPoint(Mouse.Position));
+
+            response.Elements = new AtsElement[1] { elem };
+            ui3.Dispose();
         }
     }
 

@@ -24,7 +24,6 @@ using FlaUI.UIA3;
 using FlaUI.UIA3.EventHandlers;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using windowsdriver.items;
 
 namespace windowsdriver
@@ -103,18 +102,6 @@ namespace windowsdriver
                 PaneOrWindow = paneOrWindow;
                 LoadChildren = DesktopElement.IsDesktopComponent(className);
             }
-        }
-
-        //-------------------------------------------------------------------------------------------------------------
-        //-------------------------------------------------------------------------------------------------------------
-
-        public AtsElement GetElementFromPoint(Point pt)
-        {
-            AutomationElement elem = uia3.FromPoint(pt);
-            if(elem != null){
-                return new AtsElement(elem);
-            }
-            return null;
         }
 
         //-------------------------------------------------------------------------------------------------------------
