@@ -18,8 +18,11 @@ under the License.
  */
 
 using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Conditions;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Windows.Forms;
 
@@ -38,29 +41,113 @@ namespace windowsdriver.items
 
         public override AtsElement[] GetElements(string tag, string[] attributes)
         {
+            Attributes = new DesktopData[0];
             List<AtsElement> listElements = new List<AtsElement>
             {
                 this
             };
 
-            int len = attributes.Length;
-            AutomationElement[] uiElements;
+            AutomationElement[] desktopChildren = Element.FindAllChildren();
+            List<AutomationElement> desktopElements = new List<AutomationElement>();
 
-            uiElements = Element.FindAllChildren();
-            foreach (AutomationElement child in uiElements)
+            int len = attributes.Length;
+
+            foreach (AutomationElement child in desktopChildren)
             {
-                    listElements.Add(CachedElement.CreateCachedElement(child, true));
-                    if (IsDesktopComponent(child.ClassName))
+                AddDesktopElement(desktopElements, child);
+                if (IsDesktopComponent(child.ClassName))
+                {
+                    foreach (AutomationElement subChild in child.FindAllDescendants())
                     {
-                        foreach (AutomationElement subChild in child.FindAllDescendants())
-                        {
-                            listElements.Add(CachedElement.CreateCachedElement(subChild, true));
-                        }
+                        AddDesktopElement(desktopElements, subChild);
                     }
+                }
             }
 
-            Array.Clear(uiElements, 0, len);
+
+            if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
+            {
+                if (len > 0)
+                {
+                    string[] newAttributes = new string[len];
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        string[] attributeData = attributes[i].Split('\t');
+                        newAttributes[i] = attributeData[0];
+
+                        /*if (attributeData.Length == 2)
+                        {
+                            string propertyValue = attributeData[1];
+                        }*/
+                        
+                    }
+
+                    for (int i = 0; i < desktopElements.Count; i++)
+                    {
+                        CachedElement.AddCachedElement(listElements, new AtsElement("*", desktopElements[i], newAttributes));
+                    }
+                    
+                }
+                else
+                {
+                    for (int i = 0; i < desktopElements.Count; i++)
+                    {
+                        listElements.Add(CachedElement.CreateCachedElement(desktopElements[i], true));
+                    }
+                }
+            }
+            else
+            {
+                if (len > 0)
+                {
+                    string[] newAttributes = new string[len];
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        string[] attributeData = attributes[i].Split('\t');
+                        newAttributes[i] = attributeData[0];
+
+                        /*if (attributeData.Length == 2)
+                        {
+                            string propertyValue = attributeData[1];
+                        }*/
+
+                    }
+
+                    for (int i = 0; i < desktopElements.Count; i++)
+                    {
+                        AutomationElement elem = desktopElements[i];
+                        if (tag.Equals(GetTag(elem), StringComparison.OrdinalIgnoreCase))
+                        {
+                            CachedElement.AddCachedElement(listElements, new AtsElement(tag, elem, newAttributes));
+                        }
+                    }
+
+                }
+                else
+                {
+                    for (int i = 0; i < desktopElements.Count; i++)
+                    {
+                        AutomationElement elem = desktopElements[i];
+                        if (tag.Equals(GetTag(elem), StringComparison.OrdinalIgnoreCase))
+                        {
+                            listElements.Add(CachedElement.CreateCachedElement(elem, true));
+                        }
+                    }
+                }
+            }
+
             return listElements.ToArray();
+        }
+
+        private void AddDesktopElement(List<AutomationElement> listElements, AutomationElement elem)
+        {
+            Rectangle rect = elem.BoundingRectangle;
+            if (rect != null && (rect.X > -rect.Width && rect.Y > -rect.Height && rect.X < Width && rect.Y < Height))
+            {
+                listElements.Add(elem);
+            }
         }
         
         public static bool IsDesktopComponent(string className)
