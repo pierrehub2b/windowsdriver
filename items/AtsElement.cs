@@ -425,13 +425,10 @@ public class AtsElement
         //---------------------------------------------------------------------
 
         int len = attributes.Length;
-        AutomationElement[] uiElements;
-
-        string[] newAttributes = null;
 
         if (len > 0)
         {
-            newAttributes = new string[len];
+            string[] newAttributes = new string[len];
             AndCondition searchCondition = new AndCondition();
 
             for (int i = 0; i < len; i++)
@@ -440,164 +437,66 @@ public class AtsElement
                 if (attributeData.Length == 2)
                 {
                     MethodInfo byMethod = rootElement.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
-                    try
+                    if (byMethod != null)
                     {
                         searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(rootElement.ConditionFactory, new[] { attributeData[1] }));
                     }
-                    catch { }
                 }
                 newAttributes[i] = attributeData[0];
             }
 
-            uiElements = rootElement.FindAllDescendants(searchCondition);
+            loadElementsWithAttributes(listElements, rootElement.FindAllDescendants(searchCondition), tag, newAttributes);
         }
         else
         {
-            uiElements = rootElement.FindAllDescendants();
+            loadElements(listElements, rootElement.FindAllDescendants(), tag);
         }
 
-        len = uiElements.Length;
-
+        return listElements.ToArray();
+    }
+    private void loadElements(List<AtsElement> listElements, AutomationElement[] uiElements, string tag)
+    {
         if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
         {
-            if(newAttributes == null)
+            for (int i = 0; i < uiElements.Length; i++)
             {
-                for (int i = 0; i < len; i++)
-                {
-                    //bool clickable = element.TryGetClickablePoint(out Point pt);
-                    listElements.Add(CachedElement.CreateCachedElement(uiElements[i], true));
-                }
-            }
-            else
-            {
-                for (int i = 0; i < len; i++)
-                {
-                    CachedElement.AddCachedElement(listElements, new AtsElement("*", uiElements[i], newAttributes));
-                }
+                //bool clickable = element.TryGetClickablePoint(out Point pt);
+                listElements.Add(CachedElement.CreateCachedElement(uiElements[i], true));
             }
         }
         else
         {
-            if (newAttributes == null)
+            for (int i = 0; i < uiElements.Length; i++)
             {
-                for (int i = 0; i < len; i++)
+                AutomationElement element = uiElements[i];
+                if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))
                 {
-                    AutomationElement element = uiElements[i];
-                    if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))
-                    {
-                        CachedElement.AddCachedElement(listElements, new AtsElement(tag, element));
-                    }
-                }
-            }
-            else
-            {
-                for (int i = 0; i < len; i++)
-                {
-                    AutomationElement element = uiElements[i];
-                    if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))
-                    {
-                        CachedElement.AddCachedElement(listElements, new AtsElement(tag, element, newAttributes));
-                    }
+                    CachedElement.AddCachedElement(listElements, new AtsElement(tag, element));
                 }
             }
         }
-                                 
-
-
-            /*if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
+    }
+    
+    private void loadElementsWithAttributes(List<AtsElement> listElements, AutomationElement[] uiElements, string tag, string[] newAttributes)
+    {
+        if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
         {
-            if (len > 0)
+            for (int i = 0; i < uiElements.Length; i++)
             {
-                AndCondition searchCondition = new AndCondition();
-
-                string[] newAttributes = new string[len];
-
-                for (int i = 0; i < len; i++)
-                {
-                    string[] attributeData = attributes[i].Split('\t');
-                    if (attributeData.Length == 2)
-                    {
-                        MethodInfo byMethod = rootElement.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
-                        try
-                        {
-                            searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(rootElement.ConditionFactory, new[] { attributeData[1] }));
-                        }
-                        catch { }
-                    }
-                    newAttributes[i] = attributeData[0];
-                }
-
-                uiElements = rootElement.FindAllDescendants(searchCondition);
-                len = uiElements.Length;
-
-                for (int i = 0; i < len; i++)
-                {
-                    CachedElement.AddCachedElement(listElements, new AtsElement("*", uiElements[i], newAttributes));
-                }
-            }
-            else
-            {
-                uiElements = rootElement.FindAllDescendants();
-                len = uiElements.Length;
-
-                for (int i = 0; i < len; i++)
-                {
-                    //bool clickable = element.TryGetClickablePoint(out Point pt);
-                    listElements.Add(CachedElement.CreateCachedElement(uiElements[i], true));
-                }
+                CachedElement.AddCachedElement(listElements, new AtsElement("*", uiElements[i], newAttributes));
             }
         }
         else
         {
-            if (len > 0)
+            for (int i = 0; i < uiElements.Length; i++)
             {
-                AndCondition searchCondition = new AndCondition();
-                string[] newAttributes = new string[len];
-
-                for (int i = 0; i < len; i++)
+                AutomationElement element = uiElements[i];
+                if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))
                 {
-                    string[] attributeData = attributes[i].Split('\t');
-                    if (attributeData.Length == 2)
-                    {
-                        MethodInfo byMethod = rootElement.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
-                        if (byMethod != null)
-                        {
-                           searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(rootElement.ConditionFactory, new[] { attributeData[1] }));
-                        }
-                    }
-                    newAttributes[i] = attributeData[0];
-                }
-
-                uiElements = rootElement.FindAllDescendants(searchCondition);
-                len = uiElements.Length;
-
-                for (int i = 0; i < len; i++)
-                {
-                    AutomationElement element = uiElements[i];
-                    if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))
-                    {
-                        CachedElement.AddCachedElement(listElements, new AtsElement(tag, element, newAttributes));
-                    }
+                    CachedElement.AddCachedElement(listElements, new AtsElement(tag, element, newAttributes));
                 }
             }
-            else
-            {
-                uiElements = rootElement.FindAllDescendants();
-                len = uiElements.Length;
-
-                for (int i=0; i<len; i++)
-                {
-                    AutomationElement element = uiElements[i];
-                    if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))
-                    {
-                        CachedElement.AddCachedElement(listElements, new AtsElement(tag, element));
-                    }
-                }
-            }
-        }*/
-
-        Array.Clear(uiElements, 0, len);
-        return listElements.ToArray();
+        }
     }
 
     //-----------------------------------------------------------------------------------------------------------------------
