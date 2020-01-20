@@ -22,6 +22,7 @@ using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.Input;
+using FlaUI.UIA3;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -407,6 +408,7 @@ public class AtsElement
         //---------------------------------------------------------------------
         // try to find a modal window
         //---------------------------------------------------------------------
+        
         AutomationElement rootElement = Element;
         AutomationElement[] children = Element.FindAllChildren();
 
@@ -425,7 +427,84 @@ public class AtsElement
         int len = attributes.Length;
         AutomationElement[] uiElements;
 
+        string[] newAttributes = null;
+
+        if (len > 0)
+        {
+            newAttributes = new string[len];
+            AndCondition searchCondition = new AndCondition();
+
+            for (int i = 0; i < len; i++)
+            {
+                string[] attributeData = attributes[i].Split('\t');
+                if (attributeData.Length == 2)
+                {
+                    MethodInfo byMethod = rootElement.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
+                    try
+                    {
+                        searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(rootElement.ConditionFactory, new[] { attributeData[1] }));
+                    }
+                    catch { }
+                }
+                newAttributes[i] = attributeData[0];
+            }
+
+            uiElements = rootElement.FindAllDescendants(searchCondition);
+        }
+        else
+        {
+            uiElements = rootElement.FindAllDescendants();
+        }
+
+        len = uiElements.Length;
+
         if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
+        {
+            if(newAttributes == null)
+            {
+                for (int i = 0; i < len; i++)
+                {
+                    //bool clickable = element.TryGetClickablePoint(out Point pt);
+                    listElements.Add(CachedElement.CreateCachedElement(uiElements[i], true));
+                }
+            }
+            else
+            {
+                for (int i = 0; i < len; i++)
+                {
+                    CachedElement.AddCachedElement(listElements, new AtsElement("*", uiElements[i], newAttributes));
+                }
+            }
+        }
+        else
+        {
+            if (newAttributes == null)
+            {
+                for (int i = 0; i < len; i++)
+                {
+                    AutomationElement element = uiElements[i];
+                    if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))
+                    {
+                        CachedElement.AddCachedElement(listElements, new AtsElement(tag, element));
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < len; i++)
+                {
+                    AutomationElement element = uiElements[i];
+                    if (tag.Equals(GetTag(element), StringComparison.OrdinalIgnoreCase))
+                    {
+                        CachedElement.AddCachedElement(listElements, new AtsElement(tag, element, newAttributes));
+                    }
+                }
+            }
+        }
+                                 
+
+
+            /*if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
         {
             if (len > 0)
             {
@@ -515,7 +594,7 @@ public class AtsElement
                     }
                 }
             }
-        }
+        }*/
 
         Array.Clear(uiElements, 0, len);
         return listElements.ToArray();
