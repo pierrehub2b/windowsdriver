@@ -18,25 +18,22 @@ under the License.
  */
 
 using FlaUI.Core.AutomationElements;
-using FlaUI.Core.Conditions;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Reflection;
 using System.Runtime.Serialization;
-using System.Windows.Forms;
 
 namespace windowsdriver.items
 {
     [DataContract(Name = "com.ats.executor.drivers.desktop.DesktopElement")]
     public class DesktopElement : AtsElement
     {
-        public DesktopElement(AutomationElement elem) : base(elem){
+        public DesktopElement(AutomationElement elem, int desktopWidth, int desktopHeight) : base(elem){
             Tag = "Desktop";
             X = -5;
             Y = 5;
-            Width = SystemInformation.VirtualScreen.Width + 10;
-            Height = SystemInformation.VirtualScreen.Height + 10;
+            Width = desktopWidth + 10;
+            Height = desktopHeight + 10;
         }
 
         public override AtsElement[] GetElements(string tag, string[] attributes)
@@ -64,7 +61,6 @@ namespace windowsdriver.items
                 }
             }
 
-
             if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
             {
                 if (len > 0)
@@ -80,20 +76,18 @@ namespace windowsdriver.items
                         {
                             string propertyValue = attributeData[1];
                         }*/
-                        
                     }
 
                     for (int i = 0; i < desktopElements.Count; i++)
                     {
-                        CachedElement.AddCachedElement(listElements, new AtsElement("*", desktopElements[i], newAttributes));
+                        listElements.Add(new AtsElement("*", desktopElements[i], newAttributes));
                     }
-                    
                 }
                 else
                 {
                     for (int i = 0; i < desktopElements.Count; i++)
                     {
-                        listElements.Add(CachedElement.CreateCachedElement(desktopElements[i], true));
+                        listElements.Add(new AtsElement(desktopElements[i]));
                     }
                 }
             }
@@ -120,7 +114,7 @@ namespace windowsdriver.items
                         AutomationElement elem = desktopElements[i];
                         if (tag.Equals(GetTag(elem), StringComparison.OrdinalIgnoreCase))
                         {
-                            CachedElement.AddCachedElement(listElements, new AtsElement(tag, elem, newAttributes));
+                            listElements.Add(new AtsElement(tag, elem, newAttributes));
                         }
                     }
 
@@ -132,7 +126,7 @@ namespace windowsdriver.items
                         AutomationElement elem = desktopElements[i];
                         if (tag.Equals(GetTag(elem), StringComparison.OrdinalIgnoreCase))
                         {
-                            listElements.Add(CachedElement.CreateCachedElement(elem, true));
+                            listElements.Add(new AtsElement(elem));
                         }
                     }
                 }

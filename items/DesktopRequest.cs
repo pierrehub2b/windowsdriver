@@ -20,6 +20,7 @@ under the License.
 using System.Net;
 using System.Runtime.Serialization;
 using windowsdriver;
+using windowsdriver.items;
 
 struct DesktopRequest
 {

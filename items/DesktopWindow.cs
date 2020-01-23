@@ -45,7 +45,7 @@ public class DesktopWindow : AtsElement
     
     private bool isMaximized = false;
 
-    public DesktopWindow(AutomationElement elem) : base(elem, "Window")
+    public DesktopWindow(AutomationElement elem) : base(elem, "Window", new DesktopData[0])
     {
         elem.Properties.ProcessId.TryGetValue(out Pid);
 
@@ -64,8 +64,6 @@ public class DesktopWindow : AtsElement
             elem.Properties.ClassName.TryGetValue(out string className);
             isIE = "IEFrame".Equals(className);
         }
-
-        CachedElement.AddCachedElement(this);
     }
 
     public virtual void Resize(int w, int h)

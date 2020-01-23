@@ -18,7 +18,6 @@ under the License.
  */
 
 using FlaUI.Core.Input;
-using FlaUI.UIA3;
 using System.Collections.Generic;
 using System.Net;
 using windowsdriver;
@@ -70,7 +69,7 @@ class ElementExecution : AtsExecution
         }
         else
         {
-            AtsElement element = CachedElement.GetCachedElementById(commandsData[0]);
+            AtsElement element = CachedElements.Instance.GetElementById(commandsData[0]);
             if (element == null)
             {
                 response.setError(-73, "cached element not found");

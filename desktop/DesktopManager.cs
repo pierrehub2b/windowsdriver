@@ -23,6 +23,7 @@ using FlaUI.Core.Identifiers;
 using FlaUI.UIA3;
 using FlaUI.UIA3.EventHandlers;
 using System;
+using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Drawing;
 using windowsdriver.items;
@@ -36,10 +37,16 @@ namespace windowsdriver
         private readonly AutomationElement desktop;
         private readonly DesktopElement desktopElement;
 
+        public readonly int DesktopWidth;
+        public readonly int DesktopHeight;
+
         public DesktopManager()
         {
+            DesktopWidth = SystemInformation.VirtualScreen.Width;
+            DesktopHeight = SystemInformation.VirtualScreen.Height;
+
             desktop = uia3.GetDesktop();
-            desktopElement = new DesktopElement(desktop);
+            desktopElement = new DesktopElement(desktop, DesktopWidth + 10, DesktopHeight + 10);
 
             AutomationElement[] children = desktop.FindAllChildren();
             foreach (AutomationElement child in children)
@@ -68,6 +75,11 @@ namespace windowsdriver
                     }
                 }
             });
+        }
+
+        public string GetScreenResolution()
+        {
+            return DesktopWidth + " x " + DesktopHeight;
         }
 
         private void AddHandle(int key, int pid, ControlType type, AutomationElement elem)
@@ -154,7 +166,7 @@ namespace windowsdriver
                 AutomationElement window = windows[i];
                 if (window.Properties.Name.IsSupported && window.Name.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    return CachedElement.GetCachedWindow(window);
+                    return new DesktopWindow(window);
                 }
             }
 
@@ -170,7 +182,7 @@ namespace windowsdriver
                     AutomationElement windowChild = windowChildren[j];
                     if (windowChild.Properties.Name.IsSupported && windowChild.Name.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        return CachedElement.GetCachedWindow(windowChild);
+                        return new DesktopWindow(windowChild);
                     }
                 }
             }
@@ -199,7 +211,7 @@ namespace windowsdriver
             {
                 if (pair.Value.Pid == pid && pair.Value.PaneOrWindow)
                 {
-                    windowsList.Add(CachedElement.GetCachedWindow(uia3.FromHandle(new IntPtr(pair.Key))));
+                    windowsList.Add(new DesktopWindow(uia3.FromHandle(new IntPtr(pair.Key))));
                 }
             }
 
