@@ -481,7 +481,7 @@ public class AtsElement
             {
                 task = Task.Run(() =>
                 {
-                    Parallel.ForEach(Array.FindAll(rootElement.FindAllDescendants(), e => tag.Equals(GetTag(e), StringComparison.OrdinalIgnoreCase)), e => listElements.Add(new AtsElement(tag, e)));
+                    Array.ForEach(Array.FindAll(rootElement.FindAllDescendants(), e => tag.Equals(GetTag(e), StringComparison.OrdinalIgnoreCase)), e => listElements.Add(new AtsElement(tag, e)));
                     return listElements.ToArray();
                 });
             }
