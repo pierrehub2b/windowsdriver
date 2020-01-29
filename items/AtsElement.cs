@@ -152,6 +152,10 @@ public class AtsElement
         return false;
     }
 
+    //-----------------------------------------------------------------------------------------
+    // Select
+    //-----------------------------------------------------------------------------------------
+
     internal void SelectIndex(int index)
     {
         bool expandCollapse = ExpandElement();
@@ -185,19 +189,12 @@ public class AtsElement
             }
             else
             {
-                AutomationElement listItem = Element.Automation.GetDesktop().FindFirst(
-                    TreeScope.Children,
-                    new AndCondition(
-                        Element.ConditionFactory.ByControlType(ControlType.Pane),
-                        Element.ConditionFactory.ByClassName(Element.ClassName)));
+                //Element.Click();
+                AutomationElement[] dropDownLists = Element.Automation.GetDesktop().FindAllChildren(Element.ConditionFactory.ByControlType(ControlType.List));
 
-                if (listItem != null)
+                if (dropDownLists.Length > 0)
                 {
-                    AutomationElement[] items = listItem.FindAllChildren();
-                    if (items.Length > index)
-                    {
-                        ClickListItem(items[index]);
-                    }
+                    dropDownLists[0].AsListBox().Select(index);
                 }
             }
         }
@@ -273,48 +270,90 @@ public class AtsElement
             }
             else
             {
-                AutomationElement listItem = Element.Automation.GetDesktop().FindFirst(
-                    TreeScope.Children,
-                    new AndCondition(Element.ConditionFactory.ByControlType(ControlType.Pane),
-                    Element.ConditionFactory.ByClassName(Element.ClassName)));
+                try {
+                    AutomationElement listItem = Element.Automation.GetDesktop().FindFirst(TreeScope.Children,
+                        new AndCondition(Element.ConditionFactory.ByControlType(ControlType.Pane),
+                        Element.ConditionFactory.ByClassName(Element.ClassName)));
 
-                if (listItem != null)
+                    if (listItem != null)
+                    {
+                        AutomationElement[] items = listItem.FindAllChildren();
+                        if (regexp)
+                        {
+                            Regex regex = new Regex(@text);
+                            foreach (AutomationElement item in items)
+                            {
+                                if (regex.IsMatch(item.Name))
+                                {
+                                    ClickListItem(item);
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            foreach (AutomationElement item in items)
+                            {
+                                if (item.Name.Equals(text))
+                                {
+                                    ClickListItem(item);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    return;
+                }
+                catch {}
+                
+                //last chance 
+
+                AutomationElement[] dropDownLists = Element.Automation.GetDesktop().FindAllChildren(Element.ConditionFactory.ByControlType(ControlType.List));
+
+                if (dropDownLists.Length > 0)
                 {
-                    AutomationElement[] items = listItem.FindAllChildren();
+                    AutomationElement listBox = dropDownLists[0];
+                    AutomationElement[] items = listBox.FindAllChildren(listBox.ConditionFactory.ByControlType(ControlType.ListItem));
+
+                    int loop = 0;
+
                     if (regexp)
                     {
                         Regex regex = new Regex(@text);
                         foreach (AutomationElement item in items)
                         {
-                            if (regex.IsMatch(item.Name))
+                            string name = item.Name;
+                            if (regex.IsMatch(name))
                             {
-                                ClickListItem(item);
+                                listBox.AsListBox().Select(loop);
                                 break;
                             }
+
+                            loop++;
                         }
                     }
                     else
                     {
+                        
                         foreach (AutomationElement item in items)
                         {
-                            if (item.Name.Equals(text))
+                            string name = item.Name;
+                            if (name.Equals(text))
                             {
-                                ClickListItem(item);
+                                listBox.AsListBox().Select(loop);
                                 break;
                             }
+                            loop++;
                         }
                     }
                 }
             }
         }
-        /*else if (Element.Patterns.Value.IsSupported)
-        {
-            Element.Patterns.Value.Pattern.SetValue(text);
-        }*/
 
         if (expandCollapse)
         {
-
+            Element.Patterns.ExpandCollapse.Pattern.Collapse();
         }
     }
 
@@ -339,6 +378,7 @@ public class AtsElement
 
         if (Element.Patterns.ExpandCollapse.IsSupported)
         {
+            Element.Click();
             Element.Patterns.ExpandCollapse.Pattern.Expand();
             return true;
         }
@@ -354,6 +394,11 @@ public class AtsElement
                 Mouse.Position = dropDown.GetClickablePoint();
                 Mouse.LeftClick();
             }
+            else
+            {
+                Element.Click();
+            }
+
         }
 
         return false;
@@ -383,6 +428,9 @@ public class AtsElement
         item.FocusNative();
         item.Click();
     }
+
+    //-----------------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------------------------
 
     public static string GetTag(AutomationElement elem)
     {
