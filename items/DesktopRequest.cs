@@ -20,10 +20,12 @@ under the License.
 using System.Net;
 using System.Runtime.Serialization;
 using windowsdriver;
-using windowsdriver.items;
 
 struct DesktopRequest
 {
+    private const int errorCode = -3;
+    private const string errorMessage = "unkown command type";
+
     private enum CommandType
     {
         Driver = 0,
@@ -51,7 +53,7 @@ struct DesktopRequest
         }
         else if (type == CommandType.Mouse)
         {
-            execution = new MouseExecution(cmdSubType, cmdData);
+            execution = new MouseExecution(cmdSubType, cmdData, desktop);
         }
         else if (type == CommandType.Keyboard)
         {
@@ -71,7 +73,7 @@ struct DesktopRequest
         }
         else
         {
-            execution = new AtsExecution(-3, true, "unkown command type");
+            execution = new AtsExecution(errorCode, true, errorMessage);
         }
     }
 

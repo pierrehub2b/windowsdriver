@@ -18,6 +18,7 @@ under the License.
  */
 
 using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Definitions;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -26,17 +27,39 @@ using System.Runtime.Serialization;
 namespace windowsdriver.items
 {
     [DataContract(Name = "com.ats.executor.drivers.desktop.DesktopElement")]
-    public class DesktopElement : AtsElement
+    public class DesktopElement : DesktopWindow
     {
-        public DesktopElement(AutomationElement elem, int desktopWidth, int desktopHeight) : base(elem){
-            Tag = "Desktop";
-            X = -5;
-            Y = 5;
-            Width = desktopWidth + 10;
-            Height = desktopHeight + 10;
+        public DesktopElement(AutomationElement elem, Rectangle deskRect) : base(elem, deskRect)
+        {
+            X = deskRect.X - 5;
+            Y = deskRect.Y + 5;
+            Width = deskRect.Width + 10;
+            Height = deskRect.Height + 10;
         }
 
-        public override AtsElement[] GetElements(string tag, string[] attributes)
+        public override AtsElement[] GetElementsTree(DesktopManager desktop)
+        {
+            List<AtsElement> listElements = new List<AtsElement>();
+            
+            foreach (AutomationElement child in Element.FindAllChildren())
+            {
+                if (!child.ClassName.Equals("ApolloRuntimeContentWindow"))
+                {
+                    if (DesktopManager.IsDesktopComponent(child.ClassName))
+                    {
+                        listElements.Add(new AtsElement(true, child));
+                    }
+                    else
+                    {
+                        listElements.Add(new AtsElement(child));
+                    }
+                }
+            }
+
+            return listElements.ToArray();
+        }
+        
+        public override AtsElement[] GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop)
         {
             Attributes = new DesktopData[0];
             List<AtsElement> listElements = new List<AtsElement>
@@ -51,12 +74,12 @@ namespace windowsdriver.items
 
             foreach (AutomationElement child in desktopChildren)
             {
-                AddDesktopElement(desktopElements, child);
-                if (IsDesktopComponent(child.ClassName))
+                desktopElements.Add(child);
+                if (DesktopManager.IsDesktopComponent(child.ClassName))
                 {
                     foreach (AutomationElement subChild in child.FindAllDescendants())
                     {
-                        AddDesktopElement(desktopElements, subChild);
+                        desktopElements.Add(subChild);
                     }
                 }
             }
@@ -80,14 +103,14 @@ namespace windowsdriver.items
 
                     for (int i = 0; i < desktopElements.Count; i++)
                     {
-                        listElements.Add(new AtsElement("*", desktopElements[i], newAttributes));
+                        listElements.Add(new AtsElement(desktopElements[i], newAttributes));
                     }
                 }
                 else
                 {
                     for (int i = 0; i < desktopElements.Count; i++)
                     {
-                        listElements.Add(new AtsElement(desktopElements[i]));
+                        listElements.Add(new AtsElement(true, desktopElements[i]));
                     }
                 }
             }
@@ -114,7 +137,7 @@ namespace windowsdriver.items
                         AutomationElement elem = desktopElements[i];
                         if (tag.Equals(GetTag(elem), StringComparison.OrdinalIgnoreCase))
                         {
-                            listElements.Add(new AtsElement(tag, elem, newAttributes));
+                            listElements.Add(new AtsElement(elem, newAttributes));
                         }
                     }
 
@@ -132,25 +155,27 @@ namespace windowsdriver.items
                 }
             }
 
-            return listElements.ToArray();
-        }
-
-        private void AddDesktopElement(List<AutomationElement> listElements, AutomationElement elem)
-        {
-            Rectangle rect = elem.BoundingRectangle;
-            if (rect != null && (rect.X > -rect.Width && rect.Y > -rect.Height && rect.X < Width && rect.Y < Height))
-            {
-                listElements.Add(elem);
-            }
+            return listElements.FindAll(e => e.Visible == true).ToArray();
         }
         
-        public static bool IsDesktopComponent(string className)
-        {
-            return className.StartsWith("Shell_")
-                    || className.StartsWith("TaskList")
-                    || className == "Progman"
-                    || className == "NotifyIconOverflowWindow"
-                    || className == "Windows.UI.Core.CoreWindow";
+        public override void Resize(int w, int h){ }
+        public override void Move(int x, int y){}
+        public override void Close() { }
+        public override void Focus() { }
+        public override void ChangeState(string value) { }
+
+        public override void ToFront() {
+            foreach (AutomationElement child in Element.FindAllChildren())
+            {
+                if (!DesktopManager.IsDesktopComponent(child.ClassName) && !child.ClassName.Equals("ApolloRuntimeContentWindow") && child.Patterns.Window.Pattern.WindowVisualState.IsSupported)
+                {
+                    child.Patterns.Window.Pattern.WindowVisualState.TryGetValue(out WindowVisualState state);
+                    if (!state.Equals(WindowVisualState.Minimized) && child.Patterns.Window.Pattern.CanMinimize)
+                    {
+                        child.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Minimized);
+                    }
+                }
+            }
         }
     }
 }

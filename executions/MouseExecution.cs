@@ -18,14 +18,18 @@ under the License.
  */
 
 using FlaUI.Core.Input;
+using System;
 using System.Drawing;
 using System.Net;
+using windowsdriver;
 
 class MouseExecution : AtsExecution
 {
-    private static readonly int errorCode = -5;
+    private const int errorCode = -5;
 
     private readonly MouseType type;
+    private readonly DesktopManager desktop;
+
     private enum MouseType
     {
         Move = 0,
@@ -35,15 +39,18 @@ class MouseExecution : AtsExecution
         DoubleClick = 4,
         Down = 5,
         Release = 6,
-        Wheel = 7
+        Wheel = 7,
+        Drag = 8
     };
 
     private readonly int data0 = 0;
     private readonly int data1 = 0;
 
-    public MouseExecution(int type, string[] commandsData) : base()
+    public MouseExecution(int type, string[] commandsData, DesktopManager desktop) : base()
     {
         this.type = (MouseType)type;
+        this.desktop = desktop;
+
         if (commandsData.Length > 0)
         {
             _ = int.TryParse(commandsData[0], out data0);
@@ -60,9 +67,25 @@ class MouseExecution : AtsExecution
         {
             case MouseType.Move:
 
-                Mouse.Position = new Point(data0 - 1, data1 - 1);
-                Mouse.MoveTo(data0 + 1, data1 + 1);
+                Mouse.Position = new Point(data0, data1);
+                break;
+                
+            case MouseType.Drag:
 
+                int dragOffsetX = 20;
+                int dragOffsetY = 10;
+
+                AtsElement current = desktop.GetElementFromPoint(Mouse.Position);
+                if(current != null)
+                {
+                    dragOffsetX = Convert.ToInt32(current.Width / 2);
+                    dragOffsetY = Convert.ToInt32(current.Height / 2);
+                }
+                
+                Mouse.Down(MouseButton.Left);
+                System.Threading.Thread.Sleep(200);
+                Mouse.MoveBy(dragOffsetX, dragOffsetY);
+                
                 break;
 
             case MouseType.Click:

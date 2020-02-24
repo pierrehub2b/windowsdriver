@@ -18,10 +18,11 @@ under the License.
  */
 
 using System.Net;
+using windowsdriver.items;
 
 class KeyboardExecution : AtsExecution
 {
-    private static readonly int errorCode = -6;
+    private const int errorCode = -6;
     private readonly KeyType type;
 
     private enum KeyType
@@ -42,7 +43,7 @@ class KeyboardExecution : AtsExecution
 
         if (commandsData.Length > 0)
         {
-            this.data = commandsData[0];
+            data = commandsData[0];
         }
     }
 
@@ -50,7 +51,14 @@ class KeyboardExecution : AtsExecution
     {
         if (type == KeyType.Clear)
         {
-            action.Clear();
+            if (data != null)
+            {
+                action.Clear(CachedElements.Instance.GetElementById(data));
+            }
+            else
+            {
+                action.Clear(null);
+            }
         }
         else if (data != null)
         {

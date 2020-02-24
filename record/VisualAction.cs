@@ -155,16 +155,4 @@ public class VisualAction
 
     [DataMember(Name = "imageRef")]
     public int ImageRef;
-
-    [DataMember(Name = "cpu")]
-    public double Cpu;
-
-    [DataMember(Name = "ram")]
-    public double Ram;
-
-    [DataMember(Name = "netSent")]
-    public double NetSent;
-
-    [DataMember(Name = "netReceived")]
-    public double NetReceived;
 }

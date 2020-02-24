@@ -332,6 +332,7 @@ public class VisualRecorder
         if (visualStream != null)
         {
             AmfSerializer.WriteObject(visualStream, currentAction);
+            visualStream.Flush();
         }
     }
 

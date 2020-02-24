@@ -22,6 +22,8 @@ using System.Runtime.Serialization;
 [DataContract(Name = "com.ats.executor.drivers.desktop.DesktopData")]
 public class DesktopData
 {
+    private const string firstChar = ":";
+
     [DataMember(Name = "name")]
     public string Name;
 
@@ -31,25 +33,20 @@ public class DesktopData
     public DesktopData(string name)
     {
         Name = name;
-        Value = ":";
+        Value = firstChar;
     }
 
     public DesktopData(string name, string value) : this(name)
     {
-        Value += value;
+        Value = string.Concat(firstChar, value);
     }
 
     public DesktopData(string name, bool value) : this(name)
     {
-        Value += value;
+        Value = string.Concat(firstChar, value);
     }
     public DesktopData(string name, int value) : this(name)
     {
-        Value += value;
-    }
-
-    public DesktopData(string name, double value) : this(name)
-    {
-        Value += value;
+        Value = string.Concat(firstChar, value);
     }
 }

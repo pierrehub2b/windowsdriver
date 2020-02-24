@@ -22,7 +22,6 @@ using FlaUI.Core.WindowsAPI;
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Windows.Forms;
 
 class ActionKeyboard
@@ -31,11 +30,16 @@ class ActionKeyboard
 
     internal void SendKeysData(string data)
     {
-        PasteText(Base64Decode(data));
+        Keyboard.Type(Base64Decode(data));
     }
 
-    internal void Clear()
+    internal void Clear(AtsElement element)
     {
+        if(element != null && element.Clear())
+        {
+            return;
+        }
+
         Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
         Keyboard.Type(VirtualKeyShort.BACK);
     }
@@ -44,7 +48,6 @@ class ActionKeyboard
     {
         Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_L);
         Keyboard.Type(url);
-        //PasteText(url);
         Keyboard.Type(VirtualKeyShort.RETURN);
     }
 
@@ -91,29 +94,9 @@ class ActionKeyboard
         }
     }
 
-    private string Base64Decode(string base64EncodedData)
+    private static string Base64Decode(string base64EncodedData)
     {
         var base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
         return Encoding.UTF8.GetString(base64EncodedBytes);
-    }
-
-    private void PasteText(string text)
-    {
-        if (text.Length > 0)
-        {
-            if (text.StartsWith("$KEY-"))
-            {
-                SendKeys.SendWait("{" + text.Substring(5) + "}");
-            }
-            else
-            {
-                Thread thread = new Thread(() => Clipboard.SetText(text));
-                thread.SetApartmentState(ApartmentState.STA);
-                thread.Start();
-                thread.Join();
-
-                Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
-            }
-        }
     }
 }

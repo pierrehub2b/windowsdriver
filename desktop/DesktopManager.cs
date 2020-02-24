@@ -30,100 +30,141 @@ using windowsdriver.items;
 
 namespace windowsdriver
 {
-    class DesktopManager
+    public class DesktopManager
     {
-        private readonly Dictionary<int, DesktopChild> handles = new Dictionary<int, DesktopChild>();
+        public readonly DesktopElement DesktopElement;
+
+        private readonly int WinCloseEventId;
+
+        private readonly ListMap<int, AutomationElement> handles = new ListMap<int, AutomationElement>();
+        private readonly ListMap<int, AutomationElement> popups = new ListMap<int, AutomationElement>();
+
         private readonly UIA3Automation uia3 = new UIA3Automation();
         private readonly AutomationElement desktop;
-        private readonly DesktopElement desktopElement;
-
+               
         public readonly int DesktopWidth;
         public readonly int DesktopHeight;
 
+        public readonly Rectangle DesktopRect;
+
         public DesktopManager()
         {
-            DesktopWidth = SystemInformation.VirtualScreen.Width;
-            DesktopHeight = SystemInformation.VirtualScreen.Height;
+            WinCloseEventId = System.Windows.Automation.WindowPattern.WindowClosedEvent.Id;
+
+            DesktopRect = SystemInformation.VirtualScreen;
+            DesktopWidth = DesktopRect.Width;
+            DesktopHeight = DesktopRect.Height;
 
             desktop = uia3.GetDesktop();
-            desktopElement = new DesktopElement(desktop, DesktopWidth + 10, DesktopHeight + 10);
+            DesktopElement = new DesktopElement(desktop, DesktopRect);
 
             AutomationElement[] children = desktop.FindAllChildren();
             foreach (AutomationElement child in children)
             {
-                if (child.Properties.NativeWindowHandle.IsSupported && child.Properties.ProcessId.IsSupported)
+                if(child.Properties.ProcessId.IsSupported)
                 {
-                    AddHandle(child.Properties.NativeWindowHandle.Value.ToInt32(), child.Properties.ProcessId, child.ControlType, child);
+                    int pid = child.Properties.ProcessId;
+
+                    if (!child.Patterns.Window.IsSupported)
+                    {
+                        if (!IsDesktopComponent(child.ClassName))
+                        {
+                            AddPopup(pid, child);
+                        }
+                    }
+                    else if (child.Properties.NativeWindowHandle.IsSupported)
+                    {
+                        AddHandle(pid, child.AsWindow());
+                    }
                 }
             }
 
-            var eventHandler = desktop.RegisterStructureChangedEvent(FlaUI.Core.Definitions.TreeScope.Children, (element, type, arg3) =>
+            var eventHandler = desktop.RegisterStructureChangedEvent(TreeScope.Children, (element, type, arg3) =>
             {
-                if (element.Properties.NativeWindowHandle.IsSupported && element.Properties.ProcessId.IsSupported && element.Properties.ClassName.IsSupported)
+                if (type.Equals(StructureChangeType.ChildAdded))
                 {
-                    int nativeHandle = element.Properties.NativeWindowHandle.Value.ToInt32();
-                    if (type.Equals(StructureChangeType.ChildAdded))
+                    if(element.Properties.ProcessId.IsSupported && element.Properties.ClassName.IsSupported)
                     {
-                        AddHandle(nativeHandle, element.Properties.ProcessId, element.ControlType, element);
-                                               
-                        UIA3AutomationEventHandler closeEvent = null;
-                        closeEvent = (UIA3AutomationEventHandler)element.RegisterAutomationEvent(new EventId(20017, "WindowClosedEvent"), FlaUI.Core.Definitions.TreeScope.Element, (w, evType) =>
+                        int pid = element.Properties.ProcessId;
+                        string className = element.Properties.ClassName;
+                        if (className != "SysShadow")
                         {
-                            closeEvent.Dispose();
-                            RemoveHandle(nativeHandle);
-                        });
+                            if (!element.Patterns.Window.IsSupported)
+                            {
+                                AddPopup(pid, element);
+                            }
+                            else if (element.Properties.NativeWindowHandle.IsSupported)
+                            {
+                                AddHandle(pid, element.AsWindow());
+                            }
+                        }
                     }
                 }
             });
         }
 
-        public string GetScreenResolution()
+        public bool ContainsPoint(int x, int y)
         {
-            return DesktopWidth + " x " + DesktopHeight;
+            return DesktopRect.Contains(x, y);
         }
 
-        private void AddHandle(int key, int pid, ControlType type, AutomationElement elem)
+        private void AddHandle(int pid, Window win)
         {
-            if (!handles.ContainsKey(key))
+            handles.Add(pid, win);
+
+            UIA3AutomationEventHandler closeEvent = null;
+            closeEvent = (UIA3AutomationEventHandler)win.RegisterAutomationEvent(new EventId(WinCloseEventId, "WindowClosedEvent"), TreeScope.Element, (removed, evType) =>
             {
-                string className = "";
-                try
+                closeEvent.Dispose();
+                handles.Remove(removed);
+            });
+        }
+
+        private void AddPopup(int pid, AutomationElement popup)
+        {
+            popups.Add(pid, popup);
+
+            UIA3StructureChangedEventHandler closeEvent = null;
+            closeEvent = (UIA3StructureChangedEventHandler)popup.RegisterStructureChangedEvent(TreeScope.Element, (removed, id, obj) =>
+            {
+                closeEvent.Dispose();
+                popups.Remove(removed);
+            });
+        }
+
+        private class ListMap<T, V> : List<KeyValuePair<T, V>>
+        {
+            public void Add(T key, V value)
+            {
+                if (!Contains(value))
                 {
-                    className = elem.ClassName;
+                    Add(new KeyValuePair<T, V>(key, value));
                 }
-                catch { }
-
-                handles.Add(key, new DesktopChild(pid, type == ControlType.Pane || type == ControlType.Window, className));
             }
-        }
 
-        private void RemoveHandle(int key)
-        {
-            if (handles.ContainsKey(key))
+            public V[] Get(T key)
             {
-                handles.Remove(key);
+                return FindAll(p => p.Key.Equals(key)).ConvertAll(p => p.Value).ToArray();
             }
-        }
 
-        //-----------------------------------------------------------------------------------------------------------
-        //-----------------------------------------------------------------------------------------------------------
-
-        public class DesktopChild
-        {
-            public int Pid;
-            public string ClassName;
-            public bool PaneOrWindow;
-            public bool LoadChildren;
-
-            public DesktopChild(int pid, bool paneOrWindow, string className)
+            public bool Contains(V value)
             {
-                Pid = pid;
-                ClassName = className;
-                PaneOrWindow = paneOrWindow;
-                LoadChildren = DesktopElement.IsDesktopComponent(className);
+                foreach(KeyValuePair<T, V> kv in this)
+                {
+                    if (kv.Value.Equals(value))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            public void Remove(V value)
+            {
+                Remove(Find(p => p.Value.Equals(value)));
             }
         }
-
+        
         //-------------------------------------------------------------------------------------------------------------
         //-------------------------------------------------------------------------------------------------------------
 
@@ -141,19 +182,13 @@ namespace windowsdriver
 
         public DesktopWindow GetWindowIndexByPid(int pid, int index)
         {
-            List<int> wins = new List<int>();
-            foreach (KeyValuePair<int, DesktopChild> pair in handles)
+            List<KeyValuePair<int, AutomationElement>> pids = handles.FindAll(w => w.Key == pid);
+
+            if (index > pids.Count)
             {
-                if(pair.Value.Pid == pid)
-                {
-                    wins.Add(pair.Key);
-                }
+                return new DesktopWindow(pids[index].Value, this); 
             }
 
-            if (index > wins.Count)
-            {
-                return new DesktopWindow(uia3.FromHandle(new IntPtr(wins[index])));
-            }
             return null;
         }
 
@@ -166,7 +201,7 @@ namespace windowsdriver
                 AutomationElement window = windows[i];
                 if (window.Properties.Name.IsSupported && window.Name.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    return new DesktopWindow(window);
+                    return new DesktopWindow(window, this);
                 }
             }
 
@@ -182,7 +217,7 @@ namespace windowsdriver
                     AutomationElement windowChild = windowChildren[j];
                     if (windowChild.Properties.Name.IsSupported && windowChild.Name.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        return new DesktopWindow(windowChild);
+                        return new DesktopWindow(windowChild, this);
                     }
                 }
             }
@@ -194,11 +229,15 @@ namespace windowsdriver
         {
             if (handle > 0)
             {
-                AutomationElement window = uia3.FromHandle(new IntPtr(handle));
+                AutomationElement window = handles.Find(e => e.Value.AsWindow().Properties.NativeWindowHandle == new IntPtr(handle)).Value;
                 if (window != null)
                 {
-                    return new DesktopWindow(window);
+                    return new DesktopWindow(window, this);
                 }
+            }
+            else
+            {
+                return DesktopElement;
             }
             return null;
         }
@@ -206,21 +245,43 @@ namespace windowsdriver
         public List<DesktopWindow> GetOrderedWindowsByPid(int pid)
         {
             List<DesktopWindow> windowsList = new List<DesktopWindow>();
-
-            foreach (KeyValuePair<int, DesktopChild> pair in handles)
-            {
-                if (pair.Value.Pid == pid && pair.Value.PaneOrWindow)
-                {
-                    windowsList.Add(new DesktopWindow(uia3.FromHandle(new IntPtr(pair.Key))));
-                }
-            }
+            handles.FindAll(w => w.Key == pid).ForEach(e => windowsList.Add(new DesktopWindow(e.Value, this)));
 
             return windowsList;
         }
 
         public AtsElement[] GetElements(string tag, string[] attributes)
         {
-            return desktopElement.GetElements(tag, attributes);
+            return DesktopElement.GetElements(tag, attributes, desktop, this);
+        }
+
+        public AutomationElement[] GetPopupDescendants(int pid)
+        {
+            List<AutomationElement> list = new List<AutomationElement>();
+            foreach (AutomationElement p in popups.Get(pid))
+            {
+                list.Add(p);
+                list.AddRange(p.FindAllDescendants());
+            }
+            return list.ToArray();
+        }
+
+        public AutomationElement[] GetDialogChildren(int pid)
+        {
+            return desktop.FindAllChildren(desktop.ConditionFactory.ByControlType(ControlType.Window).And(desktop.ConditionFactory.ByProcessId(pid)));
+        }
+
+        //----------------------------------------------------------------------------------------------
+        //----------------------------------------------------------------------------------------------
+
+        public static bool IsDesktopComponent(string className)
+        {
+            return className.StartsWith("Shell_")
+                    || className.StartsWith("TaskList")
+                    || className == "SysListView32"
+                    || className == "Progman"
+                    || className == "NotifyIconOverflowWindow"
+                    || className == "Windows.UI.Core.CoreWindow";
         }
     }
 }

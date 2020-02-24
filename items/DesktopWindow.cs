@@ -20,8 +20,13 @@ under the License.
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading;
+using windowsdriver;
 
 [DataContract(Name = "com.ats.executor.drivers.desktop.DesktopWindow")]
 public class DesktopWindow : AtsElement
@@ -39,24 +44,26 @@ public class DesktopWindow : AtsElement
     private const string RESTORE = "restore";
     private const string CLOSE = "close";
 
-    private readonly bool canMove = false;
-    private readonly bool canResize = false;
     protected bool isWindow = false;
     
     private bool isMaximized = false;
 
-    public DesktopWindow(AutomationElement elem) : base(elem, "Window", new DesktopData[0])
+    private DesktopManager desktop;
+
+    public DesktopWindow(AutomationElement elem, Rectangle deskRect) : base(elem)
     {
+        Tag = "Desktop";
+    }
+
+    public DesktopWindow(AutomationElement elem, DesktopManager desktop) : base(elem)
+    {
+        Tag = "Window";
+        this.desktop = desktop;
+
         elem.Properties.ProcessId.TryGetValue(out Pid);
 
         elem.Properties.NativeWindowHandle.TryGetValue(out IntPtr handle);
         Handle = handle.ToInt32();
-
-        if (elem.Patterns.Transform.IsSupported)
-        {
-            canMove = elem.Patterns.Transform.Pattern.CanMove;
-            canResize = elem.Patterns.Transform.Pattern.CanResize;
-        }
 
         if (elem.Patterns.Window.IsSupported)
         {
@@ -66,10 +73,87 @@ public class DesktopWindow : AtsElement
         }
     }
 
+    private bool CanMoveResize()
+    {
+        try
+        {
+            return Element.Patterns.Transform.IsSupported && Element.Patterns.Transform.Pattern.CanMove && Element.Patterns.Transform.Pattern.CanResize;
+        }
+        catch { }
+
+        return false;
+    }
+
+    private bool HasModalChild()
+    {
+        AutomationElement[] children = Element.FindAllChildren(Element.ConditionFactory.ByControlType(ControlType.Window));
+        for (int i = 0; i < children.Length; i++)
+        {
+            if (children[i].Patterns.Window.Pattern.IsModal)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public override AtsElement[] GetElementsTree(DesktopManager desktop)
+    {
+        AutomationElement[] popupChildren = desktop.GetPopupDescendants(Element.Properties.ProcessId);
+
+        List<AtsElement> listElements = new List<AtsElement> { };
+
+        //---------------------------------------------------------------------
+        // try to find a modal window
+        //---------------------------------------------------------------------
+
+        AutomationElement[] children = Element.FindAllChildren(Element.ConditionFactory.ByControlType(ControlType.Window));
+        for (int i = 0; i < children.Length; i++)
+        {
+            AutomationElement child = children[i];
+            if (child.Patterns.Window.Pattern.IsModal)
+            {
+                for (int j = 0; j < popupChildren.Length; j++)
+                {
+                    listElements.Add(new AtsElement(true, popupChildren[j]));
+                }
+
+                listElements.Add(new AtsElement(true, child));
+                return listElements.ToArray();
+            }
+        }
+
+        children = popupChildren.Concat(Element.FindAllChildren()).ToArray();
+        for (int i = 0; i < children.Length; i++)
+        {
+            listElements.Add(new AtsElement(true, children[i]));
+        }
+
+        return listElements.ToArray();
+    }
+
+    public override AtsElement[] GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop)
+    {
+        //---------------------------------------------------------------------
+        // try to find a modal window
+        //---------------------------------------------------------------------
+
+        AutomationElement[] children = Element.FindAllChildren(Element.ConditionFactory.ByControlType(ControlType.Window));
+        for (int i = children.Length - 1; i >= 0; i--)
+        {
+            AutomationElement child = children[i];
+            if (child.Patterns.Window.Pattern.IsModal)
+            {
+                return base.GetElements(tag, attributes, child, desktop);
+            }
+        }
+
+        return base.GetElements(tag, attributes, Element, desktop, desktop.GetPopupDescendants(Element.Properties.ProcessId));
+    }
+
     public virtual void Resize(int w, int h)
     {
-        WaitIdle();
-        if (canResize)
+        if(WaitIdle())
         {
             Element.Patterns.Transform.Pattern.Resize(w, h);
         }
@@ -77,8 +161,7 @@ public class DesktopWindow : AtsElement
 
     public virtual void Move(int x, int y)
     {
-        WaitIdle();
-        if (canMove)
+        if (WaitIdle())
         {
             Element.Patterns.Transform.Pattern.Move(x, y);
         }
@@ -116,50 +199,103 @@ public class DesktopWindow : AtsElement
                     }
                 }
             }
-            Element.AsWindow().Close();
+
+            try
+            {
+                CloseModalPopups();
+                Element.AsWindow().Close();
+                Thread.Sleep(500);
+
+                if (CloseModalPopups())
+                {
+                    Process[] process = Process.GetProcesses();
+                    foreach (Process proc in process)
+                    {
+                        if (proc.Id == Pid)
+                        {
+                            proc.Kill();
+                            break;
+                        }
+                    }
+                }
+            }
+            catch { }
         }
+
         Dispose();
     }
 
-    internal void WaitIdle()
+    private bool CloseModalPopups()
     {
-        //TODO if needed
+        bool findModal = false;
+
+        AutomationElement[] dialogs = desktop.GetDialogChildren(Pid);
+        for (int i = 0; i < dialogs.Length; i++)
+        {
+            AutomationElement dialog = dialogs[i];
+            if (!dialog.Equals(Element))
+            {
+                dialog.AsWindow().Close();
+                findModal = true;
+            }
+        }
+               
+        dialogs = Element.FindAllChildren(Element.ConditionFactory.ByControlType(ControlType.Window));
+        for (int i = 0; i < dialogs.Length; i++)
+        {
+            AutomationElement dialog = dialogs[i];
+            if (dialog.Patterns.Window.Pattern.IsModal)
+            {
+                dialog.AsWindow().Close();
+                findModal = true;
+            }
+        }
+
+        return findModal;
     }
 
-    internal new void Focus()
+    internal bool WaitIdle()
+    {
+        //TODO if needed
+        return CanMoveResize();
+    }
+
+    public override void Focus()
     {
         Element.SetForeground();
         base.Focus();
     }
 
-    internal void ToFront()
+    public virtual void ToFront()
     {
         if (isWindow)
         {
-            double w = Element.AsWindow().ActualWidth;
-            double h = Element.AsWindow().ActualHeight;
-
-            if (isMaximized)
+            if (!HasModalChild() && Element.Patterns.Window.Pattern.WindowVisualState.IsSupported)
             {
-                Element.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Maximized);
-            }
-            else
-            {
-                Element.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Normal);
-            }
+                double w = Element.AsWindow().ActualWidth;
+                double h = Element.AsWindow().ActualHeight;
 
-            if (Element.AsWindow().ActualWidth != w || Element.AsWindow().ActualHeight != h)
-            {
-                Resize(Convert.ToInt32(w), Convert.ToInt32(h));
-            }
+                if (isMaximized)
+                {
+                    Element.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Maximized);
+                }
+                else
+                {
+                    Element.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Normal);
+                }
 
+                if (Element.AsWindow().ActualWidth != w || Element.AsWindow().ActualHeight != h)
+                {
+                    Resize(Convert.ToInt32(w), Convert.ToInt32(h));
+                }
+            }
             Element.AsWindow().SetForeground();
             Element.AsWindow().Focus();
             Element.AsWindow().FocusNative();
         }
     }
 
-    internal void ChangeState(string value)
+    public virtual void ChangeState(string value)
     {
         if (isWindow)
         {

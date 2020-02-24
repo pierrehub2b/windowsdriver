@@ -116,7 +116,8 @@ public class WebServer
             new DesktopData("MachineName", Environment.MachineName),
             new DesktopData("DriverVersion", System.Reflection.Assembly.GetEntryAssembly().GetName().Version.ToString()),
             new DesktopData("DotNetVersion", GetFrameworkVersion().ToString()),
-            new DesktopData("ScreenResolution", desktop.GetScreenResolution()),
+            new DesktopData("ScreenWidth", desktop.DesktopWidth),
+            new DesktopData("ScreenHeight", desktop.DesktopHeight),
             new DesktopData("VirtualWidth", desktop.DesktopWidth),
             new DesktopData("VirtualHeight", desktop.DesktopHeight),
             new DesktopData("Version", Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseId", "").ToString())

@@ -18,8 +18,10 @@ under the License.
  */
 
 using FlaUI.Core.Input;
+using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Threading.Tasks;
 using windowsdriver;
 using windowsdriver.items;
 
@@ -34,7 +36,8 @@ class ElementExecution : AtsExecution
         Select = 4,
         FromPoint = 5,
         Script = 6,
-        Root = 7
+        Root = 7,
+        LoadTree = 8
     };
 
     private readonly Executor executor;
@@ -47,20 +50,28 @@ class ElementExecution : AtsExecution
         {
             if (commandsData.Length > 1)
             {
-                string tag = commandsData[1];
-                string[] criterias = new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray();
-
                 _ = int.TryParse(commandsData[0], out int handle);
-                if (handle > 0)
-                {
-                    executor = new FindExecutor(response, desktop, handle, tag, criterias);
-                }
-                else
-                {
-                    executor = new DesktopExecutor(response, desktop, tag, criterias);
-                }
+                executor = new FindExecutor(response, desktop, handle, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray());
                 return;
             }
+        }
+        /*else if (elemType == ElementType.Desktop)
+        {
+            if (commandsData.Length > 1)
+            {
+                executor = new DesktopExecutor(response, desktop, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray());
+            }
+            else
+            {
+                executor = new DesktopExecutor(response, desktop);
+            }
+            return;
+        }*/
+        else if (elemType == ElementType.LoadTree)
+        {
+            _ = int.TryParse(commandsData[0], out int handle);
+            executor = new LoadTreeExecutor(response, desktop, handle);
+            return;
         }
         else if (elemType == ElementType.FromPoint)
         {
@@ -78,23 +89,23 @@ class ElementExecution : AtsExecution
             {
                 if (elemType == ElementType.Parents)
                 {
-                    executor = new ElementExecutor(response, element);
+                    executor = new ElementExecutor(response, element, desktop);
                     return;
                 }
                 else if (elemType == ElementType.Root)
                 {
-                    executor = new ChildsExecutor(response, element, "*", new string[0]);
+                    executor = new ChildsExecutor(response, element, "*", new string[0], desktop);
                     return;
                 }
                 else if (elemType == ElementType.Attributes)
                 {
                     if (commandsData.Length > 1)
                     {
-                        executor = new AttributesExecutor(response, element, commandsData[1]);
+                        executor = new AttributesExecutor(response, element, commandsData[1], desktop);
                     }
                     else
                     {
-                        executor = new AttributesExecutor(response, element, null);
+                        executor = new AttributesExecutor(response, element, null, desktop);
                     }
                     return;
                 }
@@ -102,7 +113,7 @@ class ElementExecution : AtsExecution
                 {
                     if (commandsData.Length > 1)
                     {
-                        executor = new ScriptExecutor(response, element, commandsData[1]);
+                        executor = new ScriptExecutor(response, element, commandsData[1], desktop);
                         return;
                     }
                 }
@@ -111,7 +122,7 @@ class ElementExecution : AtsExecution
                     if (elemType == ElementType.Childs)
                     {
                         element.TryExpand();
-                        executor = new ChildsExecutor(response, element, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray());
+                        executor = new ChildsExecutor(response, element, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray(), desktop);
                         return;
                     }
 
@@ -119,12 +130,12 @@ class ElementExecution : AtsExecution
                     {
                         if (commandsData.Length > 3)
                         {
-                            executor = new SelectExecutor(response, element, commandsData[1], commandsData[2], commandsData[3]);
+                            executor = new SelectExecutor(response, element, commandsData[1], commandsData[2], commandsData[3], desktop);
                             return;
                         }
                         else
                         {
-                            executor = new SelectExecutor(response, element, commandsData[1], commandsData[2]);
+                            executor = new SelectExecutor(response, element, commandsData[1], commandsData[2], desktop);
                             return;
                         }
                     }
@@ -162,6 +173,11 @@ class ElementExecution : AtsExecution
         readonly string tag;
         readonly string[] criterias;
 
+        public DesktopExecutor(DesktopResponse response, DesktopManager desktop) : base(response)
+        {
+            this.desktop = desktop;
+        }
+
         public DesktopExecutor(DesktopResponse response, DesktopManager desktop, string tag, string[] criterias) : base(response)
         {
             this.desktop = desktop;
@@ -171,7 +187,46 @@ class ElementExecution : AtsExecution
 
         public override void Run()
         {
-            response.Elements = desktop.GetElements(tag, criterias);
+            if (string.IsNullOrEmpty(tag))
+            {
+                response.Elements = new AtsElement[1] { desktop.DesktopElement };
+            }
+            else
+            {
+                response.Elements = desktop.GetElements(tag, criterias);
+            }
+        }
+    }
+
+    private class LoadTreeExecutor : Executor
+    {
+        private readonly int handle;
+        private readonly DesktopManager desktop;
+
+        public LoadTreeExecutor(DesktopResponse response, DesktopManager desktop, int handle) : base(response)
+        {
+            this.handle = handle;
+            this.desktop = desktop;
+        }
+
+        public override void Run()
+        {
+            DesktopWindow window = desktop.GetWindowByHandle(handle);
+            if (window != null)
+            {
+                window.Focus();
+                Task<AtsElement[]> task = Task.Run(() =>
+                {
+                    return window.GetElementsTree(desktop);
+                });
+
+                task.Wait(TimeSpan.FromSeconds(40));
+                response.Elements = task.Result;
+            }
+            else
+            {
+                response.Elements = new AtsElement[0];
+            }
         }
     }
 
@@ -196,7 +251,7 @@ class ElementExecution : AtsExecution
             if (window != null)
             {
                 window.Focus();
-                response.Elements = window.GetElements(tag, attributes);
+                response.Elements = window.GetElements(tag, attributes, null, desktop);
             }
             else
             {
@@ -230,10 +285,12 @@ class ElementExecution : AtsExecution
     private class ElementExecutor : Executor
     {
         protected AtsElement element;
+        protected DesktopManager desktop;
 
-        public ElementExecutor(DesktopResponse response, AtsElement element) : base(response)
+        public ElementExecutor(DesktopResponse response, AtsElement element, DesktopManager desktop) : base(response)
         {
             this.element = element;
+            this.desktop = desktop;
         }
 
         public override void Run()
@@ -253,7 +310,7 @@ class ElementExecution : AtsExecution
         private readonly string tag;
         private readonly string[] attributes;
 
-        public ChildsExecutor(DesktopResponse response, AtsElement element, string tag, string[] attributes) : base(response, element)
+        public ChildsExecutor(DesktopResponse response, AtsElement element, string tag, string[] attributes, DesktopManager desktop) : base(response, element, desktop)
         {
             this.tag = tag;
             this.attributes = attributes;
@@ -261,7 +318,7 @@ class ElementExecution : AtsExecution
 
         public override void Run()
         {
-            response.Elements = element.GetElements(tag, attributes);
+            response.Elements = element.GetElements(tag, attributes, element.Element, desktop);
         }
     }
 
@@ -269,7 +326,7 @@ class ElementExecution : AtsExecution
     {
         private readonly string propertyName;
 
-        public AttributesExecutor(DesktopResponse response, AtsElement element, string propertyName) : base(response, element)
+        public AttributesExecutor(DesktopResponse response, AtsElement element, string propertyName, DesktopManager desktop) : base(response, element, desktop)
         {
             this.propertyName = propertyName;
         }
@@ -295,7 +352,7 @@ class ElementExecution : AtsExecution
     {
         private readonly string script;
 
-        public ScriptExecutor(DesktopResponse response, AtsElement element, string script) : base(response, element)
+        public ScriptExecutor(DesktopResponse response, AtsElement element, string script, DesktopManager desktop) : base(response, element, desktop)
         {
             this.script = script;
         }
@@ -323,13 +380,13 @@ class ElementExecution : AtsExecution
         private readonly string type;
         private readonly string value;
 
-        public SelectExecutor(DesktopResponse response, AtsElement element, string type, string value) : base(response, element)
+        public SelectExecutor(DesktopResponse response, AtsElement element, string type, string value, DesktopManager desktop) : base(response, element, desktop)
         {
             this.type = type;
             this.value = value;
         }
 
-        public SelectExecutor(DesktopResponse response, AtsElement element, string type, string value, string regexp) : base(response, element)
+        public SelectExecutor(DesktopResponse response, AtsElement element, string type, string value, string regexp, DesktopManager desktop) : base(response, element, desktop)
         {
             this.type = type;
             this.value = value;
