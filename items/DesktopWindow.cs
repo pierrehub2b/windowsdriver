@@ -83,20 +83,7 @@ public class DesktopWindow : AtsElement
 
         return false;
     }
-
-    private bool HasModalChild()
-    {
-        AutomationElement[] children = Element.FindAllChildren(Element.ConditionFactory.ByControlType(ControlType.Window));
-        for (int i = 0; i < children.Length; i++)
-        {
-            if (children[i].Patterns.Window.Pattern.IsModal)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
+       
     public override AtsElement[] GetElementsTree(DesktopManager desktop)
     {
         AutomationElement[] popupChildren = desktop.GetPopupDescendants(Element.Properties.ProcessId);
@@ -139,7 +126,7 @@ public class DesktopWindow : AtsElement
         //---------------------------------------------------------------------
 
         AutomationElement[] children = Element.FindAllChildren(Element.ConditionFactory.ByControlType(ControlType.Window));
-        for (int i = children.Length - 1; i >= 0; i--)
+        for (int i = 0; i < children.Length; i++)
         {
             AutomationElement child = children[i];
             if (child.Patterns.Window.Pattern.IsModal)
@@ -293,6 +280,19 @@ public class DesktopWindow : AtsElement
             Element.AsWindow().Focus();
             Element.AsWindow().FocusNative();
         }
+    }
+
+    private bool HasModalChild()
+    {
+        AutomationElement[] children = Element.FindAllChildren(Element.ConditionFactory.ByControlType(ControlType.Window));
+        for (int i = 0; i < children.Length; i++)
+        {
+            if (children[i].Patterns.Window.Pattern.IsModal)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public virtual void ChangeState(string value)
