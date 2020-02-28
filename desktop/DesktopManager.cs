@@ -55,7 +55,10 @@ namespace windowsdriver
             DesktopWidth = DesktopRect.Width;
             DesktopHeight = DesktopRect.Height;
 
+            uia3.ConnectionTimeout = new TimeSpan(0, 0, 10);
+            uia3.TransactionTimeout = new TimeSpan(0, 1, 0);
             desktop = uia3.GetDesktop();
+
             DesktopElement = new DesktopElement(desktop, DesktopRect);
 
             AutomationElement[] children = desktop.FindAllChildren();
@@ -78,7 +81,7 @@ namespace windowsdriver
                     }
                 }
             }
-
+                       
             var eventHandler = desktop.RegisterStructureChangedEvent(TreeScope.Children, (element, type, arg3) =>
             {
                 if (type.Equals(StructureChangeType.ChildAdded))

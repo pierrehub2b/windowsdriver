@@ -17,12 +17,7 @@ specific language governing permissions and limitations
 under the License.
  */
 
-using FlaUI.Core.AutomationElements;
-using FlaUI.UIA3;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Net;
 
 public static class DesktopDriver
