@@ -70,7 +70,7 @@ namespace windowsdriver
 
                     if (!child.Patterns.Window.IsSupported)
                     {
-                        if (!IsDesktopComponent(child.ClassName))
+                        if (child.Properties.ClassName.IsSupported && !IsDesktopComponent(child.ClassName))
                         {
                             AddPopup(pid, child);
                         }

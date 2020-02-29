@@ -98,7 +98,7 @@ public class DesktopWindow : AtsElement
         for (int i = 0; i < children.Length; i++)
         {
             AutomationElement child = children[i];
-            if (child.Patterns.Window.Pattern.IsModal)
+            if (child.Patterns.Window.IsSupported && child.Patterns.Window.Pattern.IsModal)
             {
                 for (int j = 0; j < popupChildren.Length; j++)
                 {
