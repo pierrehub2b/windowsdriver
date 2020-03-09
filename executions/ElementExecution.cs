@@ -21,6 +21,7 @@ using FlaUI.Core.Input;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using windowsdriver;
 using windowsdriver.items;
@@ -37,7 +38,8 @@ class ElementExecution : AtsExecution
         FromPoint = 5,
         Script = 6,
         Root = 7,
-        LoadTree = 8
+        LoadTree = 8,
+        ListItems = 9
     };
 
     private readonly Executor executor;
@@ -55,18 +57,6 @@ class ElementExecution : AtsExecution
                 return;
             }
         }
-        /*else if (elemType == ElementType.Desktop)
-        {
-            if (commandsData.Length > 1)
-            {
-                executor = new DesktopExecutor(response, desktop, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray());
-            }
-            else
-            {
-                executor = new DesktopExecutor(response, desktop);
-            }
-            return;
-        }*/
         else if (elemType == ElementType.LoadTree)
         {
             _ = int.TryParse(commandsData[0], out int handle);
@@ -117,11 +107,15 @@ class ElementExecution : AtsExecution
                         return;
                     }
                 }
+                else if (elemType == ElementType.ListItems)
+                {
+                    executor = new ListItemsExecutor(response, element, desktop);
+                    return;
+                }
                 else if (commandsData.Length > 1)
                 {
                     if (elemType == ElementType.Childs)
                     {
-                        element.TryExpand();
                         executor = new ChildsExecutor(response, element, commandsData[1], new List<string>(commandsData).GetRange(2, commandsData.Length - 2).ToArray(), desktop);
                         return;
                     }
@@ -322,6 +316,32 @@ class ElementExecution : AtsExecution
         }
     }
 
+    private class ListItemsExecutor : ElementExecutor
+    {
+        private AtsElement[] items;
+
+        public ListItemsExecutor(DesktopResponse response, AtsElement element, DesktopManager desktop) : base(response, element, desktop)
+        {
+            this.items = element.GetListItems(desktop);
+        }
+
+        public override void Run()
+        {
+            if(items.Length == 0)
+            {
+                element.TryExpand();
+                items = element.GetListItems(desktop);
+            }
+            
+            foreach(AtsElement it in items)
+            {
+                it.LoadListItemAttributes();
+            }
+            response.Elements = items;
+            Keyboard.Type('\t');
+        }
+    }
+
     private class AttributesExecutor : ElementExecutor
     {
         private readonly string propertyName;
@@ -398,7 +418,7 @@ class ElementExecution : AtsExecution
             if ("index".Equals(type))
             {
                 _ = int.TryParse(value, out int index);
-                element.SelectIndex(index);
+                element.SelectIndex(index, desktop);
             }
             else if ("value".Equals(type))
             {
@@ -406,7 +426,7 @@ class ElementExecution : AtsExecution
             }
             else
             {
-                element.SelectText(value, regexp);
+                element.SelectText(value, regexp, desktop);
             }
         }
     }

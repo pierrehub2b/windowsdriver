@@ -29,7 +29,7 @@ using windowsdriver;
 
 public class WebServer
 {
-    private static readonly string ATS_USER_AGENT = "AtsDesktopDriver";
+    private const string ATS_USER_AGENT = "AtsDesktopDriver";
 
     private Boolean isRunning = true;
 

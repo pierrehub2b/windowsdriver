@@ -49,4 +49,9 @@ public class DesktopData
     {
         Value = string.Concat(firstChar, value);
     }
+
+    public void SetValue(string value)
+    {
+        Value = string.Concat(firstChar, value);
+    }
 }

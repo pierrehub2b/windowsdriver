@@ -165,7 +165,10 @@ namespace windowsdriver.items
         public override void ChangeState(string value) { }
 
         public override void ToFront() {
-            foreach (AutomationElement child in Element.FindAllChildren())
+
+            AutomationElement[] children = Element.FindAllChildren();
+
+            foreach (AutomationElement child in children)
             {
                 if (!DesktopManager.IsDesktopComponent(child.ClassName) && !child.ClassName.Equals("ApolloRuntimeContentWindow") && child.Patterns.Window.Pattern.WindowVisualState.IsSupported)
                 {

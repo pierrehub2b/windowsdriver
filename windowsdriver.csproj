@@ -137,6 +137,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="desktop\DesktopManager.cs" />
+    <Compile Include="desktop\PopupHandle.cs" />
+    <Compile Include="desktop\WindowHandle.cs" />
     <Compile Include="items\AtsElement.cs" />
     <Compile Include="items\CachedElements.cs" />
     <Compile Include="items\DesktopElement.cs" />

@@ -31,6 +31,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using windowsdriver;
 using windowsdriver.items;
@@ -102,10 +103,10 @@ public class AtsElement
                     return false;
                 }
 
-                if (state.HasFlag(AccessibilityState.STATE_SYSTEM_UNAVAILABLE) && !state.HasFlag(AccessibilityState.STATE_SYSTEM_HOTTRACKED))
+                /*if (state.HasFlag(AccessibilityState.STATE_SYSTEM_UNAVAILABLE) && !state.HasFlag(AccessibilityState.STATE_SYSTEM_HOTTRACKED))
                 {
                     return false;
-                }
+                }*/
 
                 Rectangle rec = elem.Properties.BoundingRectangle;
                 X = rec.X;
@@ -153,7 +154,6 @@ public class AtsElement
             Id = Guid.NewGuid().ToString();
             Tag = GetTag(Element);
             Password = IsPassword(Element);
-
             CachedElements.Instance.Add(Id, this);
         }
     }
@@ -162,24 +162,102 @@ public class AtsElement
     {
         Attributes = Properties.AddProperties(attributes, Password, Visible, elem);
     }
-
-    internal bool TryExpand()
+       
+    public AtsElement[] GetListItems(DesktopManager desktop)
     {
-        if (Element.Patterns.ExpandCollapse.IsSupported)
+        AutomationElement[] listItems = Element.FindAllDescendants(Element.ConditionFactory.ByControlType(ControlType.ListItem));
+
+        int len = listItems.Length;
+        if (len > 0)
         {
-            Element.Patterns.ExpandCollapse.Pattern.Expand();
-            return true;
+            AtsElement[] result = new AtsElement[len];
+            for (int i = 0; i < len; i++)
+            {
+                result[i] = new AtsElement(listItems[i]);
+            }
+            return result;
         }
-        return false;
+        return desktop.GetPopupListItems();
+    }
+    
+    public void LoadListItemAttributes()
+    {
+        Attributes = new DesktopData[2];
+        Attributes[0] = new DesktopData("text");
+        Attributes[1] = new DesktopData("value");
+
+        try
+        {
+            Attributes[0].SetValue(TruncString(Element.Name, 52));
+            Attributes[1].SetValue(TruncString(Element.Patterns.LegacyIAccessible.Pattern.Value, 52));
+        }
+        catch { }
+    }
+
+    private string TruncString(string myStr, int THRESHOLD)
+    {
+        if (myStr.Length > THRESHOLD)
+            return myStr.Substring(0, THRESHOLD) + "...";
+        return myStr;
     }
 
     //-----------------------------------------------------------------------------------------
     // Select
     //-----------------------------------------------------------------------------------------
 
-    internal void SelectIndex(int index)
+    internal bool Match(Regex regexp)
     {
-        bool expandCollapse = ExpandElement();
+        return regexp.IsMatch(Element.Name);
+    }
+
+    internal bool Match(string text)
+    {
+        return Element.Name.Equals(text);
+    }
+
+    internal void Select()
+    {
+        if (Element.Properties.BoundingRectangle.IsSupported)
+        {
+            Rectangle rect = Element.BoundingRectangle;
+            Mouse.MoveTo(new Point(rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2)));
+            Mouse.Click();
+        }
+        else
+        {
+            try
+            {
+                Element.Patterns.Invoke.Pattern.Invoke();
+            }
+            catch { }
+        }
+    }
+
+    private AtsElement[] GetSelectItems(DesktopManager desktop)
+    {
+        ExpandElement();
+        AtsElement[] items = GetListItems(desktop);
+        if (items.Length == 0)
+        {
+            TryExpand();
+            items = GetListItems(desktop);
+        }
+
+        Rectangle rect = Element.BoundingRectangle;
+        Mouse.Position = new Point(rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2));
+
+        return items;
+    }
+
+    internal void SelectIndex(int index, DesktopManager desktop)
+    {
+        AtsElement[] items = GetSelectItems(desktop);
+        if (items.Length > index)
+        {
+            items[index].Select();
+        }
+
+        /*bool expandCollapse = ExpandElement();
 
         if (Element.Patterns.Selection.IsSupported)
         {
@@ -205,7 +283,7 @@ public class AtsElement
                 AutomationElement[] listItems = list.FindAllChildren();
                 if (listItems.Length > index)
                 {
-                    SelectListItem(listItems[index]);
+                    //SelectListItem(listItems[index]);
                 }
             }
             else
@@ -223,14 +301,64 @@ public class AtsElement
         if (expandCollapse)
         {
             Element.Patterns.ExpandCollapse.Pattern.Collapse();
-        }
+        }*/
     }
 
-    internal void SelectText(string text, bool regexp)
+    private bool FindSelectText(string text, bool regexp, AtsElement[] items)
     {
-        bool expandCollapse = ExpandElement();
+        if (regexp)
+        {
+            Regex regex = new Regex(@text);
+            foreach (AtsElement item in items)
+            {
+                if (item.Match(regex))
+                {
+                    item.Select();
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            foreach (AtsElement item in items)
+            {
+                if (item.Match(text))
+                {
+                    item.Select();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
-        if (Element.Patterns.Selection.IsSupported)
+    internal void SelectText(string text, bool regexp, DesktopManager desktop)
+    {
+        AtsElement[] items = GetSelectItems(desktop);
+        bool found = FindSelectText(text, regexp, items);
+        if (!found)
+        {
+            AutomationElement list = Element.FindFirstDescendant(Element.ConditionFactory.ByControlType(ControlType.List));
+            if(list != null)
+            {
+                Rectangle rect = Element.BoundingRectangle;
+                Mouse.MoveBy(0, rect.Height + 5);
+
+                int maxtry = 50;
+                while (!found && maxtry > 0)
+                {
+                    Thread.Sleep(80);
+                    Mouse.Scroll(-0.8);
+
+                    items = GetListItems(desktop);
+                    found = FindSelectText(text, regexp, items);
+                    maxtry--;
+                }
+            }
+        }
+
+
+        /*if (Element.Patterns.Selection.IsSupported)
         {
             ComboBox combo = Element.AsComboBox();
             ComboBoxItem[] items = combo.Items;
@@ -370,12 +498,12 @@ public class AtsElement
                     }
                 }
             }
-        }
+        }*/
 
-        if (expandCollapse)
+        /*if (expandCollapse)
         {
             Element.Patterns.ExpandCollapse.Pattern.Collapse();
-        }
+        }*/
     }
 
     internal void SelectValue(string value)
@@ -393,14 +521,34 @@ public class AtsElement
         }
     }
 
+    internal bool TryExpand()
+    {
+        Element.FocusNative();
+        Thread.Sleep(100);
+
+        try
+        {
+            if (Element.Patterns.ExpandCollapse.IsSupported)
+            {
+                Element.Patterns.ExpandCollapse.Pattern.Expand();
+                Thread.Sleep(300);
+                return true;
+            }
+        }
+        catch {}
+
+        return false;
+    }
+
     private bool ExpandElement()
     {
         Element.FocusNative();
+        Thread.Sleep(100);
 
         if (Element.Patterns.ExpandCollapse.IsSupported)
         {
-            Element.Click();
             Element.Patterns.ExpandCollapse.Pattern.Expand();
+            Thread.Sleep(300);
             return true;
         }
         else
@@ -419,37 +567,11 @@ public class AtsElement
             {
                 Element.Click();
             }
-
         }
 
         return false;
     }
-
-    private void ClickListItem(AutomationElement item)
-    {
-        item.FocusNative();
-
-        if (item.Patterns.Invoke.IsSupported)
-        {
-            item.Patterns.Invoke.Pattern.Invoke();
-        }
-
-        Rectangle rect = item.BoundingRectangle;
-
-        Mouse.Position = new Point(rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2));
-        Mouse.LeftClick();
-    }
-
-    private void SelectListItem(AutomationElement item)
-    {
-        if (item.Patterns.ScrollItem.IsSupported)
-        {
-            item.Patterns.ScrollItem.Pattern.ScrollIntoView();
-        }
-        item.FocusNative();
-        item.Click();
-    }
-
+    
     public bool Clear()
     {
         try
@@ -507,7 +629,7 @@ public class AtsElement
 
     public virtual AtsElement[] GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop, AutomationElement[] popups)
     {
-        List<AtsElement> listElements = new List<AtsElement> { this };
+        List<AtsElement> listElements = new List<AtsElement> { };
         
         int len = attributes.Length;
 
