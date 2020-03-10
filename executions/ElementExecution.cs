@@ -422,7 +422,7 @@ class ElementExecution : AtsExecution
             }
             else
             {
-                element.SelectItem(type, value, regexp, desktop);
+                element.SelectItem("value".Equals(type), value, regexp, desktop);
             }
         }
     }

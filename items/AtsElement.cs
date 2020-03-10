@@ -260,14 +260,13 @@ public class AtsElement
         return null;
     }
 
-    internal void SelectItem(string type, string text, bool regexp, DesktopManager desktop)
+    internal void SelectItem(bool byValue, string text, bool regexp, DesktopManager desktop)
     {
         Predicate<AutomationElement> predicate;
-
         if (regexp)
         {
             Regex rx = new Regex(@text);
-            if ("value".Equals(type))
+            if (byValue)
             {
                 predicate = (AutomationElement e) => { return e.Patterns.Value.IsSupported && rx.IsMatch(e.Patterns.Value.ToString()); };
             }
@@ -278,7 +277,7 @@ public class AtsElement
         }
         else
         {
-            if ("value".Equals(type))
+            if (byValue)
             {
                 predicate = (AutomationElement e) => { return e.Patterns.Value.IsSupported && e.Patterns.Value.ToString() == text; };
             }
@@ -303,8 +302,7 @@ public class AtsElement
             Thread.Sleep(20);
             currentItem = GetSelectedItem(currentItem, desktop);
         }
-
-
+        
         /*bool found = FindSelectText(text, regexp, items);
         if (!found)
         {
