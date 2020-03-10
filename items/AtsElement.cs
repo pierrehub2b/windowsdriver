@@ -212,37 +212,17 @@ public class AtsElement
     // Select
     //-----------------------------------------------------------------------------------------
             
-    private void SelectFirstItem()
+    private AutomationElement SelectFirstItem(DesktopManager desktop)
     {
         ExpandElement();
         Thread.Sleep(200);
         Keyboard.Type(new[] { VirtualKeyShort.PRIOR });
         Keyboard.Type(new[] { VirtualKeyShort.HOME });
         Thread.Sleep(50);
+
+        return GetSelectedItem(null, desktop);
     }
 
-    internal void SelectIndex(int index, DesktopManager desktop)
-    {
-        SelectFirstItem();
-
-        int currentIndex = 0;
-        AutomationElement currentItem = GetSelectedItem(null, desktop);
-        while (currentItem != null)
-        {
-            if (currentIndex == index)
-            {
-                Keyboard.Type(VirtualKeyShort.ENTER);
-                break;
-            }
-
-            Keyboard.Type(VirtualKeyShort.DOWN);
-            Thread.Sleep(20);
-            currentItem = GetSelectedItem(currentItem, desktop);
-
-            currentIndex++;
-        }
-    }
-    
     private AutomationElement GetSelectedItem(AutomationElement current, DesktopManager desktop)
     {
         AutomationElement[] items = GetListItemElements(desktop);
@@ -260,36 +240,31 @@ public class AtsElement
         return null;
     }
 
-    internal void SelectItem(bool byValue, string text, bool regexp, DesktopManager desktop)
+    internal void SelectItem(int index, DesktopManager desktop)
     {
-        Predicate<AutomationElement> predicate;
-        if (regexp)
-        {
-            Regex rx = new Regex(@text);
-            if (byValue)
-            {
-                predicate = (AutomationElement e) => { return e.Patterns.Value.IsSupported && rx.IsMatch(e.Patterns.Value.ToString()); };
-            }
-            else
-            {
-                predicate = (AutomationElement e) => { return rx.IsMatch(e.Name); };
-            }
-        }
-        else
-        {
-            if (byValue)
-            {
-                predicate = (AutomationElement e) => { return e.Patterns.Value.IsSupported && e.Patterns.Value.ToString() == text; };
-            }
-            else
-            {
-                predicate = (AutomationElement e) => { return e.Name == text; };
-            }
-        }
+        AutomationElement currentItem = SelectFirstItem(desktop);
 
-        SelectFirstItem();
+        int currentIndex = 0;
+        while (currentItem != null)
+        {
+            if (currentIndex == index)
+            {
+                Keyboard.Type(VirtualKeyShort.ENTER);
+                break;
+            }
 
-        AutomationElement currentItem = GetSelectedItem(null, desktop);
+            Keyboard.Type(VirtualKeyShort.DOWN);
+            Thread.Sleep(20);
+            currentItem = GetSelectedItem(currentItem, desktop);
+
+            currentIndex++;
+        }
+    }
+    
+    internal void SelectItem(Predicate<AutomationElement> predicate, DesktopManager desktop)
+    {
+        AutomationElement currentItem = SelectFirstItem(desktop);
+
         while(currentItem != null)
         {
             if (predicate(currentItem))
@@ -302,28 +277,6 @@ public class AtsElement
             Thread.Sleep(20);
             currentItem = GetSelectedItem(currentItem, desktop);
         }
-        
-        /*bool found = FindSelectText(text, regexp, items);
-        if (!found)
-        {
-            AutomationElement list = Element.FindFirstDescendant(Element.ConditionFactory.ByControlType(ControlType.List));
-            if(list != null)
-            {
-                Rectangle rect = Element.BoundingRectangle;
-                Mouse.MoveBy(0, rect.Height + 5);
-
-                int maxtry = 50;
-                while (!found && maxtry > 0)
-                {
-                    Thread.Sleep(80);
-                    Mouse.Scroll(-0.8);
-
-                    items = GetListItems(desktop);
-                    found = FindSelectText(text, regexp, items);
-                    maxtry--;
-                }
-            }
-        }*/
     }
 
     internal bool TryExpand()
