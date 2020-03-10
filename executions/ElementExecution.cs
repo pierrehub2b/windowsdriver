@@ -420,13 +420,9 @@ class ElementExecution : AtsExecution
                 _ = int.TryParse(value, out int index);
                 element.SelectIndex(index, desktop);
             }
-            else if ("value".Equals(type))
-            {
-                element.SelectValue(value);
-            }
             else
             {
-                element.SelectText(value, regexp, desktop);
+                element.SelectItem(type, value, regexp, desktop);
             }
         }
     }

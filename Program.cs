@@ -48,7 +48,7 @@ public static class DesktopDriver
 
         Console.WriteLine("executed in -> " + sw.ElapsedMilliseconds);
         Console.WriteLine("visible elements -> " + listElements.Count);*/
-                              
+
         int defaultPort = DefaultPort;
         for (int i = 0; i < args.Length; i++)
         {

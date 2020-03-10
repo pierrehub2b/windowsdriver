@@ -102,12 +102,7 @@ public class AtsElement
                 {
                     return false;
                 }
-
-                /*if (state.HasFlag(AccessibilityState.STATE_SYSTEM_UNAVAILABLE) && !state.HasFlag(AccessibilityState.STATE_SYSTEM_HOTTRACKED))
-                {
-                    return false;
-                }*/
-
+                
                 Rectangle rec = elem.Properties.BoundingRectangle;
                 X = rec.X;
                 Y = rec.Y;
@@ -179,7 +174,19 @@ public class AtsElement
         }
         return desktop.GetPopupListItems();
     }
-    
+
+    public AutomationElement[] GetListItemElements(DesktopManager desktop)
+    {
+        AutomationElement[] listItems = Element.FindAllDescendants(Element.ConditionFactory.ByControlType(ControlType.ListItem));
+
+        int len = listItems.Length;
+        if (len > 0)
+        {
+            return listItems;
+        }
+        return desktop.GetPopupListItemElements();
+    }
+
     public void LoadListItemAttributes()
     {
         Attributes = new DesktopData[2];
@@ -204,138 +211,101 @@ public class AtsElement
     //-----------------------------------------------------------------------------------------
     // Select
     //-----------------------------------------------------------------------------------------
-
-    internal bool Match(Regex regexp)
-    {
-        return regexp.IsMatch(Element.Name);
-    }
-
-    internal bool Match(string text)
-    {
-        return Element.Name.Equals(text);
-    }
-
-    internal void Select()
-    {
-        if (Element.Properties.BoundingRectangle.IsSupported)
-        {
-            Rectangle rect = Element.BoundingRectangle;
-            Mouse.MoveTo(new Point(rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2)));
-            Mouse.Click();
-        }
-        else
-        {
-            try
-            {
-                Element.Patterns.Invoke.Pattern.Invoke();
-            }
-            catch { }
-        }
-    }
-
-    private AtsElement[] GetSelectItems(DesktopManager desktop)
+            
+    private void SelectFirstItem()
     {
         ExpandElement();
-        AtsElement[] items = GetListItems(desktop);
-        if (items.Length == 0)
-        {
-            TryExpand();
-            items = GetListItems(desktop);
-        }
-
-        Rectangle rect = Element.BoundingRectangle;
-        Mouse.Position = new Point(rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2));
-
-        return items;
+        Thread.Sleep(200);
+        Keyboard.Type(new[] { VirtualKeyShort.PRIOR });
+        Keyboard.Type(new[] { VirtualKeyShort.HOME });
+        Thread.Sleep(50);
     }
 
     internal void SelectIndex(int index, DesktopManager desktop)
     {
-        AtsElement[] items = GetSelectItems(desktop);
-        if (items.Length > index)
+        SelectFirstItem();
+
+        int currentIndex = 0;
+        AutomationElement currentItem = GetSelectedItem(null, desktop);
+        while (currentItem != null)
         {
-            items[index].Select();
-        }
-
-        /*bool expandCollapse = ExpandElement();
-
-        if (Element.Patterns.Selection.IsSupported)
-        {
-            ComboBox combo = Element.AsComboBox();
-            ComboBoxItem[] items = combo.Items;
-
-            if (items.Length > index)
+            if (currentIndex == index)
             {
-                ComboBoxItem item = items[index];
-                if (item.Patterns.ScrollItem.IsSupported)
+                Keyboard.Type(VirtualKeyShort.ENTER);
+                break;
+            }
+
+            Keyboard.Type(VirtualKeyShort.DOWN);
+            Thread.Sleep(20);
+            currentItem = GetSelectedItem(currentItem, desktop);
+
+            currentIndex++;
+        }
+    }
+    
+    private AutomationElement GetSelectedItem(AutomationElement current, DesktopManager desktop)
+    {
+        AutomationElement[] items = GetListItemElements(desktop);
+        foreach (AutomationElement item in items)
+        {
+            if (!item.Equals(current))
+            {
+                AccessibilityState state = item.Patterns.LegacyIAccessible.Pattern.State.Value;
+                if (state.HasFlag(AccessibilityState.STATE_SYSTEM_SELECTED))
                 {
-                    item.Patterns.ScrollItem.Pattern.ScrollIntoView();
+                    return item;
                 }
-                item.FocusNative();
-                item.Click();
             }
         }
-        else
+        return null;
+    }
+
+    internal void SelectItem(string type, string text, bool regexp, DesktopManager desktop)
+    {
+        Predicate<AutomationElement> predicate;
+
+        if (regexp)
         {
-            AutomationElement list = Element.FindFirstChild(Element.ConditionFactory.ByControlType(ControlType.List));
-            if (list != null)
+            Regex rx = new Regex(@text);
+            if ("value".Equals(type))
             {
-                AutomationElement[] listItems = list.FindAllChildren();
-                if (listItems.Length > index)
-                {
-                    //SelectListItem(listItems[index]);
-                }
+                predicate = (AutomationElement e) => { return e.Patterns.Value.IsSupported && rx.IsMatch(e.Patterns.Value.ToString()); };
             }
             else
             {
-                //Element.Click();
-                AutomationElement[] dropDownLists = Element.Automation.GetDesktop().FindAllChildren(Element.ConditionFactory.ByControlType(ControlType.List));
-
-                if (dropDownLists.Length > 0)
-                {
-                    dropDownLists[0].AsListBox().Select(index);
-                }
-            }
-        }
-
-        if (expandCollapse)
-        {
-            Element.Patterns.ExpandCollapse.Pattern.Collapse();
-        }*/
-    }
-
-    private bool FindSelectText(string text, bool regexp, AtsElement[] items)
-    {
-        if (regexp)
-        {
-            Regex regex = new Regex(@text);
-            foreach (AtsElement item in items)
-            {
-                if (item.Match(regex))
-                {
-                    item.Select();
-                    return true;
-                }
+                predicate = (AutomationElement e) => { return rx.IsMatch(e.Name); };
             }
         }
         else
         {
-            foreach (AtsElement item in items)
+            if ("value".Equals(type))
             {
-                if (item.Match(text))
-                {
-                    item.Select();
-                    return true;
-                }
+                predicate = (AutomationElement e) => { return e.Patterns.Value.IsSupported && e.Patterns.Value.ToString() == text; };
+            }
+            else
+            {
+                predicate = (AutomationElement e) => { return e.Name == text; };
             }
         }
-        return false;
-    }
 
-    internal void SelectText(string text, bool regexp, DesktopManager desktop)
-    {
-        AtsElement[] items = GetSelectItems(desktop);
-        bool found = FindSelectText(text, regexp, items);
+        SelectFirstItem();
+
+        AutomationElement currentItem = GetSelectedItem(null, desktop);
+        while(currentItem != null)
+        {
+            if (predicate(currentItem))
+            {
+                Keyboard.Type(VirtualKeyShort.ENTER);
+                break;
+            }
+            
+            Keyboard.Type(VirtualKeyShort.DOWN);
+            Thread.Sleep(20);
+            currentItem = GetSelectedItem(currentItem, desktop);
+        }
+
+
+        /*bool found = FindSelectText(text, regexp, items);
         if (!found)
         {
             AutomationElement list = Element.FindFirstDescendant(Element.ConditionFactory.ByControlType(ControlType.List));
@@ -355,170 +325,7 @@ public class AtsElement
                     maxtry--;
                 }
             }
-        }
-
-
-        /*if (Element.Patterns.Selection.IsSupported)
-        {
-            ComboBox combo = Element.AsComboBox();
-            ComboBoxItem[] items = combo.Items;
-
-            if (regexp)
-            {
-                Regex regex = new Regex(@text);
-                foreach (ComboBoxItem item in items)
-                {
-                    if (regex.IsMatch(item.Text))
-                    {
-                        SelectListItem(item);
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                foreach (ComboBoxItem item in items)
-                {
-                    if (item.Text.Equals(text))
-                    {
-                        SelectListItem(item);
-                        break;
-                    }
-                }
-            }
-        }
-        else
-        {
-            AutomationElement list = Element.FindFirstChild(Element.ConditionFactory.ByControlType(ControlType.List));
-            if (list != null)
-            {
-                AutomationElement[] listItems = list.FindAllChildren();
-                if (regexp)
-                {
-                    Regex regex = new Regex(@text);
-                    foreach (AutomationElement item in listItems)
-                    {
-                        if (regex.IsMatch(item.Name))
-                        {
-                            SelectListItem(item);
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    foreach (AutomationElement item in listItems)
-                    {
-                        if (item.Name.Equals(text))
-                        {
-                            SelectListItem(item);
-                            break;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                try {
-                    AutomationElement listItem = Element.Automation.GetDesktop().FindFirst(TreeScope.Children,
-                        new AndCondition(Element.ConditionFactory.ByControlType(ControlType.Pane),
-                        Element.ConditionFactory.ByClassName(Element.ClassName)));
-
-                    if (listItem != null)
-                    {
-                        AutomationElement[] items = listItem.FindAllChildren();
-                        if (regexp)
-                        {
-                            Regex regex = new Regex(@text);
-                            foreach (AutomationElement item in items)
-                            {
-                                if (regex.IsMatch(item.Name))
-                                {
-                                    ClickListItem(item);
-                                    break;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            foreach (AutomationElement item in items)
-                            {
-                                if (item.Name.Equals(text))
-                                {
-                                    ClickListItem(item);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    return;
-                }
-                catch {}
-                
-                //last chance 
-
-                AutomationElement[] dropDownLists = Element.Automation.GetDesktop().FindAllChildren(Element.ConditionFactory.ByControlType(ControlType.List));
-
-                if (dropDownLists.Length > 0)
-                {
-                    AutomationElement listBox = dropDownLists[0];
-                    AutomationElement[] items = listBox.FindAllChildren(listBox.ConditionFactory.ByControlType(ControlType.ListItem));
-
-                    int loop = 0;
-
-                    if (regexp)
-                    {
-                        Regex regex = new Regex(@text);
-                        foreach (AutomationElement item in items)
-                        {
-                            string name = item.Name;
-                            if (regex.IsMatch(name))
-                            {
-                                listBox.AsListBox().Select(loop);
-                                break;
-                            }
-
-                            loop++;
-                        }
-                    }
-                    else
-                    {
-                        
-                        foreach (AutomationElement item in items)
-                        {
-                            string name = item.Name;
-                            if (name.Equals(text))
-                            {
-                                listBox.AsListBox().Select(loop);
-                                break;
-                            }
-                            loop++;
-                        }
-                    }
-                }
-            }
         }*/
-
-        /*if (expandCollapse)
-        {
-            Element.Patterns.ExpandCollapse.Pattern.Collapse();
-        }*/
-    }
-
-    internal void SelectValue(string value)
-    {
-        bool expandCollapse = ExpandElement();
-
-        if (Element.Patterns.Value.IsSupported)
-        {
-            Element.Patterns.Value.Pattern.SetValue(value);
-        }
-
-        if (expandCollapse)
-        {
-            Element.Patterns.ExpandCollapse.Pattern.Collapse();
-        }
     }
 
     internal bool TryExpand()
