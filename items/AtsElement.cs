@@ -30,7 +30,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using windowsdriver;
@@ -330,15 +329,32 @@ public class AtsElement
         return false;
     }
     
-    public bool Clear()
+    public bool TextClear()
     {
-        try
-        {
-            Element.AsTextBox().Text = "";
-            return true;
-        }
-        catch { }
+        Element.FocusNative();
 
+        if(Element.Properties.IsKeyboardFocusable.IsSupported && Element.Properties.IsKeyboardFocusable)
+        {
+            AccessibilityState state = Element.Patterns.LegacyIAccessible.Pattern.State.Value;
+            if (state.HasFlag(AccessibilityState.STATE_SYSTEM_FOCUSED))
+            {
+                try
+                {
+                    Keyboard.Type(new[] { VirtualKeyShort.SPACE });
+                    Element.AsTextBox().Text = "";
+                    return true;
+                }
+                catch { }
+
+                try
+                {
+                    Keyboard.TypeSimultaneously(new[] { VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A });
+                    Keyboard.Type(new[] { VirtualKeyShort.DELETE });
+                }
+                catch { }
+                return true;
+            }
+        }
         return false;
     }
 

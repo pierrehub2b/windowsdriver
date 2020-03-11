@@ -30,12 +30,18 @@ class ActionKeyboard
 
     internal void SendKeysData(string data)
     {
-        Keyboard.Type(new[] { VirtualKeyShort.SPACE, VirtualKeyShort.BACK });
-        
         data = Base64Decode(data);
         if (data.StartsWith("$KEY-", StringComparison.OrdinalIgnoreCase))
         {
-            SendKeys.SendWait("{" + data.Substring(5).ToUpper() + "}");
+            string key = data.Substring(5).ToUpper();
+            if (key.Equals("BACK_SPACE"))
+            {
+                Keyboard.Type(VirtualKeyShort.BACK);
+            }
+            else
+            {
+                SendKeys.SendWait("{" + key + "}");
+            }
         }
         else
         {
@@ -45,13 +51,10 @@ class ActionKeyboard
 
     internal void Clear(AtsElement element)
     {
-        if(element != null && element.Clear())
+        if(element != null)
         {
-            return;
+            element.TextClear();
         }
-
-        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
-        Keyboard.Type(VirtualKeyShort.BACK);
     }
 
     internal void AddressBar(string url)
