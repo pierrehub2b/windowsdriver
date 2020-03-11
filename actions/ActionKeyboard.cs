@@ -26,22 +26,35 @@ using System.Windows.Forms;
 
 class ActionKeyboard
 {
-    private static readonly Regex keyRegexp = new Regex(@"\$key\((.*)\)");
+    private readonly string keyPattern = @"\$key\(([^)]*)\)";
 
     internal void SendKeysData(string data)
     {
-        Keyboard.Type(Base64Decode(data));
+        data = Base64Decode(data);
+        if (data.StartsWith("$KEY-", StringComparison.OrdinalIgnoreCase))
+        {
+            string key = data.Substring(5).ToUpper();
+            if (key.Equals("BACK_SPACE"))
+            {
+                Keyboard.Type(VirtualKeyShort.BACK);
+            }
+            else
+            {
+                SendKeys.SendWait("{" + key + "}");
+            }
+        }
+        else
+        {
+            Keyboard.Type(data);
+        }
     }
 
     internal void Clear(AtsElement element)
     {
-        if(element != null && element.Clear())
+        if(element != null)
         {
-            return;
+            element.TextClear();
         }
-
-        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
-        Keyboard.Type(VirtualKeyShort.BACK);
     }
 
     internal void AddressBar(string url)
@@ -53,20 +66,20 @@ class ActionKeyboard
 
     internal void RootKeys(string keys)
     {
-        bool isSpecialKey = false;
-        foreach (Match match in keyRegexp.Matches(keys))
+        string[] tokens = Regex.Split(keys, keyPattern);
+        foreach (string token in tokens)
         {
-            isSpecialKey = true;
-            try
+            if(token.Length > 0)    
             {
-                SendKeys.SendWait("{" + match.Groups[1].ToString().ToUpper() + "}");
+                try
+                {
+                    SendKeys.SendWait("{" + token.ToUpper() + "}");
+                }
+                catch
+                {
+                    Keyboard.Type(token);
+                }
             }
-            catch { }
-        }
-
-        if (!isSpecialKey)
-        {
-            SendKeys.SendWait(keys);
         }
     }
 

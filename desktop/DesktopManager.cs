@@ -210,6 +210,16 @@ namespace windowsdriver
             return new AtsElement[0];
         }
 
+        public AutomationElement[] GetPopupListItemElements()
+        {
+            PopupHandle item = popups.Find(p => p.GetListItemsLength() > 0);
+            if (item != null)
+            {
+                return item.GetListItemElements();
+            }
+            return new AutomationElement[0];
+        }
+
         public AutomationElement[] GetDialogChildren(int pid)
         {
             return desktop.FindAllChildren(desktop.ConditionFactory.ByControlType(ControlType.Window).And(desktop.ConditionFactory.ByProcessId(pid)));

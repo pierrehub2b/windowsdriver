@@ -17,10 +17,12 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Input;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using windowsdriver;
@@ -418,15 +420,34 @@ class ElementExecution : AtsExecution
             if ("index".Equals(type))
             {
                 _ = int.TryParse(value, out int index);
-                element.SelectIndex(index, desktop);
-            }
-            else if ("value".Equals(type))
-            {
-                element.SelectValue(value);
+                element.SelectItem(index, desktop);
             }
             else
             {
-                element.SelectText(value, regexp, desktop);
+                bool byValue = "value".Equals(type);
+                if (regexp)
+                {
+                    Regex rx = new Regex(@value);
+                    if (byValue)
+                    {
+                        element.SelectItem((AutomationElement e) => { return e.Patterns.Value.IsSupported && rx.IsMatch(e.Patterns.Value.ToString());}, desktop);
+                    }
+                    else
+                    {
+                        element.SelectItem((AutomationElement e) => { return rx.IsMatch(e.Name); }, desktop);
+                    }
+                }
+                else
+                {
+                    if (byValue)
+                    {
+                        element.SelectItem((AutomationElement e) => { return e.Patterns.Value.IsSupported && e.Patterns.Value.ToString() == value; }, desktop);
+                    }
+                    else
+                    {
+                        element.SelectItem((AutomationElement e) => { return e.Name == value; }, desktop);
+                    }
+                }
             }
         }
     }

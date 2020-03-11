@@ -64,6 +64,11 @@ namespace windowsdriver.desktop
             return result;
         }
 
+        public AutomationElement[] GetListItemElements()
+        {
+            return Elem.FindAllDescendants(Elem.ConditionFactory.ByControlType(ControlType.ListItem));
+        }
+
         public AutomationElement[] GetElements()
         {
             AutomationElement[] desc = Elem.FindAllDescendants();
