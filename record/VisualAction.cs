@@ -52,7 +52,6 @@ public class VisualAction
 
         using (StreamWriter writer = new StreamWriter(httpWebRequest.GetRequestStream()))
         {
-            writer.WriteLine("screenshot");
             writer.WriteLine("hires");
         }
 
