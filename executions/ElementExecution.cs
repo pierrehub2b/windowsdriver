@@ -382,16 +382,7 @@ class ElementExecution : AtsExecution
         public override void Run()
         {
             element.LoadProperties();
-
-            if (script == null || script.Length == 0)
-            {
-                response.Data = new DesktopData[0];
-            }
-            else
-            {
-                response.Data = element.ExecuteScript(script);
-            }
-
+            response.Data = element.ExecuteScript(script);
             Dispose();
         }
     }

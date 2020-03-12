@@ -214,10 +214,10 @@ public class AtsElement
     private AutomationElement SelectFirstItem(DesktopManager desktop)
     {
         ExpandElement();
-        Thread.Sleep(200);
+        Thread.Sleep(150);
         Keyboard.Type(new[] { VirtualKeyShort.PRIOR });
         Keyboard.Type(new[] { VirtualKeyShort.HOME });
-        Thread.Sleep(50);
+        Thread.Sleep(150);
 
         return GetSelectedItem(null, desktop);
     }
@@ -229,11 +229,16 @@ public class AtsElement
         {
             if (!item.Equals(current))
             {
-                AccessibilityState state = item.Patterns.LegacyIAccessible.Pattern.State.Value;
-                if (state.HasFlag(AccessibilityState.STATE_SYSTEM_SELECTED))
+                try
                 {
-                    return item;
+                    AccessibilityState state = item.Patterns.LegacyIAccessible.Pattern.State.Value;
+                    if (state.HasFlag(AccessibilityState.STATE_SYSTEM_SELECTED))
+                    {
+                        return item;
+                    }
                 }
+                catch { }
+
             }
         }
         return null;
@@ -253,7 +258,7 @@ public class AtsElement
             }
 
             Keyboard.Type(VirtualKeyShort.DOWN);
-            Thread.Sleep(20);
+            Thread.Sleep(150);
             currentItem = GetSelectedItem(currentItem, desktop);
 
             currentIndex++;
@@ -264,7 +269,7 @@ public class AtsElement
     {
         AutomationElement currentItem = SelectFirstItem(desktop);
 
-        while(currentItem != null)
+        while (currentItem != null)
         {
             if (predicate(currentItem))
             {
@@ -273,7 +278,7 @@ public class AtsElement
             }
             
             Keyboard.Type(VirtualKeyShort.DOWN);
-            Thread.Sleep(20);
+            Thread.Sleep(150);
             currentItem = GetSelectedItem(currentItem, desktop);
         }
     }
@@ -328,7 +333,134 @@ public class AtsElement
 
         return false;
     }
+
+    //-----------------------------------------------------------------------------------------
+    // Script
+    //-----------------------------------------------------------------------------------------
+
+    private const string SelectText = "SelectText(";
+    private const int SelectTextLength = 11;
+
+    private const string SelectIndex = "SelectIndex(";
+    private const int SelectIndexLength = 12;
     
+    private const string SelectTextItem = "SelectTextItem(";
+    private const int SelectTextItemLength = 15;
+
+    private const string SelectDataItem = "SelectDataItem(";
+    private const int SelectDataItemLength = 15;
+
+    internal DesktopData[] ExecuteScript(string script)
+    {
+        if (script != null)
+        {
+            if (script.StartsWith("Invoke()", StringComparison.OrdinalIgnoreCase) && Element.Patterns.Invoke.IsSupported)
+            {
+                Element.Patterns.Invoke.Pattern.Invoke();
+            }
+            else if (script.StartsWith("Focus()", StringComparison.OrdinalIgnoreCase))
+            {
+                Focus();
+            }
+            else if (script.StartsWith(SelectText, StringComparison.OrdinalIgnoreCase))
+            {
+                int closeParenthesis = script.LastIndexOf(")");
+                if(closeParenthesis > SelectTextLength)
+                {
+                    string text = script.Substring(SelectTextLength, closeParenthesis - SelectTextLength);
+
+                    ExpandElement();
+                    Element.AsComboBox().Select(text);
+                    Thread.Sleep(200);
+                    Element.AsComboBox().SelectedItem.Click();
+                }
+            }
+            else if (script.StartsWith(SelectIndex, StringComparison.OrdinalIgnoreCase))
+            {
+                int closeParenthesis = script.LastIndexOf(")");
+                if (closeParenthesis > SelectIndexLength)
+                {
+                    _ = int.TryParse(script.Substring(SelectIndexLength, closeParenthesis - SelectIndexLength), out int index);
+
+                    ExpandElement();
+                    Element.AsComboBox().Select(index);
+                    Thread.Sleep(200);
+                    Element.AsComboBox().SelectedItem.Click();
+                }
+            }
+            else if (script.StartsWith(SelectTextItem, StringComparison.OrdinalIgnoreCase))
+            {
+                int closeParenthesis = script.LastIndexOf(")");
+                if (closeParenthesis > SelectTextItemLength)
+                {
+                    string text = script.Substring(SelectTextItemLength, closeParenthesis - SelectTextItemLength);
+
+                    AutomationElement windowParent = Element.Parent;
+                    while (windowParent != null)
+                    {
+                        if (windowParent.Properties.ControlType.IsSupported && windowParent.ControlType.Equals(ControlType.Window))
+                        {
+                            ExpandElement();
+                            AutomationElement[] listItems = windowParent.FindAllDescendants(windowParent.ConditionFactory.ByControlType(ControlType.ListItem));
+
+                            foreach (AutomationElement item in listItems)
+                            {
+                                ListBoxItem listItem = item.AsListBoxItem();
+                                if (item.Name.Equals(text))
+                                {
+                                    listItem.ScrollIntoView();
+
+                                    Rectangle rect = listItem.BoundingRectangle;
+                                    Mouse.Position = new Point(rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2));
+                                    Mouse.Click();
+                                }
+                            }
+                            break;
+                        }
+                        windowParent = windowParent.Parent;
+                    }
+                }
+            }
+            else if (script.StartsWith(SelectDataItem, StringComparison.OrdinalIgnoreCase))
+            {
+                int closeParenthesis = script.LastIndexOf(")");
+                if (closeParenthesis > SelectDataItemLength)
+                {
+                    string text = script.Substring(SelectDataItemLength, closeParenthesis - SelectDataItemLength);
+                    AutomationElement[] rows = Element.FindAllChildren();
+
+                    foreach(AutomationElement row in rows)
+                    {
+                        AutomationElement[] cells = row.FindAllDescendants(row.ConditionFactory.ByControlType(ControlType.DataItem));
+                        if (cells.Length > 0)
+                        {
+                            AutomationElement cell = cells[1];
+                            cell.Focus();
+                            cell.Click();
+                            Thread.Sleep(50);
+                            if (cell.Name.Contains(text)){
+
+                                break;
+                            }
+
+                        }
+                    }
+
+                }
+            }
+            else if (script.StartsWith("SelectRowIndex(", StringComparison.OrdinalIgnoreCase))
+            {
+
+            }           
+        }
+
+        return new DesktopData[0];
+    }
+
+    //-----------------------------------------------------------------------------------------
+    // Text
+    //-----------------------------------------------------------------------------------------
+
     public bool TextClear()
     {
         Element.FocusNative();
@@ -559,30 +691,6 @@ public class AtsElement
             if (data.Name.Equals(name))
             {
                 return new DesktopData[] { data };
-            }
-        }
-        return new DesktopData[0];
-    }
-
-    internal DesktopData[] ExecuteScript(string script)
-    {
-        if (script.StartsWith("Invoke()", StringComparison.OrdinalIgnoreCase) && Element.Patterns.Invoke.IsSupported)
-        {
-            Element.Patterns.Invoke.Pattern.Invoke();
-        }
-        else if((script.StartsWith("Focus()", StringComparison.OrdinalIgnoreCase)))
-        {
-            Focus();
-        }
-        else if(Element.Properties.ControlType.IsSupported)
-        {
-            if (Element.ControlType.Equals(ControlType.Table))
-            {
-                AutomationElement[] rows = Element.FindAllChildren();
-                foreach(AutomationElement row in rows)
-                {
-                    row.Focus();
-                }
             }
         }
         return new DesktopData[0];

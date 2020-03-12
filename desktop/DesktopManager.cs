@@ -86,9 +86,7 @@ namespace windowsdriver
                             }
                         }
                     }
-                    catch {
-                        Console.WriteLine("aieee");
-                    }
+                    catch {}
                 }
             });
         }
