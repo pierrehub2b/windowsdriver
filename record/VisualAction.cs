@@ -37,14 +37,15 @@ public class VisualAction
 
     public static byte[] GetScreenshot(string uri)
     {
-        using (MemoryStream ms = new MemoryStream())
+        return GetScreenshotStream(uri).ToArray();
+        /*using (MemoryStream ms = new MemoryStream())
         {
             GetScreenshotStream(uri).CopyTo(ms);
             return ms.ToArray();
-        }
+        }*/
     }
 
-    public static Stream GetScreenshotStream(string uri)
+    public static MemoryStream GetScreenshotStream(string uri)
     {
         HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
         httpWebRequest.ContentType = "application/json";
@@ -55,9 +56,22 @@ public class VisualAction
             writer.WriteLine("hires");
         }
 
-        WebResponse response = httpWebRequest.GetResponse();
+        byte[] buffer = new byte[4096];
+        using (Stream responseStream = httpWebRequest.GetResponse().GetResponseStream())
+        {
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                int count = 0;
+                do
+                {
+                    count = responseStream.Read(buffer, 0, buffer.Length);
+                    memoryStream.Write(buffer, 0, count);
 
-        return response.GetResponseStream();
+                } while (count != 0);
+
+                return memoryStream;
+            }
+        }
     }
 
     public static Bitmap GetScreenshotImage(string uri)
