@@ -120,7 +120,7 @@ namespace windowsdriver
         {
             List<WindowHandle> pids = handles.FindAll(w => w.Pid == pid);
 
-            if (index > pids.Count)
+            if (index < pids.Count)
             {
                 return new DesktopWindow(pids[index].Win, this); 
             }
