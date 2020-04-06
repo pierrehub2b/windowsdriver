@@ -37,15 +37,10 @@ public class VisualAction
 
     public static byte[] GetScreenshot(string uri)
     {
-        return GetScreenshotStream(uri).ToArray();
-        /*using (MemoryStream ms = new MemoryStream())
-        {
-            GetScreenshotStream(uri).CopyTo(ms);
-            return ms.ToArray();
-        }*/
+        return GetScreenshotStream(uri);
     }
 
-    public static MemoryStream GetScreenshotStream(string uri)
+    public static byte[] GetScreenshotStream(string uri)
     {
         HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
         httpWebRequest.ContentType = "application/json";
@@ -69,14 +64,19 @@ public class VisualAction
 
                 } while (count != 0);
 
-                return memoryStream;
+                return memoryStream.ToArray();
             }
         }
     }
 
     public static Bitmap GetScreenshotImage(string uri)
     {
-        return new Bitmap(GetScreenshotStream(uri));
+        Bitmap bmp;
+        using (var ms = new MemoryStream(GetScreenshotStream(uri)))
+        {
+            bmp = new Bitmap(ms);
+        }
+        return bmp;
     }
 
     public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived) : this()
