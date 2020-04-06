@@ -179,8 +179,8 @@ public class VisualRecorder
             using (imageStream = new MemoryStream())
             {
                 bitmap.Save(imageStream, encoder, encoderParameters);
+                return imageStream.ToArray();
             }
-            return imageStream.ToArray();
         }
     }
 

@@ -23,6 +23,7 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Runtime.Serialization;
+using System.Text;
 
 [DataContract(Name = "com.ats.recorder.VisualAction")]
 public class VisualAction
@@ -46,10 +47,13 @@ public class VisualAction
         httpWebRequest.ContentType = "application/json";
         httpWebRequest.Method = "POST";
 
-        using (StreamWriter writer = new StreamWriter(httpWebRequest.GetRequestStream()))
-        {
-            writer.WriteLine("hires");
-        }
+        // Set the content length of the string being posted.
+        byte[] b = Encoding.ASCII.GetBytes("hires");
+        httpWebRequest.ContentLength = b.Length;
+
+        Stream newStream = httpWebRequest.GetRequestStream();
+
+        newStream.Write(b, 0, b.Length);
 
         byte[] buffer = new byte[4096];
         using (Stream responseStream = httpWebRequest.GetResponse().GetResponseStream())
