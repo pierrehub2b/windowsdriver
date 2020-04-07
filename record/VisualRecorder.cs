@@ -19,6 +19,7 @@ under the License.
 
 using DotAmf.Serialization;
 using System;
+using System.Collections;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -69,6 +70,18 @@ public class VisualRecorder
     private DateTime startTime;
 
     private string AtsvFilePath;
+
+    private ArrayList simpleActions = new ArrayList
+        {
+            "com.ats.script.actions.ActionChannelStart",
+            "com.ats.script.actions.ActionChannelClose",
+            "com.ats.script.actions.ActionComment",
+            "com.ats.script.actions.ActionAssertCount",
+            "com.ats.script.actions.ActionAssertProperty",
+            "com.ats.script.actions.ActionAssertValue",
+            "com.ats.script.actions.ActionProperty",
+            "com.ats.script.actions.ActionChannelSwitch"
+        };
 
     //private PerformanceCounter cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
     //private PerformanceCounter ramCounter;
@@ -270,12 +283,20 @@ public class VisualRecorder
     {
         Flush();
         currentAction = new VisualAction(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F);
+        if (!simpleActions.Contains(actionType))
+        {
+            Flush();
+        }
     }
 
     internal void CreateMobile(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound, string url)
     {
-        Flush();
+        Flush(); 
         currentAction = new VisualAction(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
+        if(!simpleActions.Contains(actionType))
+        {
+            Flush();
+        }
     }
 
     internal void AddImage(double[] screenRect, bool isRef)
