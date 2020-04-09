@@ -129,7 +129,7 @@ public class VisualAction
     public static Bitmap GetScreenshotImage(string uri)
     {
         Bitmap bmp;
-        using (var ms = new MemoryStream(GetScreenshotStream2(uri)))
+        using (var ms = new MemoryStream(GetScreenshotStream(uri)))
         {
             bmp = new Bitmap(ms);
         }
