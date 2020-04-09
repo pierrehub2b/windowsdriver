@@ -21,7 +21,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -75,13 +74,13 @@ public class VisualAction
         catch (ArgumentNullException e)
         {
             Console.WriteLine("ArgumentNullException: {0}", e);
-            return new byte[0];
         }
         catch (SocketException e)
         {
             Console.WriteLine("SocketException: {0}", e);
-            return new byte[0];
         }
+
+        return new byte[0];
     }
 
     private static byte[] ParseStream(byte[] stream)
@@ -95,7 +94,7 @@ public class VisualAction
         return screenshot;
     }
 
-    public static byte[] GetScreenshotStream2(string uri)
+    /* public static byte[] GetScreenshotStream(string uri)
     {
         HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
         httpWebRequest.ContentType = "application/json";
@@ -122,12 +121,10 @@ public class VisualAction
                     memoryStream.Write(buffer, 0, count);
                 } while (count != 0);
 
-                File.WriteAllBytes("Foo2.png", memoryStream.ToArray());
-
                 return memoryStream.ToArray();
             }
         }
-    }
+    } */
 
     public static Bitmap GetScreenshotImage(string uri)
     {
