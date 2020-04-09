@@ -26,6 +26,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 [DataContract(Name = "com.ats.recorder.VisualAction")]
 public class VisualAction
@@ -62,40 +63,38 @@ public class VisualAction
             NetworkStream stream = client.GetStream();
             stream.Write(header, 0, header.Length);
 
-            // byte[] buffer = new byte[client.ReceiveBufferSize];
             MemoryStream memoryStream = new MemoryStream();
-
             stream.CopyTo(memoryStream);
 
-            /* int count = 0;
-            do
-            {
-                count = stream.Read(buffer, 0, buffer.Length);
-                memoryStream.Write(buffer, 0, count);
-
-
-            } while (count > 0); */
-
             stream.Close();
-            client.Close(); 
+            client.Close();
 
-            return memoryStream.ToArray();
-
-
+            return ParseStream(memoryStream.ToArray());
         }
         catch (ArgumentNullException e)
         {
             Console.WriteLine("ArgumentNullException: {0}", e);
-            return new byte[0];
         }
         catch (SocketException e)
         {
             Console.WriteLine("SocketException: {0}", e);
-            return new byte[0];
         }
+
+        return new byte[0];
     }
 
-    public static byte[] GetScreenshotStream2(string uri)
+    private static byte[] ParseStream(byte[] stream)
+    {
+        string str = Encoding.ASCII.GetString(stream, 0, stream.Length);
+        var stringArray = Regex.Split(str, "\r\n\r\n");
+        var headerBytes = Encoding.ASCII.GetBytes(stringArray[0] + "\r\n\r\n");
+
+        var screenshot = new byte[stream.Length - headerBytes.Length];
+        Array.Copy(stream, headerBytes.Length, screenshot, 0, screenshot.Length);
+        return screenshot;
+    }
+
+    /* public static byte[] GetScreenshotStream(string uri)
     {
         HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
         httpWebRequest.ContentType = "application/json";
@@ -125,7 +124,7 @@ public class VisualAction
                 return memoryStream.ToArray();
             }
         }
-    }
+    } */
 
     public static Bitmap GetScreenshotImage(string uri)
     {
