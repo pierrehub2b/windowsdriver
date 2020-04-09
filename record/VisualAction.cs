@@ -21,11 +21,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 [DataContract(Name = "com.ats.recorder.VisualAction")]
 public class VisualAction
@@ -62,26 +64,13 @@ public class VisualAction
             NetworkStream stream = client.GetStream();
             stream.Write(header, 0, header.Length);
 
-            // byte[] buffer = new byte[client.ReceiveBufferSize];
             MemoryStream memoryStream = new MemoryStream();
-
             stream.CopyTo(memoryStream);
 
-            /* int count = 0;
-            do
-            {
-                count = stream.Read(buffer, 0, buffer.Length);
-                memoryStream.Write(buffer, 0, count);
-
-
-            } while (count > 0); */
-
             stream.Close();
-            client.Close(); 
+            client.Close();
 
-            return memoryStream.ToArray();
-
-
+            return ParseStream(memoryStream.ToArray());
         }
         catch (ArgumentNullException e)
         {
@@ -93,6 +82,17 @@ public class VisualAction
             Console.WriteLine("SocketException: {0}", e);
             return new byte[0];
         }
+    }
+
+    private static byte[] ParseStream(byte[] stream)
+    {
+        string str = Encoding.ASCII.GetString(stream, 0, stream.Length);
+        var stringArray = Regex.Split(str, "\r\n\r\n");
+        var headerBytes = Encoding.ASCII.GetBytes(stringArray[0] + "\r\n\r\n");
+
+        var screenshot = new byte[stream.Length - headerBytes.Length];
+        Array.Copy(stream, headerBytes.Length, screenshot, 0, screenshot.Length);
+        return screenshot;
     }
 
     public static byte[] GetScreenshotStream2(string uri)
@@ -121,6 +121,8 @@ public class VisualAction
                     count = responseStream.Read(buffer, 0, buffer.Length);
                     memoryStream.Write(buffer, 0, count);
                 } while (count != 0);
+
+                File.WriteAllBytes("Foo2.png", memoryStream.ToArray());
 
                 return memoryStream.ToArray();
             }
