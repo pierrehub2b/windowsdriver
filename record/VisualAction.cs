@@ -17,11 +17,13 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -41,7 +43,59 @@ public class VisualAction
         return GetScreenshotStream(uri);
     }
 
-    public static byte[] GetScreenshotStream(string uri)
+    public static byte[] GetScreenshotStream(string uriString)
+    {
+        var uri = new Uri(uriString);
+        String hostname = uri.Host;
+        int port = uri.Port;
+
+        try
+        {
+            var client = new TcpClient(hostname, port);
+
+            var dataString = "hires";
+            byte[] data = Encoding.ASCII.GetBytes(dataString);
+
+            var headerString = "POST /screenshot HTTP/1.1\r\nUser-Agent: Windows Driver\r\nDate: " + DateTime.Now + "\r\nContent-Type: " + "text/plain" + "\r\nContent-Length: " + data.Length + "\r\n\r\n" + dataString;
+            byte[] header = Encoding.ASCII.GetBytes(headerString);
+
+            NetworkStream stream = client.GetStream();
+            stream.Write(header, 0, header.Length);
+
+            // byte[] buffer = new byte[client.ReceiveBufferSize];
+            MemoryStream memoryStream = new MemoryStream();
+
+            stream.CopyTo(memoryStream);
+
+            /* int count = 0;
+            do
+            {
+                count = stream.Read(buffer, 0, buffer.Length);
+                memoryStream.Write(buffer, 0, count);
+
+
+            } while (count > 0); */
+
+            stream.Close();
+            client.Close(); 
+
+            return memoryStream.ToArray();
+
+
+        }
+        catch (ArgumentNullException e)
+        {
+            Console.WriteLine("ArgumentNullException: {0}", e);
+            return new byte[0];
+        }
+        catch (SocketException e)
+        {
+            Console.WriteLine("SocketException: {0}", e);
+            return new byte[0];
+        }
+    }
+
+    public static byte[] GetScreenshotStream2(string uri)
     {
         HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
         httpWebRequest.ContentType = "application/json";
@@ -61,11 +115,11 @@ public class VisualAction
             using (MemoryStream memoryStream = new MemoryStream())
             {
                 int count = 0;
+
                 do
                 {
                     count = responseStream.Read(buffer, 0, buffer.Length);
                     memoryStream.Write(buffer, 0, count);
-
                 } while (count != 0);
 
                 return memoryStream.ToArray();
@@ -117,14 +171,15 @@ public class VisualAction
 
         imagesList.Add(cap);
     }
-    
+
     public void AddImage(VisualRecorder recorder, string url, double[] channelBound, bool isRef)
     {
         if (isRef)
         {
             imagesList.Clear();
         }
-        //imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshot(url, false)));
+
+        // imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshot(url, false)));
     }
 
     [DataMember(Name = "channelName")]
