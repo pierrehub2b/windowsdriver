@@ -39,8 +39,7 @@ class RecordExecution : AtsExecution
         Download = 10,
         ImageMobile = 11,
         CreateMobile = 12,
-        ScreenshotMobile = 13,
-        Flush = 14
+        ScreenshotMobile = 13
     };
 
     public RecordExecution(int type, string[] commandsData, VisualRecorder recorder) : base()
@@ -227,9 +226,6 @@ class RecordExecution : AtsExecution
             else if (recordType == RecordType.Position)
             {
                 recorder.AddPosition(commandsData[0], commandsData[1], commandsData[2], commandsData[3]);
-            } else if(recordType == RecordType.Flush)
-            {
-                recorder.Flush();
             }
         }
     }

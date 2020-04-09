@@ -130,7 +130,7 @@ public class VisualAction
     public static Bitmap GetScreenshotImage(string uri)
     {
         Bitmap bmp;
-        using (var ms = new MemoryStream(GetScreenshotStream(uri)))
+        using (var ms = new MemoryStream(GetScreenshotStream2(uri)))
         {
             bmp = new Bitmap(ms);
         }
@@ -174,12 +174,12 @@ public class VisualAction
 
     public void AddImage(VisualRecorder recorder, string url, double[] channelBound, bool isRef)
     {
+        byte[] cap = recorder.ScreenCapture(channelBound, GetScreenshotImage(url));
         if (isRef)
         {
             imagesList.Clear();
         }
-
-        // imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshot(url, false)));
+        imagesList.Add(cap);
     }
 
     [DataMember(Name = "channelName")]
