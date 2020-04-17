@@ -35,6 +35,7 @@ class KeyboardExecution : AtsExecution
 
     private readonly ActionKeyboard action;
     private readonly string data;
+    private readonly string id;
 
     public KeyboardExecution(int type, string[] commandsData, ActionKeyboard action) : base()
     {
@@ -44,6 +45,10 @@ class KeyboardExecution : AtsExecution
         if (commandsData.Length > 0)
         {
             data = commandsData[0];
+        }
+        if (commandsData.Length > 1)
+        {
+            id = commandsData[1];
         }
     }
 
@@ -64,6 +69,7 @@ class KeyboardExecution : AtsExecution
         {
             if (type == KeyType.Enter)
             {
+                action.focusElement(CachedElements.Instance.GetElementById(id));
                 action.SendKeysData(data);
             }
             else if (type == KeyType.Down)

@@ -57,6 +57,14 @@ class ActionKeyboard
         }
     }
 
+    internal void focusElement(AtsElement element)
+    {
+        if (element != null)
+        {
+            element.ElementFocus();
+        }
+    }
+
     internal void AddressBar(string url)
     {
         Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_L);
@@ -85,25 +93,33 @@ class ActionKeyboard
 
     internal void Down(string code)
     {
-        if ("33".Equals(code))//ctrl key
+        if ("33".Equals(code) || "57353".Equals(code))//ctrl key
         {
             Keyboard.Pressing(VirtualKeyShort.CONTROL);
         }
-        else if ("46".Equals(code))//shift key
+        else if ("46".Equals(code) || "57352".Equals(code))//shift key
         {
             Keyboard.Pressing(VirtualKeyShort.SHIFT);
+        }
+        else if ("57354".Equals(code))//alt key
+        {
+            Keyboard.Pressing(VirtualKeyShort.ALT);
         }
     }
 
     internal void Release(string code)
     {
-        if ("33".Equals(code))//ctrl key
+        if ("33".Equals(code) || "57353".Equals(code))//ctrl key
         {
             Keyboard.Release(VirtualKeyShort.CONTROL);
         }
-        else if ("46".Equals(code))//shift key
+        else if ("46".Equals(code) || "57352".Equals(code))//shift key
         {
             Keyboard.Release(VirtualKeyShort.SHIFT);
+        }
+        else if ("57354".Equals(code))//alt key
+        {
+            Keyboard.Release(VirtualKeyShort.ALT);
         }
     }
 

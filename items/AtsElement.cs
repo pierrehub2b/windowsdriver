@@ -494,6 +494,11 @@ public class AtsElement
     // Text
     //-----------------------------------------------------------------------------------------
 
+    public void ElementFocus()
+    {
+        Element.FocusNative();
+    }
+
     public void TextClear()
     {
         Element.FocusNative();
