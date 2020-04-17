@@ -57,7 +57,7 @@ class ActionKeyboard
         }
     }
 
-    internal void focusElement(AtsElement element)
+    internal void FocusElement(AtsElement element)
     {
         if (element != null)
         {

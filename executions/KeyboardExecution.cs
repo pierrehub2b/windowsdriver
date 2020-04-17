@@ -46,7 +46,7 @@ class KeyboardExecution : AtsExecution
         {
             data = commandsData[0];
         }
-        if (commandsData.Length > 1)
+        if (commandsData.Length > 1 && commandsData[1] != "")
         {
             id = commandsData[1];
         }
@@ -69,7 +69,7 @@ class KeyboardExecution : AtsExecution
         {
             if (type == KeyType.Enter)
             {
-                action.focusElement(CachedElements.Instance.GetElementById(id));
+                action.FocusElement(CachedElements.Instance.GetElementById(id));
                 action.SendKeysData(data);
             }
             else if (type == KeyType.Down)
