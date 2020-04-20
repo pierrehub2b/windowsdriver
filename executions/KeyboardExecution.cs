@@ -17,7 +17,9 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using System;
 using System.Net;
+using System.Windows.Input;
 using windowsdriver.items;
 
 class KeyboardExecution : AtsExecution
@@ -36,11 +38,13 @@ class KeyboardExecution : AtsExecution
     private readonly ActionKeyboard action;
     private readonly string data;
     private readonly string id;
+    private readonly bool keyDown;
 
-    public KeyboardExecution(int type, string[] commandsData, ActionKeyboard action) : base()
+    public KeyboardExecution(int type, string[] commandsData, ActionKeyboard action, bool keyDown) : base()
     {
         this.action = action;
         this.type = (KeyType)type;
+        this.keyDown = keyDown;
 
         if (commandsData.Length > 0)
         {
@@ -70,14 +74,14 @@ class KeyboardExecution : AtsExecution
             if (type == KeyType.Enter)
             {
                 action.FocusElement(CachedElements.Instance.GetElementById(id));
-                action.SendKeysData(data);
+                action.SendKeysData(data, keyDown) ;
             }
             else if (type == KeyType.Down)
             {
                 action.Down(data);
             }
             else if (type == KeyType.Release)
-            {
+            { 
                 action.Release(data);
             }
             else

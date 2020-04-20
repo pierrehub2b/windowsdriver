@@ -19,6 +19,7 @@ under the License.
 
 using System.Net;
 using System.Runtime.Serialization;
+using System.Windows.Input;
 using windowsdriver;
 
 struct DesktopRequest
@@ -43,7 +44,7 @@ struct DesktopRequest
         execution = new AtsExecution(errorCode, atsAgent, message);
     }
 
-    public DesktopRequest(int cmdType, int cmdSubType, string[] cmdData, ActionKeyboard keyboard, VisualRecorder recorder, DesktopData[] capabilities, DesktopManager desktop)
+    public DesktopRequest(int cmdType, int cmdSubType, string[] cmdData, ActionKeyboard keyboard, VisualRecorder recorder, DesktopData[] capabilities, DesktopManager desktop, bool keyDown = false)
     {
         CommandType type = (CommandType)cmdType;
 
@@ -57,7 +58,7 @@ struct DesktopRequest
         }
         else if (type == CommandType.Keyboard)
         {
-            execution = new KeyboardExecution(cmdSubType, cmdData, keyboard);
+            execution = new KeyboardExecution(cmdSubType, cmdData, keyboard, keyDown);
         }
         else if (type == CommandType.Window)
         {

@@ -28,7 +28,7 @@ class ActionKeyboard
 {
     private readonly string keyPattern = @"\$key\(([^)]*)\)";
 
-    internal void SendKeysData(string data)
+    internal void SendKeysData(string data, bool keyDown)
     {
         data = Base64Decode(data);
         if (data.StartsWith("$KEY-", StringComparison.OrdinalIgnoreCase))
@@ -45,7 +45,7 @@ class ActionKeyboard
         }
         else
         {
-            Keyboard.Type(data);
+            Keyboard.Type(keyDown ? data.ToLowerInvariant() : data);
         }
     }
 
@@ -95,15 +95,15 @@ class ActionKeyboard
     {
         if ("33".Equals(code) || "57353".Equals(code))//ctrl key
         {
-            Keyboard.Pressing(VirtualKeyShort.CONTROL);
+            Keyboard.Press(VirtualKeyShort.CONTROL);
         }
         else if ("46".Equals(code) || "57352".Equals(code))//shift key
         {
-            Keyboard.Pressing(VirtualKeyShort.SHIFT);
+            Keyboard.Press(VirtualKeyShort.SHIFT);
         }
         else if ("57354".Equals(code))//alt key
         {
-            Keyboard.Pressing(VirtualKeyShort.ALT);
+            Keyboard.Press(VirtualKeyShort.ALT);
         }
     }
 

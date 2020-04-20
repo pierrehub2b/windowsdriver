@@ -32,6 +32,7 @@ public class WebServer
     private const string ATS_USER_AGENT = "AtsDesktopDriver";
 
     private Boolean isRunning = true;
+    private Boolean keyDown = false;
 
     private readonly HttpListener listener;
 
@@ -69,7 +70,8 @@ public class WebServer
             {
                 postData = reader.ReadToEnd();
             }
-            req = new DesktopRequest(t0, t1, postData.Split('\n'), keyboard, recorder, capabilities, desktop);
+            req = new DesktopRequest(t0, t1, postData.Split('\n'), keyboard, recorder, capabilities, desktop, keyDown);
+            keyDown = t1 == 2;
         }
         else
         {
