@@ -22,7 +22,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Text;

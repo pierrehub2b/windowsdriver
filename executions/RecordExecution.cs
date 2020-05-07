@@ -17,10 +17,7 @@ specific language governing permissions and limitations
 under the License.
  */
 
-using System;
-using System.Drawing;
 using System.IO;
-using System.Runtime.Serialization;
 
 class RecordExecution : AtsExecution
 {

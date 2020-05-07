@@ -231,7 +231,10 @@ class WindowExecution : AtsExecution
 
                 if (window != null)
                 {
-                    window.Resize(bounds[0], bounds[1]);
+                    if(bounds[0] > 0 && bounds[1] > 0)
+                    {
+                        window.Resize(bounds[0], bounds[1]);
+                    }
                 }
                 else
                 {

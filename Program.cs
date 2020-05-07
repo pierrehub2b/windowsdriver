@@ -27,28 +27,6 @@ public static class DesktopDriver
     public static int Main(String[] args)
     {
 
-        /*AutomationElement[] elements = new UIA3Automation().GetDesktop().FindAllChildren();
-        Console.WriteLine("elements -> " + elements.Length);
-
-        List<AtsElement> listElements = new List<AtsElement> { };
-        Stopwatch sw = Stopwatch.StartNew();
-
-        List<AtsElement> treeList = new List<AtsElement>();
-        for (int i = 0; i < elements.Length; i++)
-        {
-            treeList.Add(new AtsElement(elements.ElementAt(i)));
-        }
-
-        foreach (AtsElement e in treeList)
-        {
-            e.addToFlatList(listElements);
-        }
-        
-        sw.Stop();
-
-        Console.WriteLine("executed in -> " + sw.ElapsedMilliseconds);
-        Console.WriteLine("visible elements -> " + listElements.Count);*/
-
         int defaultPort = DefaultPort;
         for (int i = 0; i < args.Length; i++)
         {

@@ -19,7 +19,6 @@ under the License.
 
 using System.Net;
 using System.Runtime.Serialization;
-using System.Windows.Input;
 using windowsdriver;
 
 struct DesktopRequest

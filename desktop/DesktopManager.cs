@@ -50,8 +50,9 @@ namespace windowsdriver
             DesktopWidth = DesktopRect.Width;
             DesktopHeight = DesktopRect.Height;
 
-            uia3.ConnectionTimeout = new TimeSpan(0, 0, 6);
-            uia3.TransactionTimeout = new TimeSpan(0, 1, 0);
+            //uia3.ConnectionTimeout = new TimeSpan(0, 0, 6);
+            //uia3.TransactionTimeout = new TimeSpan(0, 1, 0);
+
             desktop = uia3.GetDesktop();
 
             DesktopElement = new DesktopElement(desktop, DesktopRect);
@@ -89,6 +90,13 @@ namespace windowsdriver
                     catch {}
                 }
             });
+        }
+
+        public void Clean()
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
         }
 
         public bool ContainsPoint(int x, int y)
@@ -191,11 +199,11 @@ namespace windowsdriver
             return DesktopElement.GetElements(tag, attributes, desktop, this);
         }
 
-        public AutomationElement[] GetPopupDescendants(int pid)
+        public List<AutomationElement> GetPopupDescendants(int pid)
         {
             List<AutomationElement> list = new List<AutomationElement>();
             popups.FindAll(p => p.Pid == pid).ForEach(e => list.AddRange(e.GetElements()));
-            return list.ToArray();
+            return list;
         }
 
         public AtsElement[] GetPopupListItems()

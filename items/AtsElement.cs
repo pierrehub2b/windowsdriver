@@ -27,11 +27,9 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using windowsdriver;
 using windowsdriver.items;
 
@@ -70,7 +68,7 @@ public class AtsElement
 
     [DataMember(Name = "attributes")]
     public DesktopData[] Attributes;
-       
+
     [DataMember(Name = "children")]
     public AtsElement[] Children;
 
@@ -97,10 +95,8 @@ public class AtsElement
             if (elem.Properties.BoundingRectangle.IsSupported)
             {
                 AccessibilityState state = elem.Patterns.LegacyIAccessible.Pattern.State.Value;
-                if(state.HasFlag(AccessibilityState.STATE_SYSTEM_INVISIBLE) 
-                    || state.HasFlag(AccessibilityState.STATE_SYSTEM_OFFSCREEN)
-                    || (elem.Properties.ClassName.IsSupported && elem.ClassName.Equals("Intermediate D3D Window"))) { 
-
+                if (state.HasFlag(AccessibilityState.STATE_SYSTEM_INVISIBLE))
+                {
                     return false;
                 }
 
@@ -118,7 +114,7 @@ public class AtsElement
         return false;
     }
 
-    public AtsElement(bool loadChildren, AutomationElement elem):this(elem)
+    public AtsElement(bool loadChildren, AutomationElement elem) : this(elem)
     {
         if (Visible)
         {
@@ -157,7 +153,7 @@ public class AtsElement
     {
         Attributes = Properties.AddProperties(attributes, Password, Visible, elem);
     }
-       
+
     public AtsElement[] GetListItems(DesktopManager desktop)
     {
         AutomationElement[] listItems = Element.FindAllDescendants(Element.ConditionFactory.ByControlType(ControlType.ListItem));
@@ -211,7 +207,7 @@ public class AtsElement
     //-----------------------------------------------------------------------------------------
     // Select
     //-----------------------------------------------------------------------------------------
-            
+
     private AutomationElement SelectFirstItem(DesktopManager desktop)
     {
         ExpandElement();
@@ -264,7 +260,7 @@ public class AtsElement
             currentIndex++;
         }
     }
-    
+
     internal void SelectItem(Predicate<AutomationElement> predicate, DesktopManager desktop)
     {
         AutomationElement currentItem = SelectFirstItem(desktop);
@@ -276,7 +272,7 @@ public class AtsElement
                 Keyboard.Type(VirtualKeyShort.ENTER);
                 break;
             }
-            
+
             Keyboard.Type(VirtualKeyShort.DOWN);
             currentItem = GetSelectedItem(currentItem, desktop);
         }
@@ -296,7 +292,7 @@ public class AtsElement
                 return true;
             }
         }
-        catch {}
+        catch { }
 
         return false;
     }
@@ -381,7 +377,7 @@ public class AtsElement
             return index;
         }
     }
-    
+
     internal DesktopData[] ExecuteScript(string script)
     {
         if (script != null)
@@ -454,7 +450,7 @@ public class AtsElement
                         }
                     }
                 }
-            }           
+            }
         }
 
         return new DesktopData[0];
@@ -489,7 +485,7 @@ public class AtsElement
         Thread.Sleep(140);
         Element.AsComboBox().SelectedItem.Click();
     }
-       
+
     //-----------------------------------------------------------------------------------------
     // Text
     //-----------------------------------------------------------------------------------------
@@ -510,7 +506,7 @@ public class AtsElement
             return;
         }
         catch { }
-        
+
         try
         {
             Keyboard.TypeSimultaneously(new[] { VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A });
@@ -543,7 +539,8 @@ public class AtsElement
         try
         {
             return elem.Properties.ControlType.ToString();
-        }catch { }
+        }
+        catch { }
         return "*";
     }
 
@@ -555,10 +552,10 @@ public class AtsElement
         }
         return false;
     }
-           
+
     //-----------------------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------------------
-    
+
     public virtual AtsElement[] GetElementsTree(DesktopManager desktop)
     {
         return new AtsElement[0];
@@ -569,103 +566,139 @@ public class AtsElement
 
     public virtual AtsElement[] GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop)
     {
-        return GetElements(tag, attributes, root, desktop, new AutomationElement[0]);
+        return GetElements(tag, attributes, root, desktop, new List<AutomationElement>());
     }
 
-    public virtual AtsElement[] GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop, AutomationElement[] popups)
+    public virtual AtsElement[] GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop, List<AutomationElement> popups)
     {
         List<AtsElement> listElements = new List<AtsElement> { };
-        
+
         int len = attributes.Length;
+        List<AutomationElement> elements;
 
-        Task<AtsElement[]> task = Task.Run(() =>
+        if (len > 0)
         {
-            if (len > 0)
+            string[] newAttributes = new string[len];
+            for (int i = 0; i < len; i++)
             {
-                string[] newAttributes = new string[len];
-                AndCondition searchCondition = new AndCondition();
+                string[] attributeData = attributes[i].Split('\t');
+                newAttributes[i] = attributeData[0];
+            }
 
-                for (int i = 0; i < len; i++)
-                {
-                    string[] attributeData = attributes[i].Split('\t');
-                    MethodInfo byMethod = root.ConditionFactory.GetType().GetMethod("By" + attributeData[0]);
-
-                    if (byMethod != null)
-                    {
-                        if (attributeData.Length == 2)
-                        {
-                            searchCondition = searchCondition.And((PropertyCondition)byMethod.Invoke(root.ConditionFactory, new[] { attributeData[1] }));
-                        }
-                    }
-                    newAttributes[i] = attributeData[0];
-                }
-
-                AutomationElement[] elements = root.FindAllDescendants(searchCondition).Concat(popups).ToArray();
-
-                if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
-                {
-                    for (int i = 0; i < elements.Length; i++)
-                    {
-                        AtsElement elem = new AtsElement(elements.ElementAt(i), newAttributes);
-                        if (elem.Visible)
-                        {
-                            listElements.Add(elem);
-                        }
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < elements.Length; i++)
-                    {
-                        AutomationElement e = elements.ElementAt(i);
-                        if (tag.Equals(GetTag(e), StringComparison.OrdinalIgnoreCase))
-                        {
-                            AtsElement elem = new AtsElement(e, newAttributes);
-                            if (elem.Visible)
-                            {
-                                listElements.Add(elem);
-                            }
-                        }
-                    }
-                }
+            if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
+            {
+                elements = GetDescendents(root);
             }
             else
             {
-                AutomationElement[] elements = root.FindAllDescendants().Concat(popups).ToArray();
+                elements = GetDescendentsByControleType(root, tag);
+            }
 
-                if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
+            foreach (AutomationElement element in elements.Concat(popups))
+            {
+                AddAtsElement(listElements, new AtsElement(element, newAttributes));
+            }
+        }
+        else
+        {
+            if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
+            {
+                elements = GetDescendents(root);
+            }
+            else
+            {
+                elements = GetDescendentsByControleType(root, tag);
+            }
+
+            foreach (AutomationElement element in elements.Concat(popups))
+            {
+                AddAtsElement(listElements, new AtsElement(element));
+            }
+        }
+
+        popups.Clear();
+        elements.Clear();
+
+        return listElements.ToArray();
+    }
+
+    private static void AddAtsElement(List<AtsElement> list, AtsElement element)
+    {
+        if (element.Visible)
+        {
+            list.Add(element);
+        }
+    }
+
+    public static List<AutomationElement> GetDescendents(AutomationElement root)
+    {
+        List<AutomationElement> items = new List<AutomationElement>();
+        ChildWalker(items, root);
+
+        return items;
+    }
+
+    private static List<AutomationElement> GetDescendentsByControleType(AutomationElement root, String type)
+    {
+        ControlType controlType;
+        try
+        {
+            controlType = (ControlType)Enum.Parse(typeof(ControlType), type);
+        }
+        catch
+        {
+            return new List<AutomationElement>();
+        }
+
+        List<AutomationElement> items = new List<AutomationElement>();
+        ChildWalker(items, root, controlType);
+
+        return items;
+    }
+
+    static void ChildWalker(List<AutomationElement> list, AutomationElement parent, ControlType type)
+    {
+        AutomationElement[] children = parent.FindAllChildren();
+        foreach (AutomationElement child in children)
+        {
+            try
+            {
+                if (child.IsOffscreen)
                 {
-                    for (int i = 0; i < elements.Length; i++)
-                    {
-                            AtsElement elem = new AtsElement(elements.ElementAt(i));
-                            if (elem.Visible)
-                            {
-                                listElements.Add(elem);
-                            }
-                    }
+                    continue;
                 }
-                else
+
+                if (child.ControlType.Equals(type))
                 {
-                    for (int i = 0; i < elements.Length; i++)
-                    {
-                        AutomationElement e = elements.ElementAt(i);
-                        if (tag.Equals(GetTag(e), StringComparison.OrdinalIgnoreCase))
-                        {
-                            AtsElement elem = new AtsElement(e);
-                            if (elem.Visible)
-                            {
-                                listElements.Add(elem);
-                            }
-                        }
-                    }
+                    list.Add(child);
                 }
             }
-            return listElements.ToArray();
-        });
-               
-        task.Wait(40000);
-        return task.Result;
+            catch { }
+
+            ChildWalker(list, child, type);
+        }
     }
+
+    static void ChildWalker(List<AutomationElement> list, AutomationElement parent)
+    {
+        AutomationElement[] children = parent.FindAllChildren();
+        foreach (AutomationElement child in children)
+        {
+            try
+            {
+                if (child.IsOffscreen)
+                {
+                    continue;
+                }
+
+                list.Add(child);
+            }
+            catch { }
+
+            ChildWalker(list, child);
+        }
+    }
+
 
     //-----------------------------------------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------------------------------------
@@ -813,7 +846,7 @@ public class AtsElement
             FrameworkAutomationElementBase.IProperties propertyValues = element.Properties;
             FrameworkAutomationElementBase.IFrameworkPatterns patternValues = element.Patterns;
 
-            for(int i=0; i< attributes.Length; i++)
+            for (int i = 0; i < attributes.Length; i++)
             {
                 AddProperty(attributes[i], isPassword, isVisible, element, propertyValues, patternValues, ref result);
             }

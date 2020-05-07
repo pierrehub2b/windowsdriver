@@ -86,7 +86,7 @@ public class DesktopWindow : AtsElement
        
     public override AtsElement[] GetElementsTree(DesktopManager desktop)
     {
-        AutomationElement[] popupChildren = desktop.GetPopupDescendants(Element.Properties.ProcessId);
+        List<AutomationElement> popupChildren = desktop.GetPopupDescendants(Element.Properties.ProcessId);
 
         List<AtsElement> listElements = new List<AtsElement> { };
 
@@ -100,9 +100,9 @@ public class DesktopWindow : AtsElement
             AutomationElement child = children[i];
             if (child.Patterns.Window.IsSupported && child.Patterns.Window.Pattern.IsModal)
             {
-                for (int j = 0; j < popupChildren.Length; j++)
+                foreach (AutomationElement popup in popupChildren)
                 {
-                    listElements.Add(new AtsElement(true, popupChildren[j]));
+                    listElements.Add(new AtsElement(true, popup));
                 }
 
                 listElements.Add(new AtsElement(true, child));
@@ -110,10 +110,12 @@ public class DesktopWindow : AtsElement
             }
         }
 
-        children = popupChildren.Concat(Element.FindAllChildren()).ToArray();
-        for (int i = 0; i < children.Length; i++)
+        foreach (AutomationElement child in popupChildren.Concat(Element.FindAllChildren()))
         {
-            listElements.Add(new AtsElement(true, children[i]));
+            if(child.Properties.ClassName.IsSupported && child.ClassName.Equals("Intermediate D3D Window")){ // Main Google Chrome app window
+                continue;
+            }
+            listElements.Add(new AtsElement(true, child));
         }
 
         return listElements.ToArray();

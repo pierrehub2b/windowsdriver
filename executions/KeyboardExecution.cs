@@ -17,9 +17,7 @@ specific language governing permissions and limitations
 under the License.
  */
 
-using System;
 using System.Net;
-using System.Windows.Input;
 using windowsdriver.items;
 
 class KeyboardExecution : AtsExecution

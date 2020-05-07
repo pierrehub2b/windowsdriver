@@ -68,6 +68,7 @@ namespace windowsdriver.items
             };
 
             AutomationElement[] desktopChildren = Element.FindAllChildren();
+
             List<AutomationElement> desktopElements = new List<AutomationElement>();
 
             int len = attributes.Length;
@@ -77,7 +78,7 @@ namespace windowsdriver.items
                 desktopElements.Add(child);
                 if (DesktopManager.IsDesktopComponent(child.ClassName))
                 {
-                    foreach (AutomationElement subChild in child.FindAllDescendants())
+                    foreach (AutomationElement subChild in AtsElement.GetDescendents(child))
                     {
                         desktopElements.Add(subChild);
                     }
