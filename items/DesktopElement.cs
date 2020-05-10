@@ -76,7 +76,10 @@ namespace windowsdriver.items
                 desktopElements.Add(child);
                 if (DesktopManager.IsDesktopComponent(child.ClassName))
                 {
-                    foreach (AutomationElement subChild in AtsElement.GetDescendents(child))
+                    Stack<AutomationElement> items = new Stack<AutomationElement>();
+                    AtsElement.LoadDescendants(items, child);
+
+                    foreach (AutomationElement subChild in items)
                     {
                         desktopElements.Add(subChild);
                     }

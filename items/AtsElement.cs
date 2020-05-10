@@ -568,17 +568,15 @@ public class AtsElement
         return GetElements(tag, attributes, root, desktop, new Stack<AutomationElement>());
     }
 
-    public virtual Queue<AtsElement> GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop, Stack<AutomationElement> popups)
+    public virtual Queue<AtsElement> GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop, Stack<AutomationElement> elements)
     {
-        Stack<AutomationElement> elements;
-
         if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
         {
-            elements = GetDescendents(popups, root);
+            LoadDescendants(elements, root);
         }
         else
         {
-            elements = GetDescendentsByControleType(popups, root, tag);
+            LoadDescendantsByControleType(elements, root, tag);
         }
         
         Queue<AtsElement> listElements = new Queue<AtsElement> { };
@@ -617,34 +615,26 @@ public class AtsElement
         }
     }
 
-    public static Stack<AutomationElement> GetDescendents(AutomationElement root)
-    {
-        return GetDescendents(new Stack<AutomationElement>(), root);
-    }
-
-    public static Stack<AutomationElement> GetDescendents(Stack<AutomationElement> items, AutomationElement root)
+    public static void LoadDescendants(Stack<AutomationElement> items, AutomationElement root)
     {
         ChildWalker(items, root);
-        return items;
     }
 
-    private static Stack<AutomationElement> GetDescendentsByControleType(Stack<AutomationElement> items, AutomationElement root, String type)
+    private static void LoadDescendantsByControleType(Stack<AutomationElement> items, AutomationElement root, String tag)
     {
-        ControlType controlType;
+        ControlType type;
         try
         {
-            controlType = (ControlType)Enum.Parse(typeof(ControlType), type);
+            type = (ControlType)Enum.Parse(typeof(ControlType), tag);
         }
-        catch
-        {
-            return items;
+        catch {
+            return;
         }
 
-        ChildWalker(items, root, controlType);
-        return items;
+        ChildWalker(items, root, type);
     }
 
-    static void ChildWalker(Stack<AutomationElement> list, AutomationElement parent, ControlType type)
+    private static void ChildWalker(Stack<AutomationElement> list, AutomationElement parent, ControlType type)
     {
         foreach (AutomationElement child in parent.FindAllChildren())
         {
