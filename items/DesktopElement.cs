@@ -59,13 +59,11 @@ namespace windowsdriver.items
             return listElements.ToArray();
         }
         
-        public override AtsElement[] GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop)
+        public override Queue<AtsElement> GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop)
         {
             Attributes = new DesktopData[0];
-            List<AtsElement> listElements = new List<AtsElement>
-            {
-                this
-            };
+            Queue<AtsElement> listElements = new Queue<AtsElement>();
+            listElements.Enqueue(this);
 
             AutomationElement[] desktopChildren = Element.FindAllChildren();
 
@@ -104,14 +102,14 @@ namespace windowsdriver.items
 
                     for (int i = 0; i < desktopElements.Count; i++)
                     {
-                        listElements.Add(new AtsElement(desktopElements[i], newAttributes));
+                        AddToQueue(listElements, new AtsElement(desktopElements[i], newAttributes));
                     }
                 }
                 else
                 {
                     for (int i = 0; i < desktopElements.Count; i++)
                     {
-                        listElements.Add(new AtsElement(true, desktopElements[i]));
+                        AddToQueue(listElements, new AtsElement(true, desktopElements[i]));
                     }
                 }
             }
@@ -125,12 +123,6 @@ namespace windowsdriver.items
                     {
                         string[] attributeData = attributes[i].Split('\t');
                         newAttributes[i] = attributeData[0];
-
-                        /*if (attributeData.Length == 2)
-                        {
-                            string propertyValue = attributeData[1];
-                        }*/
-
                     }
 
                     for (int i = 0; i < desktopElements.Count; i++)
@@ -138,10 +130,9 @@ namespace windowsdriver.items
                         AutomationElement elem = desktopElements[i];
                         if (tag.Equals(GetTag(elem), StringComparison.OrdinalIgnoreCase))
                         {
-                            listElements.Add(new AtsElement(elem, newAttributes));
+                            AddToQueue(listElements, new AtsElement(elem, newAttributes));
                         }
                     }
-
                 }
                 else
                 {
@@ -150,13 +141,21 @@ namespace windowsdriver.items
                         AutomationElement elem = desktopElements[i];
                         if (tag.Equals(GetTag(elem), StringComparison.OrdinalIgnoreCase))
                         {
-                            listElements.Add(new AtsElement(elem));
+                            AddToQueue(listElements, new AtsElement(elem));
                         }
                     }
                 }
             }
 
-            return listElements.FindAll(e => e.Visible == true).ToArray();
+            return listElements;
+        }
+
+        private static void AddToQueue(Queue<AtsElement> list, AtsElement elem)
+        {
+            if (elem.Visible)
+            {
+                list.Enqueue(elem);
+            }
         }
         
         public override void Resize(int w, int h){ }

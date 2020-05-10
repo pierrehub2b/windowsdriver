@@ -92,22 +92,20 @@ public class AtsElement
     {
         try
         {
-            if (elem.Properties.BoundingRectangle.IsSupported)
-            {
-                AccessibilityState state = elem.Patterns.LegacyIAccessible.Pattern.State.Value;
+            Rectangle rec = elem.Properties.BoundingRectangle;
+
+            AccessibilityState state = elem.Patterns.LegacyIAccessible.Pattern.State.Value;
                 if (state.HasFlag(AccessibilityState.STATE_SYSTEM_INVISIBLE))
                 {
                     return false;
                 }
-
-                Rectangle rec = elem.Properties.BoundingRectangle;
+                               
                 X = rec.X;
                 Y = rec.Y;
                 Width = rec.Width;
                 Height = rec.Height;
 
                 return true;
-            }
         }
         catch (Exception) { }
 
@@ -546,10 +544,11 @@ public class AtsElement
 
     public static bool IsPassword(AutomationElement elem)
     {
-        if (elem.Properties.IsPassword.IsSupported)
+        try
         {
             return elem.Properties.IsPassword;
         }
+        catch { }
         return false;
     }
 
@@ -564,18 +563,27 @@ public class AtsElement
     //-----------------------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------------------
 
-    public virtual AtsElement[] GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop)
+    public virtual Queue<AtsElement> GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop)
     {
-        return GetElements(tag, attributes, root, desktop, new List<AutomationElement>());
+        return GetElements(tag, attributes, root, desktop, new Stack<AutomationElement>());
     }
 
-    public virtual AtsElement[] GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop, List<AutomationElement> popups)
+    public virtual Queue<AtsElement> GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop, Stack<AutomationElement> popups)
     {
-        List<AtsElement> listElements = new List<AtsElement> { };
+        Stack<AutomationElement> elements;
 
+        if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
+        {
+            elements = GetDescendents(popups, root);
+        }
+        else
+        {
+            elements = GetDescendentsByControleType(popups, root, tag);
+        }
+        
+        Queue<AtsElement> listElements = new Queue<AtsElement> { };
         int len = attributes.Length;
-        List<AutomationElement> elements;
-
+        
         if (len > 0)
         {
             string[] newAttributes = new string[len];
@@ -585,60 +593,42 @@ public class AtsElement
                 newAttributes[i] = attributeData[0];
             }
 
-            if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
+            while (elements.Count > 0)
             {
-                elements = GetDescendents(root);
-            }
-            else
-            {
-                elements = GetDescendentsByControleType(root, tag);
-            }
-
-            foreach (AutomationElement element in elements.Concat(popups))
-            {
-                AddAtsElement(listElements, new AtsElement(element, newAttributes));
+                AddAtsElement(listElements, new AtsElement(elements.Pop(), newAttributes));
             }
         }
         else
         {
-            if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
+            while (elements.Count > 0)
             {
-                elements = GetDescendents(root);
-            }
-            else
-            {
-                elements = GetDescendentsByControleType(root, tag);
-            }
-
-            foreach (AutomationElement element in elements.Concat(popups))
-            {
-                AddAtsElement(listElements, new AtsElement(element));
+                AddAtsElement(listElements, new AtsElement(elements.Pop()));
             }
         }
 
-        popups.Clear();
-        elements.Clear();
-
-        return listElements.ToArray();
+        return listElements;
     }
 
-    private static void AddAtsElement(List<AtsElement> list, AtsElement element)
+    private static void AddAtsElement(Queue<AtsElement> list, AtsElement element)
     {
         if (element.Visible)
         {
-            list.Add(element);
+            list.Enqueue(element);
         }
     }
 
-    public static List<AutomationElement> GetDescendents(AutomationElement root)
+    public static Stack<AutomationElement> GetDescendents(AutomationElement root)
     {
-        List<AutomationElement> items = new List<AutomationElement>();
-        ChildWalker(items, root);
+        return GetDescendents(new Stack<AutomationElement>(), root);
+    }
 
+    public static Stack<AutomationElement> GetDescendents(Stack<AutomationElement> items, AutomationElement root)
+    {
+        ChildWalker(items, root);
         return items;
     }
 
-    private static List<AutomationElement> GetDescendentsByControleType(AutomationElement root, String type)
+    private static Stack<AutomationElement> GetDescendentsByControleType(Stack<AutomationElement> items, AutomationElement root, String type)
     {
         ControlType controlType;
         try
@@ -647,19 +637,16 @@ public class AtsElement
         }
         catch
         {
-            return new List<AutomationElement>();
+            return items;
         }
 
-        List<AutomationElement> items = new List<AutomationElement>();
         ChildWalker(items, root, controlType);
-
         return items;
     }
 
-    static void ChildWalker(List<AutomationElement> list, AutomationElement parent, ControlType type)
+    static void ChildWalker(Stack<AutomationElement> list, AutomationElement parent, ControlType type)
     {
-        AutomationElement[] children = parent.FindAllChildren();
-        foreach (AutomationElement child in children)
+        foreach (AutomationElement child in parent.FindAllChildren())
         {
             try
             {
@@ -667,10 +654,14 @@ public class AtsElement
                 {
                     continue;
                 }
+            }
+            catch { }
 
+            try
+            {
                 if (child.ControlType.Equals(type))
                 {
-                    list.Add(child);
+                    list.Push(child);
                 }
             }
             catch { }
@@ -679,10 +670,9 @@ public class AtsElement
         }
     }
 
-    static void ChildWalker(List<AutomationElement> list, AutomationElement parent)
+    static void ChildWalker(Stack<AutomationElement> list, AutomationElement parent)
     {
-        AutomationElement[] children = parent.FindAllChildren();
-        foreach (AutomationElement child in children)
+        foreach (AutomationElement child in parent.FindAllChildren())
         {
             try
             {
@@ -690,16 +680,14 @@ public class AtsElement
                 {
                     continue;
                 }
-
-                list.Add(child);
             }
             catch { }
 
+            list.Push(child);
             ChildWalker(list, child);
         }
     }
-
-
+    
     //-----------------------------------------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------------------------------------
 
@@ -779,8 +767,7 @@ public class AtsElement
     internal AtsElement[] GetParents()
     {
         LoadProperties();
-
-        List<AtsElement> parents = new List<AtsElement>();
+        Stack<AtsElement> parents = new Stack<AtsElement>();
 
         AutomationElement parent = Element.Parent;
         while (parent != null)
@@ -788,9 +775,12 @@ public class AtsElement
             AtsElement parentElement = new AtsElement(parent);
             parentElement.LoadProperties();
 
-            parents.Insert(0, parentElement);
+            parents.Push(parentElement);
             parent = parent.Parent;
         }
+
+        parents.Pop();// remove Windows desktop
+        parents.Pop();// remove main windows of application
 
         //TODO get full innertext
 

@@ -194,15 +194,21 @@ namespace windowsdriver
             return windowsList;
         }
 
-        public AtsElement[] GetElements(string tag, string[] attributes)
+        public Queue<AtsElement> GetElements(string tag, string[] attributes)
         {
             return DesktopElement.GetElements(tag, attributes, desktop, this);
         }
 
-        public List<AutomationElement> GetPopupDescendants(int pid)
+        public Stack<AutomationElement> GetPopupDescendants(int pid)
         {
-            List<AutomationElement> list = new List<AutomationElement>();
-            popups.FindAll(p => p.Pid == pid).ForEach(e => list.AddRange(e.GetElements()));
+            Stack<AutomationElement> list = new Stack<AutomationElement>();
+            popups.FindAll(p => p.Pid == pid).ForEach(e =>
+            {
+                foreach (AutomationElement elem in e.GetElements())
+                {
+                    list.Push(elem);
+                }
+            });
             return list;
         }
 

@@ -86,9 +86,9 @@ public class DesktopWindow : AtsElement
        
     public override AtsElement[] GetElementsTree(DesktopManager desktop)
     {
-        List<AutomationElement> popupChildren = desktop.GetPopupDescendants(Element.Properties.ProcessId);
+        Stack<AutomationElement> popupChildren = desktop.GetPopupDescendants(Element.Properties.ProcessId);
 
-        List<AtsElement> listElements = new List<AtsElement> { };
+        Queue<AtsElement> listElements = new Queue<AtsElement> { };
 
         //---------------------------------------------------------------------
         // try to find a modal window
@@ -102,10 +102,10 @@ public class DesktopWindow : AtsElement
             {
                 foreach (AutomationElement popup in popupChildren)
                 {
-                    listElements.Add(new AtsElement(true, popup));
+                    listElements.Enqueue(new AtsElement(true, popup));
                 }
 
-                listElements.Add(new AtsElement(true, child));
+                listElements.Enqueue(new AtsElement(true, child));
                 return listElements.ToArray();
             }
         }
@@ -115,13 +115,13 @@ public class DesktopWindow : AtsElement
             if(child.Properties.ClassName.IsSupported && child.ClassName.Equals("Intermediate D3D Window")){ // Main Google Chrome app window
                 continue;
             }
-            listElements.Add(new AtsElement(true, child));
+            listElements.Enqueue(new AtsElement(true, child));
         }
 
         return listElements.ToArray();
     }
 
-    public override AtsElement[] GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop)
+    public override Queue<AtsElement> GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop)
     {
         //---------------------------------------------------------------------
         // try to find a modal window

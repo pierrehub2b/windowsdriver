@@ -154,6 +154,20 @@ class ElementExecution : AtsExecution
             this.response = response;
         }
         public abstract void Run();
+
+        public AtsElement[] GetAtsElementsArray(Queue<AtsElement> elements)
+        {
+            AtsElement[] result = new AtsElement[elements.Count];
+
+            int loop = 0;
+            while (elements.Count > 0)
+            {
+                result[loop] = elements.Dequeue();
+                loop++;
+            }
+
+            return result;
+        }
     }
 
     private class EmptyExecutor : Executor
@@ -188,11 +202,11 @@ class ElementExecution : AtsExecution
             }
             else
             {
-                response.Elements = desktop.GetElements(tag, criterias);
+                response.Elements = GetAtsElementsArray(desktop.GetElements(tag, criterias)); ;
             }
         }
     }
-
+       
     private class LoadTreeExecutor : Executor
     {
         private readonly int handle;
@@ -246,7 +260,7 @@ class ElementExecution : AtsExecution
             if (window != null)
             {
                 window.Focus();
-                response.Elements = window.GetElements(tag, attributes, null, desktop);
+                response.Elements = GetAtsElementsArray(window.GetElements(tag, attributes, null, desktop));
             }
             else
             {
@@ -313,7 +327,7 @@ class ElementExecution : AtsExecution
 
         public override void Run()
         {
-            response.Elements = element.GetElements(tag, attributes, element.Element, desktop);
+            response.Elements = GetAtsElementsArray(element.GetElements(tag, attributes, element.Element, desktop));
         }
     }
 
