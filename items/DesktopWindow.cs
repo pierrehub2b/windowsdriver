@@ -88,7 +88,7 @@ public class DesktopWindow : AtsElement
     {
         Stack<AutomationElement> popupChildren = desktop.GetPopupDescendants(Element.Properties.ProcessId);
 
-        Stack<AtsElement> listElements = new Stack<AtsElement>();
+        Queue<AtsElement> listElements = new Queue<AtsElement> { };
 
         //---------------------------------------------------------------------
         // try to find a modal window
@@ -102,38 +102,23 @@ public class DesktopWindow : AtsElement
             {
                 foreach (AutomationElement popup in popupChildren)
                 {
-                    listElements.Push(new AtsElement(true, popup));
+                    listElements.Enqueue(new AtsElement(desktop, popup));
                 }
 
-                listElements.Push(new AtsElement(true, child));
-
-                return GetArrayList(listElements);
+                listElements.Enqueue(new AtsElement(desktop, child));
+                return listElements.ToArray();
             }
         }
 
-        foreach (AutomationElement child in popupChildren.Concat(Element.FindAllChildren()))
+        foreach (AutomationElement child in popupChildren.Concat(Element.FindAllChildren(desktop.NotOffScreenProperty)))
         {
             if(child.Properties.ClassName.IsSupported && child.ClassName.Equals("Intermediate D3D Window")){ // Main Google Chrome app window
                 continue;
             }
-            listElements.Push(new AtsElement(true, child));
+            listElements.Enqueue(new AtsElement(desktop, child));
         }
 
-        return GetArrayList(listElements);
-    }
-
-    private AtsElement[] GetArrayList(Stack<AtsElement> stack)
-    {
-        AtsElement[] result = new AtsElement[stack.Count];
-        int loop = 0;
-
-        while (stack.Count > 0)
-        {
-            result[loop] = stack.Pop();
-            loop++;
-        }
-
-        return result;
+        return listElements.ToArray();
     }
 
     public override Queue<AtsElement> GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop)

@@ -26,6 +26,8 @@ using System.Collections.Generic;
 using System.Drawing;
 using windowsdriver.items;
 using windowsdriver.desktop;
+using FlaUI.Core;
+using FlaUI.Core.Conditions;
 
 namespace windowsdriver
 {
@@ -44,6 +46,8 @@ namespace windowsdriver
 
         public readonly Rectangle DesktopRect;
 
+        public readonly PropertyCondition NotOffScreenProperty;
+
         public DesktopManager()
         {
             DesktopRect = SystemInformation.VirtualScreen;
@@ -54,6 +58,7 @@ namespace windowsdriver
             //uia3.TransactionTimeout = new TimeSpan(0, 1, 0);
 
             desktop = uia3.GetDesktop();
+            NotOffScreenProperty = new PropertyCondition(uia3.PropertyLibrary.Element.IsOffscreen, false);
 
             DesktopElement = new DesktopElement(desktop, DesktopRect);
 

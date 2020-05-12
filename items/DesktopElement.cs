@@ -41,13 +41,13 @@ namespace windowsdriver.items
         {
             List<AtsElement> listElements = new List<AtsElement>();
             
-            foreach (AutomationElement child in Element.FindAllChildren())
+            foreach (AutomationElement child in Element.FindAllChildren(desktop.NotOffScreenProperty))
             {
                 if (!child.ClassName.Equals("ApolloRuntimeContentWindow"))
                 {
                     if (DesktopManager.IsDesktopComponent(child.ClassName))
                     {
-                        listElements.Add(new AtsElement(true, child));
+                        listElements.Add(new AtsElement(desktop, child));
                     }
                     else
                     {
@@ -65,7 +65,7 @@ namespace windowsdriver.items
             Queue<AtsElement> listElements = new Queue<AtsElement>();
             listElements.Enqueue(this);
 
-            AutomationElement[] desktopChildren = Element.FindAllChildren();
+            AutomationElement[] desktopChildren = Element.FindAllChildren(desktop.NotOffScreenProperty);
 
             List<AutomationElement> desktopElements = new List<AutomationElement>();
 
@@ -77,7 +77,7 @@ namespace windowsdriver.items
                 if (DesktopManager.IsDesktopComponent(child.ClassName))
                 {
                     Stack<AutomationElement> items = new Stack<AutomationElement>();
-                    AtsElement.LoadDescendants(items, child);
+                    AtsElement.LoadDescendants(desktop.NotOffScreenProperty, items, child);
 
                     foreach (AutomationElement subChild in items)
                     {
@@ -112,7 +112,7 @@ namespace windowsdriver.items
                 {
                     for (int i = 0; i < desktopElements.Count; i++)
                     {
-                        AddToQueue(listElements, new AtsElement(true, desktopElements[i]));
+                        AddToQueue(listElements, new AtsElement(desktop, desktopElements[i]));
                     }
                 }
             }

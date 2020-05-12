@@ -112,19 +112,21 @@ public class AtsElement
         return false;
     }
 
-    public AtsElement(bool loadChildren, AutomationElement elem) : this(elem)
+    public AtsElement(DesktopManager desktop, AutomationElement elem) : this(elem)
     {
         if (Visible)
         {
-            AutomationElement[] childs = elem.FindAllChildren();
+            AutomationElement[] childs = elem.FindAllChildren(desktop.NotOffScreenProperty);
             NumChildren = childs.Length;
             if (NumChildren > 0)
             {
                 Children = new AtsElement[NumChildren];
                 for (int i = 0; i < NumChildren; i++)
                 {
-                    Children[i] = new AtsElement(true, childs.ElementAt(i));
+                    Children[i] = new AtsElement(desktop, childs.ElementAt(i));
                 }
+
+                Array.Clear(childs, 0, childs.Length);
                 return;
             }
         }
@@ -511,9 +513,7 @@ public class AtsElement
             Keyboard.Type(new[] { VirtualKeyShort.SPACE, VirtualKeyShort.BACK });
         }
         catch { }
-
-
-
+               
         /*if (Element.Properties.IsKeyboardFocusable.IsSupported && Element.Properties.IsKeyboardFocusable)
         {
             
@@ -539,7 +539,7 @@ public class AtsElement
             return elem.Properties.ControlType.ToString();
         }
         catch { }
-        return "*";
+        return "Unknown";
     }
 
     public static bool IsPassword(AutomationElement elem)
@@ -567,9 +567,13 @@ public class AtsElement
     {
         return GetElements(tag, attributes, root, desktop, new Stack<AutomationElement>());
     }
+    
+    private static PropertyCondition NotOffScreenProperty;
 
     public virtual Queue<AtsElement> GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop, Stack<AutomationElement> elements)
     {
+        NotOffScreenProperty = desktop.NotOffScreenProperty;
+
         if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
         {
             LoadDescendants(elements, root);
@@ -615,6 +619,12 @@ public class AtsElement
         }
     }
 
+    public static void LoadDescendants(PropertyCondition property, Stack<AutomationElement> items, AutomationElement root)
+    {
+        NotOffScreenProperty = property;
+        ChildWalker(items, root);
+    }
+
     public static void LoadDescendants(Stack<AutomationElement> items, AutomationElement root)
     {
         ChildWalker(items, root);
@@ -622,60 +632,68 @@ public class AtsElement
 
     private static void LoadDescendantsByControleType(Stack<AutomationElement> items, AutomationElement root, String tag)
     {
-        ControlType type;
-        try
+        if(tag.Equals("Unknown"))
         {
-            type = (ControlType)Enum.Parse(typeof(ControlType), tag);
+            UndefinedChildWalker(items, root);
         }
-        catch {
-            return;
-        }
+        else
+        {
+            ControlType type;
+            try
+            {
+                type = (ControlType)Enum.Parse(typeof(ControlType), tag);
+            }
+            catch
+            {
+                return;
+            }
 
-        ChildWalker(items, root, type);
+            ChildWalker(items, root, type);
+        }
     }
 
     private static void ChildWalker(Stack<AutomationElement> list, AutomationElement parent, ControlType type)
     {
-        foreach (AutomationElement child in parent.FindAllChildren())
+        AutomationElement[] children = parent.FindAllChildren(NotOffScreenProperty);
+        for (int i = 0; i < children.Length; i++)
         {
             try
             {
-                if (child.IsOffscreen)
+                if (children[i].ControlType.Equals(type))
                 {
-                    continue;
+                    list.Push(children[i]);
                 }
             }
             catch { }
-
-            try
-            {
-                if (child.ControlType.Equals(type))
-                {
-                    list.Push(child);
-                }
-            }
-            catch { }
-
-            ChildWalker(list, child, type);
+                       
+            ChildWalker(list, children[i], type);
         }
+        Array.Clear(children, 0, children.Length);
+    }
+
+    private static void UndefinedChildWalker(Stack<AutomationElement> list, AutomationElement parent)
+    {
+        AutomationElement[] children = parent.FindAllChildren(NotOffScreenProperty);
+        for (int i = 0; i < children.Length; i++)
+        {
+            if (!children[i].Properties.ControlType.IsSupported)
+            {
+                list.Push(children[i]);
+            }
+            UndefinedChildWalker(list, children[i]);
+        }
+        Array.Clear(children, 0, children.Length);
     }
 
     static void ChildWalker(Stack<AutomationElement> list, AutomationElement parent)
     {
-        foreach (AutomationElement child in parent.FindAllChildren())
+        AutomationElement[] children = parent.FindAllChildren(NotOffScreenProperty);
+        for (int i = 0; i < children.Length; i++)
         {
-            try
-            {
-                if (child.IsOffscreen)
-                {
-                    continue;
-                }
-            }
-            catch { }
-
-            list.Push(child);
-            ChildWalker(list, child);
+            list.Push(children[i]);
+            ChildWalker(list, children[i]);
         }
+        Array.Clear(children, 0, children.Length);
     }
     
     //-----------------------------------------------------------------------------------------------------------------------
