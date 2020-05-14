@@ -19,7 +19,6 @@ under the License.
 
 using DotAmf.Serialization;
 using System;
-using System.Collections;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -124,6 +123,11 @@ public class VisualRecorder
     public byte[] ScreenCapture(double[] bound)
     {
         return ScreenCapture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters);
+    }
+
+    public byte[] ScreenCapture(TestBound bounds)
+    {
+        return ScreenCapture((int)bounds.X, (int)bounds.Y, (int)bounds.Width, (int)bounds.Height, animationEncoder, animationEncoderParameters);
     }
 
     public byte[] ScreenCapture(double[] bound, Bitmap img)
@@ -267,16 +271,32 @@ public class VisualRecorder
         return AtsvFilePath;
     }
 
-    internal void Create(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound)
+    internal void Create(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound, bool sync)
     {
+        currentAction.AddImage(this, channelBound, false);
+
         Flush();
-        currentAction = new VisualAction(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F);
+        if(sync)
+        {
+            currentAction = new VisualActionSync(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F);
+        } else
+        {
+            currentAction = new VisualAction(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F);
+        }
+        
     }
 
-    internal void CreateMobile(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound, string url)
+    internal void CreateMobile(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound, string url, bool sync)
     {
+        currentAction.AddImage(this, channelBound, false);
+
         Flush(); 
-        currentAction = new VisualAction(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
+        if(sync) {
+            currentAction = new VisualActionSync(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
+        } else
+        {
+            currentAction = new VisualAction(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
+        }
     }
 
     internal void AddImage(double[] screenRect, bool isRef)
@@ -332,6 +352,10 @@ public class VisualRecorder
 
         if (visualStream != null)
         {
+            if(currentAction is VisualActionSync)
+            {
+                currentAction = new VisualAction(currentAction as VisualActionSync);
+            }
             AmfSerializer.WriteObject(visualStream, currentAction);
             visualStream.Flush();
         }

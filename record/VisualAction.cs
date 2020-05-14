@@ -26,11 +26,12 @@ using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Windows.Media;
 
 [DataContract(Name = "com.ats.recorder.VisualAction")]
 public class VisualAction
 {
-    private readonly List<byte[]> imagesList;
+    protected readonly List<byte[]> imagesList;
 
     public VisualAction()
     {
@@ -159,26 +160,29 @@ public class VisualAction
         this.ImageRef = 0;
     }
 
-    public void AddImage(VisualRecorder recorder, double[] channelBound, bool isRef)
+    public VisualAction(VisualActionSync action) : this()
     {
-        byte[] cap = recorder.ScreenCapture(channelBound);
-        if (isRef)
-        {
-            imagesList.Clear();
-        }
-
-        imagesList.Add(cap);
+        this.ChannelBound = action.ChannelBound;
+        this.ChannelName = action.ChannelName;
+        this.Data = action.Data;
+        this.Duration = action.Duration;
+        this.Element = action.Element;
+        this.Error = action.Error;
+        this.ImageRef = action.ImageRef;
+        this.imagesList = action.imagesList;
+        this.ImageType = action.ImageType;
+        this.Index = action.Index;
+        this.Line = action.Line;
+        this.TimeLine = action.TimeLine;
+        this.Type = action.Type;
+        this.Value = action.Value;
     }
 
-    public void AddImage(VisualRecorder recorder, string url, double[] channelBound, bool isRef)
-    {
-        byte[] cap = recorder.ScreenCapture(channelBound, GetScreenshotImage(url));
-        if (isRef)
-        {
-            imagesList.Clear();
-        }
-        imagesList.Add(cap);
-    }
+    public virtual void AddImage(VisualRecorder recorder, double[] channelBound, bool isRef)
+    {}
+
+    public virtual void AddImage(VisualRecorder recorder, string url, double[] channelBound, bool isRef)
+    {}
 
     [DataMember(Name = "channelName")]
     public string ChannelName;

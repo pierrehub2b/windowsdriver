@@ -136,7 +136,9 @@ class RecordExecution : AtsExecution
                 _ = double.TryParse(commandsData[6], out channelDimmension[2]);
                 _ = double.TryParse(commandsData[7], out channelDimmension[3]);
 
-                recorder.Create(actionType, line, timeLine, channelName, channelDimmension);
+                _ = bool.TryParse(commandsData[8], out bool sync);
+                    
+                recorder.Create(actionType, line, timeLine, channelName, channelDimmension, sync);
             }
             else if (recordType == RecordType.CreateMobile)
             {
@@ -154,7 +156,9 @@ class RecordExecution : AtsExecution
                 _ = double.TryParse(commandsData[6], out channelDimmension[2]);
                 _ = double.TryParse(commandsData[7], out channelDimmension[3]);
 
-                recorder.CreateMobile(actionType, line, timeLine, channelName, channelDimmension, commandsData[8]);
+                _ = bool.TryParse(commandsData[8], out bool sync);
+
+                recorder.CreateMobile(actionType, line, timeLine, channelName, channelDimmension, commandsData[8], sync);
             }
             else if (recordType == RecordType.Image)
             {
