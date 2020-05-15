@@ -156,7 +156,7 @@ class RecordExecution : AtsExecution
                 _ = double.TryParse(commandsData[6], out channelDimmension[2]);
                 _ = double.TryParse(commandsData[7], out channelDimmension[3]);
 
-                _ = bool.TryParse(commandsData[8], out bool sync);
+                _ = bool.TryParse(commandsData[9], out bool sync);
 
                 recorder.CreateMobile(actionType, line, timeLine, channelName, channelDimmension, commandsData[8], sync);
             }
