@@ -288,7 +288,7 @@ public class VisualRecorder
 
     internal void CreateMobile(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound, string url, bool sync)
     {
-        currentAction.AddImage(this, channelBound, false);
+        currentAction.AddImage(this, url, channelBound, false);
 
         Flush(); 
         if(sync) {
