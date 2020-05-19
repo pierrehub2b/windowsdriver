@@ -159,11 +159,11 @@ class ElementExecution : AtsExecution
         {
             AtsElement[] result = new AtsElement[elements.Count];
 
-            int loop = 0;
+            int loop = elements.Count-1;
             while (elements.Count > 0)
             {
                 result[loop] = elements.Dequeue();
-                loop++;
+                loop--;
             }
 
             return result;
