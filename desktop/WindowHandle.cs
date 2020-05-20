@@ -27,7 +27,8 @@ namespace windowsdriver.desktop
 {
     class WindowHandle
     {
-        private static readonly int WinCloseEventId = System.Windows.Automation.WindowPattern.WindowClosedEvent.Id;
+        //private static readonly int WinCloseEventId = System.Windows.Automation.WindowPattern.WindowClosedEvent.Id;
+        private static readonly int WinCloseEventId = 20017;
 
         public int Pid;
         public IntPtr Handle;
