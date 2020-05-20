@@ -1,4 +1,6 @@
 language: csharp
-mono: none
 dotnet: 4.5
 solution: windowsdriver.sln
+
+notifications:
+  slack: agilitest:89arTDhysVkKJ7TGJ2qw6Xwv
