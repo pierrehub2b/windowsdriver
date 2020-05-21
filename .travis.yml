@@ -7,8 +7,7 @@ deploy:
   provider: releases
   api_key:
     secure: nJgf4UYrMWvnny0IiWTgrJpIvBv1ef+Bg+WGfXGV0YrrY/kvsao3aR+qgBaM8XEDY7XGXlEPZflgU4mnQu7Y7vQkfZ9QNkrP1iyJhGxEut0820DogP1I+CdmMXAGO+WSoN6ZYIztkuT96bO/ytPLbFCxo2EnWD3uZyiKfRhvDHckVqb2rWg2VfnLEvuvi0Y0qYM9jElAITJUspc/h4V0r8R6vAXHrPyhntz6GmT/2YRFr10lBmSBrp8+5tDmv8NPhnl3bRV3oYjfWCZQUqVZTpH3y8WDvssORLEuxvRv/MvEi+DCA3m1wHgg7QOkSXp0yqXxNNGDACGViuyz1hyxwNgjSeYKYm8WCNjAe36JjB/riSytcQSgIeq5AvG2zYMZwpunNw4nCYR48LvmbFrHIAQxigDEQFy/Pp3fFhtILXzEEQcvjXCN9RjbGTlEqVxKoxVSpuypbtbQjuGTALG2UDR+hrNTWux2YzYxnXAlqp1SkQoV5+tztYBCMqBAcpZuXfsKoyot436HmJ83rzXeFJMikTUnkdfmig+aFTmeBlRB3ebYSv/c4hNyeobyunuGjmXE/xQHLjFr+DOxYVGnGEW5A9l2bM+XjjetXfG1KmkG33+Sytd6DizvXRKPDhXN0RiswQ8ZPfy1B2xksSaAwJE3BmzzV6x1vBhjoP1AagU=
-  file:
-    - /home/travis/build/pierrehub2b/windowsdriver/bin/Release/windowsdriver.zip
+  file: /home/travis/build/pierrehub2b/windowsdriver/bin/Release/windowsdriver.zip
   on:
     repo: pierrehub2b/windowsdriver
     branch: flaui
