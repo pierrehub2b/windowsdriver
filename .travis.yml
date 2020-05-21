@@ -1,5 +1,8 @@
 language: csharp
 solution: windowsdriver.sln
+branches:
+  only:
+    - master
 before_deploy:
   - cd /home/travis/build/pierrehub2b/windowsdriver/bin/Release
   - zip windowsdriver.zip windowsdriver.exe DotAmf.dll FlaUI.Core.dll FlaUI.UIA3.dll Interop.UIAutomationClient.dll
