@@ -4,7 +4,10 @@ branches:
   only:
     - master
 before_deploy:
-  - git tag v2.0.1
+  - git config --local user.name pierrehub2b
+  - git config --local user.email pierrehuber@yahoo.fr
+  - export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
+  - git tag $TRAVIS_TAG
   - cd /home/travis/build/pierrehub2b/windowsdriver/bin/Release
   - zip windowsdriver.zip windowsdriver.exe DotAmf.dll FlaUI.Core.dll FlaUI.UIA3.dll Interop.UIAutomationClient.dll
 deploy:
