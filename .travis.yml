@@ -2,7 +2,7 @@ language: csharp
 solution: windowsdriver.sln
 before_deploy:
   - cd /home/travis/build/pierrehub2b/windowsdriver/bin/Release
-  - tar -zcf windowsdriver.tar.gz windowsdriver.exe DotAmf.dll FlaUI.Core.dll FlaUI.UIA3.dll Interop.UIAutomationClient.dll
+  - zip windowsdriver.zip windowsdriver.exe DotAmf.dll FlaUI.Core.dll FlaUI.UIA3.dll Interop.UIAutomationClient.dll
 deploy:
   provider: releases
   api_key:
@@ -14,5 +14,3 @@ deploy:
   skip_cleanup: 'true'
 notifications:
   slack: agilitest:89arTDhysVkKJ7TGJ2qw6Xwv
-    on_success: change
-    on_failure: always
