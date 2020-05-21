@@ -14,5 +14,3 @@ deploy:
   skip_cleanup: 'true'
 notifications:
   slack: agilitest:89arTDhysVkKJ7TGJ2qw6Xwv
-    on_success: change
-    on_failure: always
