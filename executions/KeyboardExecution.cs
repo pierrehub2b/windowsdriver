@@ -18,12 +18,13 @@ under the License.
  */
 
 using System.Net;
+using windowsdriver.items;
 
 class KeyboardExecution : AtsExecution
 {
-    private static int errorCode = -6;
+    private const int errorCode = -6;
+    private readonly KeyType type;
 
-    private KeyType type;
     private enum KeyType
     {
         Clear = 0,
@@ -32,17 +33,24 @@ class KeyboardExecution : AtsExecution
         Release = 3
     };
 
-    private ActionKeyboard action;
-    private string data;
+    private readonly ActionKeyboard action;
+    private readonly string data;
+    private readonly string id;
+    private readonly bool keyDown;
 
-    public KeyboardExecution(int type, string[] commandsData, ActionKeyboard action) : base()
+    public KeyboardExecution(int type, string[] commandsData, ActionKeyboard action, bool keyDown) : base()
     {
         this.action = action;
         this.type = (KeyType)type;
+        this.keyDown = keyDown;
 
         if (commandsData.Length > 0)
         {
-            this.data = commandsData[0];
+            data = commandsData[0];
+        }
+        if (commandsData.Length > 1 && commandsData[1] != "")
+        {
+            id = commandsData[1];
         }
     }
 
@@ -50,21 +58,29 @@ class KeyboardExecution : AtsExecution
     {
         if (type == KeyType.Clear)
         {
-            action.clear();
+            if (data != null)
+            {
+                action.Clear(CachedElements.Instance.GetElementById(data));
+            }
+            else
+            {
+                action.Clear(null);
+            }
         }
         else if (data != null)
         {
             if (type == KeyType.Enter)
             {
-                action.sendKeys(data);
+                action.FocusElement(CachedElements.Instance.GetElementById(id));
+                action.SendKeysData(data, keyDown) ;
             }
             else if (type == KeyType.Down)
             {
-                action.down(data);
+                action.Down(data);
             }
             else if (type == KeyType.Release)
-            {
-                action.release(data);
+            { 
+                action.Release(data);
             }
             else
             {

@@ -20,17 +20,120 @@ under the License.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Net.Sockets;
 using System.Runtime.Serialization;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Windows.Media;
 
 [DataContract(Name = "com.ats.recorder.VisualAction")]
 public class VisualAction
 {
-    private List<byte[]> imagesList;
+    protected readonly List<byte[]> imagesList;
 
     public VisualAction()
     {
         this.imagesList = new List<byte[]>();
         this.Error = 0;
+    }
+
+    public static byte[] GetScreenshot(string uri)
+    {
+        return GetScreenshotStream(uri);
+    }
+
+    public static byte[] GetScreenshotStream(string uriString)
+    {
+        var uri = new Uri(uriString);
+        String hostname = uri.Host;
+        int port = uri.Port;
+
+        try
+        {
+            var client = new TcpClient(hostname, port);
+
+            var dataString = "hires";
+            byte[] data = Encoding.ASCII.GetBytes(dataString);
+
+            var headerString = "POST /screenshot HTTP/1.1\r\nUser-Agent: Windows Driver\r\nDate: " + DateTime.Now + "\r\nContent-Type: " + "text/plain" + "\r\nContent-Length: " + data.Length + "\r\n\r\n" + dataString;
+            byte[] header = Encoding.ASCII.GetBytes(headerString);
+
+            NetworkStream stream = client.GetStream();
+            stream.Write(header, 0, header.Length);
+
+            MemoryStream memoryStream = new MemoryStream();
+            stream.CopyTo(memoryStream);
+
+            stream.Close();
+            client.Close();
+
+            return ParseStream(memoryStream.ToArray());
+        }
+        catch (ArgumentNullException e)
+        {
+            Console.WriteLine("ArgumentNullException: {0}", e);
+        }
+        catch (SocketException e)
+        {
+            Console.WriteLine("SocketException: {0}", e);
+        }
+
+        return new byte[0];
+    }
+
+    private static byte[] ParseStream(byte[] stream)
+    {
+        string str = Encoding.ASCII.GetString(stream, 0, stream.Length);
+        var stringArray = Regex.Split(str, "\r\n\r\n");
+        var headerBytes = Encoding.ASCII.GetBytes(stringArray[0] + "\r\n\r\n");
+
+        var screenshot = new byte[stream.Length - headerBytes.Length];
+        Array.Copy(stream, headerBytes.Length, screenshot, 0, screenshot.Length);
+        return screenshot;
+    }
+
+    /* public static byte[] GetScreenshotStream(string uri)
+    {
+        HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
+        httpWebRequest.ContentType = "application/json";
+        httpWebRequest.Method = "POST";
+
+        // Set the content length of the string being posted.
+        byte[] b = Encoding.ASCII.GetBytes("hires");
+        httpWebRequest.ContentLength = b.Length;
+
+        Stream newStream = httpWebRequest.GetRequestStream();
+
+        newStream.Write(b, 0, b.Length);
+
+        byte[] buffer = new byte[4096];
+        using (Stream responseStream = httpWebRequest.GetResponse().GetResponseStream())
+        {
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                int count = 0;
+
+                do
+                {
+                    count = responseStream.Read(buffer, 0, buffer.Length);
+                    memoryStream.Write(buffer, 0, count);
+                } while (count != 0);
+
+                return memoryStream.ToArray();
+            }
+        }
+    } */
+
+    public static Bitmap GetScreenshotImage(string uri)
+    {
+        Bitmap bmp;
+        using (var ms = new MemoryStream(GetScreenshotStream(uri)))
+        {
+            bmp = new Bitmap(ms);
+        }
+        return bmp;
     }
 
     public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived) : this()
@@ -40,61 +143,55 @@ public class VisualAction
         this.TimeLine = timeLine;
         this.ChannelName = channelName;
         this.ChannelBound = new TestBound(channelBound);
-        this.imagesList.Add(recorder.Capture(channelBound));
+        this.imagesList.Add(recorder.ScreenCapture(channelBound));
         this.ImageType = imageType;
         this.ImageRef = 0;
-        /*try
-        {
-            this.Cpu = (int)cpu.NextValue() / Environment.ProcessorCount;
-            this.Ram = ram.RawValue / 1024;
-            this.NetSent = Convert.ToDouble(netSent);
-            this.NetReceived = Convert.ToDouble(netReceived);
-        }
-        catch { }*/
-
     }
 
-    public void addImage(VisualRecorder recorder, double[] channelBound, bool isRef)
+    public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) : this()
     {
-        byte[] cap = recorder.Capture(channelBound);
-
-        /*if (!Equality(cap, imagesList.Last())) {
-            imagesList.Add(cap);
-        }*/
-
-        if (isRef)
-        {
-            imagesList.Clear();
-        }
-
-        imagesList.Add(cap);
+        this.Type = type;
+        this.Line = line;
+        this.TimeLine = timeLine;
+        this.ChannelName = channelName;
+        this.imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshotImage(url)));
+        this.ChannelBound = new TestBound(channelBound);
+        this.ImageType = imageType;
+        this.ImageRef = 0;
     }
 
-    public bool Equality(byte[] a1, byte[] b1)
+    public VisualAction(VisualActionSync action) : this()
     {
-        if (a1.Length != b1.Length)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < a1.Length; i++)
-        {
-            if (a1[i] != b1[i])
-            {
-                return false;
-            }
-        }
-        return true;
+        this.ChannelBound = action.ChannelBound;
+        this.ChannelName = action.ChannelName;
+        this.Data = action.Data;
+        this.Duration = action.Duration;
+        this.Element = action.Element;
+        this.Error = action.Error;
+        this.ImageRef = action.ImageRef;
+        this.imagesList = action.imagesList;
+        this.ImageType = action.ImageType;
+        this.Index = action.Index;
+        this.Line = action.Line;
+        this.TimeLine = action.TimeLine;
+        this.Type = action.Type;
+        this.Value = action.Value;
     }
+
+    public virtual void AddImage(VisualRecorder recorder, double[] channelBound, bool isRef)
+    {}
+
+    public virtual void AddImage(VisualRecorder recorder, string url, double[] channelBound, bool isRef)
+    {}
 
     [DataMember(Name = "channelName")]
-    public string ChannelName { get; set; }
+    public string ChannelName;
 
     [DataMember(Name = "data")]
-    public string Data { get; set; }
+    public string Data;
 
     [DataMember(Name = "element")]
-    public VisualElement Element { get; set; }
+    public VisualElement Element;
 
     [DataMember(Name = "images")]
     public byte[][] Images
@@ -104,44 +201,32 @@ public class VisualAction
     }
 
     [DataMember(Name = "imageType")]
-    public string ImageType { get; set; }
+    public string ImageType;
 
     [DataMember(Name = "index")]
-    public int Index { get; set; }
+    public int Index;
 
     [DataMember(Name = "error")]
-    public int Error { get; set; }
+    public int Error;
 
     [DataMember(Name = "duration")]
-    public long Duration { get; set; }
+    public long Duration;
 
     [DataMember(Name = "line")]
-    public int Line { get; set; }
+    public int Line;
 
     [DataMember(Name = "timeLine")]
-    public long TimeLine { get; set; }
+    public long TimeLine;
 
     [DataMember(Name = "type")]
-    public string Type { get; set; }
+    public string Type;
 
     [DataMember(Name = "value")]
-    public string Value { get; set; }
+    public string Value;
 
     [DataMember(Name = "channelBound")]
-    public TestBound ChannelBound { get; set; }
+    public TestBound ChannelBound;
 
     [DataMember(Name = "imageRef")]
-    public int ImageRef { get; set; }
-
-    [DataMember(Name = "cpu")]
-    public double Cpu { get; set; }
-
-    [DataMember(Name = "ram")]
-    public double Ram { get; set; }
-
-    [DataMember(Name = "netSent")]
-    public double NetSent { get; set; }
-
-    [DataMember(Name = "netReceived")]
-    public double NetReceived { get; set; }
+    public int ImageRef;
 }

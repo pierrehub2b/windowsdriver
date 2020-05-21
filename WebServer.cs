@@ -17,22 +17,34 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Management;
 using System.Net;
 using System.Threading;
+using windowsdriver;
 
 public class WebServer
 {
-    public Boolean isRunning = true;
+    private const string ATS_USER_AGENT = "AtsDesktopDriver";
+
+    private Boolean isRunning = true;
+    private Boolean keyDown = false;
 
     private readonly HttpListener listener;
-    private readonly Func<HttpListenerContext, bool> _responderMethod;
 
-    private int port;
+    private readonly ActionKeyboard keyboard = new ActionKeyboard();
+    private readonly DesktopManager desktop = new DesktopManager();
+    private readonly VisualRecorder recorder = new VisualRecorder();
 
-    public WebServer(int port, Func<HttpListenerContext, bool> method)
+    private readonly DesktopData[] capabilities;
+
+    public WebServer(int port)
     {
-        this.port = port;
+        this.capabilities = GetCapabilities(desktop);
         this.listener = new HttpListener();
 
         if (!HttpListener.IsSupported)
@@ -40,37 +52,54 @@ public class WebServer
                 "Needs Windows XP SP2, Server 2003 or later.");
 
         listener.Prefixes.Add("http://localhost:" + port + "/");
-
-        _responderMethod = method;
         listener.Start();
     }
 
+    private bool SendResponse(HttpListenerContext listener)
+    {
+        DesktopRequest req;
+
+        string[] cmdType = listener.Request.RawUrl.Substring(1).Split('/');
+        if (cmdType.Length > 1)
+        {
+            _ = int.TryParse(cmdType[0], out int t0);
+            _ = int.TryParse(cmdType[1], out int t1);
+
+            string postData = "";
+            using (var reader = new StreamReader(listener.Request.InputStream, listener.Request.ContentEncoding))
+            {
+                postData = reader.ReadToEnd();
+            }
+            req = new DesktopRequest(t0, t1, postData.Split('\n'), keyboard, recorder, capabilities, desktop, keyDown);
+            keyDown = t1 == 2;
+        }
+        else
+        {
+            req = new DesktopRequest(-2, listener.Request.UserAgent.Equals(ATS_USER_AGENT), "wrong number of url parameters");
+        }
+
+        return req.Execute(listener);
+    }
+    
     public void Run()
     {
         while (isRunning)
         {
-            try
-            {
-                while (listener.IsListening)
-                {
-                    ThreadPool.QueueUserWorkItem((c) =>
-                    {
-                        var ctx = c as HttpListenerContext;
-                        bool atsAgent = ctx.Request.UserAgent.Equals("AtsDesktopDriver");
-                        try
-                        {
-                            _responderMethod(ctx);
-                        }
-                        catch (Exception e)
-                        {
-                            DesktopRequest req = new DesktopRequest(-99, atsAgent, "error -> " + e.StackTrace.ToString());
-                            isRunning = req.execute(ctx);
-                        }
+            _ = ThreadPool.QueueUserWorkItem((c) =>
+              {
+                  var ctx = c as HttpListenerContext;
+                  bool atsAgent = ctx.Request.UserAgent.Equals(ATS_USER_AGENT);
+                  try
+                  {
+                      SendResponse(ctx);
+                  }
+                  catch (Exception e)
+                  {
+                      DesktopRequest req = new DesktopRequest(-99, atsAgent, "error -> " + e.StackTrace.ToString());
+                      isRunning = req.Execute(ctx);
+                  }
 
-                    }, listener.GetContext());
-                }
-            }
-            catch { } // suppress any exceptions
+              }, listener.GetContext());
         }
     }
 
@@ -78,5 +107,89 @@ public class WebServer
     {
         listener.Stop();
         listener.Close();
+    }
+
+    //-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    private static DesktopData[] GetCapabilities(DesktopManager desktop)
+    {
+        List<DesktopData> osData = new List<DesktopData>
+        {
+            new DesktopData("MachineName", Environment.MachineName),
+            new DesktopData("DriverVersion", System.Reflection.Assembly.GetEntryAssembly().GetName().Version.ToString()),
+            new DesktopData("DotNetVersion", GetFrameworkVersion().ToString()),
+            new DesktopData("ScreenWidth", desktop.DesktopWidth),
+            new DesktopData("ScreenHeight", desktop.DesktopHeight),
+            new DesktopData("VirtualWidth", desktop.DesktopWidth),
+            new DesktopData("VirtualHeight", desktop.DesktopHeight),
+            new DesktopData("Version", Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseId", "").ToString())
+        };
+
+        string driveLetter = Path.GetPathRoot(Environment.CurrentDirectory);
+        DriveInfo dinf = new DriveInfo(driveLetter);
+        if (dinf.IsReady)
+        {
+            osData.Add(new DesktopData("DriveLetter", driveLetter));
+            osData.Add(new DesktopData("DiskTotalSize", dinf.TotalSize / 1024 / 1024 + " Mo"));
+            osData.Add(new DesktopData("DiskFreeSpace", dinf.AvailableFreeSpace / 1024 / 1024 + " Mo"));
+        }
+
+        ManagementObject os = new ManagementObjectSearcher("select * from Win32_OperatingSystem").Get().Cast<ManagementObject>().First();
+        osData.Add(new DesktopData("BuildNumber", (string)os["BuildNumber"]));
+        osData.Add(new DesktopData("Name", (string)os["Caption"]));
+        osData.Add(new DesktopData("CountryCode", (string)os["CountryCode"]));
+        os.Dispose();
+
+        ManagementObject cpu = new ManagementObjectSearcher("select * from Win32_Processor").Get().Cast<ManagementObject>().First();
+        osData.Add(new DesktopData("CpuSocket", (string)cpu["SocketDesignation"]));
+        osData.Add(new DesktopData("CpuName", (string)cpu["Caption"]));
+        osData.Add(new DesktopData("CpuArchitecture", "" + (ushort)cpu["Architecture"]));
+        osData.Add(new DesktopData("CpuMaxClockSpeed", (uint)cpu["MaxClockSpeed"] + " Mhz"));
+        osData.Add(new DesktopData("CpuCores", "" + (uint)cpu["NumberOfCores"]));
+        cpu.Dispose();
+
+        return osData.ToArray();
+    }
+
+    private static Version GetFrameworkVersion()
+    {
+        using (RegistryKey ndpKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full"))
+        {
+            if (ndpKey != null)
+            {
+                int value = (int)(ndpKey.GetValue("Release") ?? 0);
+                if (value >= 528040)
+                    return new Version(4, 8, 0);
+
+                if (value >= 461808)
+                    return new Version(4, 7, 2);
+
+                if (value >= 461308)
+                    return new Version(4, 7, 1);
+
+                if (value >= 460798)
+                    return new Version(4, 7, 0);
+
+                if (value >= 394802)
+                    return new Version(4, 6, 2);
+
+                if (value >= 394254)
+                    return new Version(4, 6, 1);
+
+                if (value >= 393295)
+                    return new Version(4, 6, 0);
+
+                if (value >= 379893)
+                    return new Version(4, 5, 2);
+
+                if (value >= 378675)
+                    return new Version(4, 5, 1);
+
+                if (value >= 378389)
+                    return new Version(4, 5, 0);
+            }
+        }
+
+        return new Version(0, 0, 0);
     }
 }

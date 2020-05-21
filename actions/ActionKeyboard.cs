@@ -17,122 +17,115 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using FlaUI.Core.Input;
+using FlaUI.Core.WindowsAPI;
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Windows.Forms;
-using WindowsInput;
-using WindowsInput.Native;
 
 class ActionKeyboard
 {
-    private static Regex keyRegexp = new Regex(@"\$key\((.*)\)");
-    private InputSimulator simulator;
+    private readonly string keyPattern = @"\$key\(([^)]*)\)";
 
-    public ActionKeyboard()
+    internal void SendKeysData(string data, bool keyDown)
     {
-        this.simulator = new InputSimulator();
-    }
-
-    internal void sendKeys(string data)
-    {
-        pasteText(Base64Decode(data));
-    }
-
-    internal void clear()
-    {
-        simulator.Keyboard.KeyDown(VirtualKeyCode.CONTROL);
-        simulator.Keyboard.KeyPress(VirtualKeyCode.VK_A);
-        simulator.Keyboard.KeyUp(VirtualKeyCode.CONTROL);
-
-        simulator.Keyboard.KeyPress(VirtualKeyCode.BACK);
-    }
-
-    internal void addressBar(string folder)
-    {
-        simulator.Keyboard.KeyDown(VirtualKeyCode.CONTROL);
-        simulator.Keyboard.KeyPress(VirtualKeyCode.VK_L);
-        simulator.Keyboard.KeyUp(VirtualKeyCode.CONTROL);
-
-        pasteText(folder);
-
-        simulator.Keyboard.KeyDown(VirtualKeyCode.RETURN);
-        simulator.Keyboard.KeyUp(VirtualKeyCode.RETURN);
-    }
-
-    internal void rootKeys(string keys)
-    {
-        bool isSpecialKey = false;
-        foreach (Match match in keyRegexp.Matches(keys))
+        data = Base64Decode(data);
+        if (data.StartsWith("$KEY-", StringComparison.OrdinalIgnoreCase))
         {
-            isSpecialKey = true;
-            try
+            string key = data.Substring(5).ToUpper();
+            if (key.Equals("BACK_SPACE"))
             {
-                SendKeys.SendWait("{" + match.Groups[1].ToString().ToUpper() + "}");
+                Keyboard.Type(VirtualKeyShort.BACK);
             }
-            catch (Exception) { }
-            
-            /*VirtualKeyCode code;
-            if (Enum.TryParse<VirtualKeyCode>(match.Groups[1].ToString().ToUpper(), out code))
+            else
             {
-                //simulator.Keyboard.KeyPress(code);
+                SendKeys.SendWait("{" + key + "}");
+            }
+        }
+        else
+        {
+            Keyboard.Type(keyDown ? data.ToLowerInvariant() : data);
+        }
+    }
+
+    internal void Clear(AtsElement element)
+    {
+        if(element != null)
+        {
+            element.TextClear();
+        }
+    }
+
+    internal void FocusElement(AtsElement element)
+    {
+        if (element != null)
+        {
+            element.ElementFocus();
+        }
+    }
+
+    internal void AddressBar(string url)
+    {
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_L);
+        Keyboard.Type(url);
+        Keyboard.Type(VirtualKeyShort.RETURN);
+    }
+
+    internal void RootKeys(string keys)
+    {
+        string[] tokens = Regex.Split(keys, keyPattern);
+        foreach (string token in tokens)
+        {
+            if(token.Length > 0)    
+            {
                 try
                 {
-                    SendKeys.SendWait(code);
+                    SendKeys.SendWait("{" + token.ToUpper() + "}");
                 }
-                catch (Exception){}
-
-            }*/
-        }
-
-        if (!isSpecialKey)
-        {
-            SendKeys.SendWait(keys);
+                catch
+                {
+                    Keyboard.Type(token);
+                }
+            }
         }
     }
-    
-    internal void down(string code)
+
+    internal void Down(string code)
     {
-        if ("33".Equals(code))//ctrl key
+        if ("33".Equals(code) || "57353".Equals(code))//ctrl key
         {
-            simulator.Keyboard.KeyDown(VirtualKeyCode.CONTROL);
+            Keyboard.Press(VirtualKeyShort.CONTROL);
         }
-        else if ("46".Equals(code))//shift key
+        else if ("46".Equals(code) || "57352".Equals(code))//shift key
         {
-            simulator.Keyboard.KeyDown(VirtualKeyCode.SHIFT);
+            Keyboard.Press(VirtualKeyShort.SHIFT);
+        }
+        else if ("57354".Equals(code))//alt key
+        {
+            Keyboard.Press(VirtualKeyShort.ALT);
         }
     }
 
-    internal void release(string code)
+    internal void Release(string code)
     {
-        if ("33".Equals(code))//ctrl key
+        if ("33".Equals(code) || "57353".Equals(code))//ctrl key
         {
-            simulator.Keyboard.KeyUp(VirtualKeyCode.CONTROL);
+            Keyboard.Release(VirtualKeyShort.CONTROL);
         }
-        else if ("46".Equals(code))//shift key
+        else if ("46".Equals(code) || "57352".Equals(code))//shift key
         {
-            simulator.Keyboard.KeyUp(VirtualKeyCode.SHIFT);
+            Keyboard.Release(VirtualKeyShort.SHIFT);
+        }
+        else if ("57354".Equals(code))//alt key
+        {
+            Keyboard.Release(VirtualKeyShort.ALT);
         }
     }
-    
-    private string Base64Decode(string base64EncodedData)
+
+    private static string Base64Decode(string base64EncodedData)
     {
         var base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
         return Encoding.UTF8.GetString(base64EncodedBytes);
-    }
-
-    private void pasteText(string text)
-    {
-        if (text.Length > 0) {
-            Thread thread = new Thread(() => Clipboard.SetText(text));
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
-
-            simulator.Keyboard.KeyDown(VirtualKeyCode.CONTROL);
-            simulator.Keyboard.KeyPress(VirtualKeyCode.VK_V);
-            simulator.Keyboard.KeyUp(VirtualKeyCode.CONTROL);
-        }
     }
 }

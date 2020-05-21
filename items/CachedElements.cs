@@ -17,37 +17,46 @@ specific language governing permissions and limitations
 under the License.
  */
 
-using System;
-using System.Net;
+using System.Collections.Generic;
 
-public static class DesktopDriver
+namespace windowsdriver.items
 {
-    public const int DefaultPort = 9988;
-
-    public static int Main(String[] args)
+    sealed class CachedElements
     {
+        private static CachedElements instance = null;
+        private static readonly object padlock = new object();
+        
+        private readonly Dictionary<string, AtsElement> elements;
 
-        int defaultPort = DefaultPort;
-        for (int i = 0; i < args.Length; i++)
+        public CachedElements()
         {
-            if (args[i].IndexOf("--port=") == 0)
+            elements = new Dictionary<string, AtsElement>();
+        }
+
+        public static CachedElements Instance
+        {
+            get
             {
-                String[] dataPort = args[i].Split('=');
-                if (dataPort.Length >= 2)
+                lock (padlock)
                 {
-                    _ = int.TryParse(dataPort[1], out defaultPort);
-                    if (defaultPort < 1025 || defaultPort > IPEndPoint.MaxPort)
+                    if (instance == null)
                     {
-                        defaultPort = DefaultPort;
+                        instance = new CachedElements();
                     }
+                    return instance;
                 }
             }
         }
+        
+        public void Add(string id, AtsElement elem)
+        {
+            elements.Add(id, elem);
+        }
 
-        Console.WriteLine("Starting ATS Windows Desktop Driver on port {0}", defaultPort);
-        Console.WriteLine("Only local connections are allowed.");
-        new WebServer(defaultPort).Run();
-
-        return 0;
+        public AtsElement GetElementById(string id)
+        {
+            elements.TryGetValue(id, out AtsElement value);
+            return value;
+        }
     }
 }

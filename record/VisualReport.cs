@@ -36,65 +36,65 @@ public class VisualReport : VisualAction
         this.TotalMemory = HardwareInfo.GetPhysicalMemory();
         this.OsInfo = HardwareInfo.GetOSInformation();
 
-        if (id != string.Empty)
+        if (!string.IsNullOrEmpty(id)) 
         {
             this.Id = id;
         }
 
-        if (author != string.Empty)
+        if (!string.IsNullOrEmpty(author))
         {
             this.Author = author;
         }
 
-        if (description != string.Empty)
+        if (!string.IsNullOrEmpty(description))
         {
             this.Description = description;
         }
 
-        if (groups != string.Empty)
+        if (!string.IsNullOrEmpty(groups))
         {
             this.Groups = groups;
         }
 
-        if (prereq != string.Empty)
+        if (!string.IsNullOrEmpty(prereq))
         {
             this.Prerequisite = prereq;
         }
     }
 
     [DataMember(Name = "author")]
-    public string Author { get; set; }
+    public string Author;
 
     [DataMember(Name = "description")]
-    public string Description { get; set; }
+    public string Description;
 
     [DataMember(Name = "started")]
-    public string Started { get; set; }
+    public string Started;
 
     [DataMember(Name = "groups")]
-    public string Groups { get; set; }
+    public string Groups;
 
     [DataMember(Name = "id")]
-    public string Id { get; set; }
+    public string Id;
 
     [DataMember(Name = "name")]
-    public string Name { get; set; }
+    public string Name;
 
     [DataMember(Name = "prerequisite")]
-    public string Prerequisite { get; set; }
+    public string Prerequisite;
 
     [DataMember(Name = "quality")]
-    public int Quality { get; set; }
+    public int Quality;
 
     [DataMember(Name = "cpuSpeed")]
-    public long CpuSpeed { get; set; }
+    public long CpuSpeed;
 
     [DataMember(Name = "totalMemory")]
-    public long TotalMemory { get; set; }
+    public long TotalMemory;
 
     [DataMember(Name = "cpuCount")]
-    public int CpuCount { get; set; }
+    public int CpuCount;
 
     [DataMember(Name = "osInfo")]
-    public string OsInfo { get; set; }
+    public string OsInfo;
 }

@@ -17,12 +17,15 @@ specific language governing permissions and limitations
 under the License.
  */
 
-using System.Collections.Generic;
 using System.Net;
 using System.Runtime.Serialization;
+using windowsdriver;
 
-class DesktopRequest
+struct DesktopRequest
 {
+    private const int errorCode = -3;
+    private const string errorMessage = "unkown command type";
+
     private enum CommandType
     {
         Driver = 0,
@@ -33,32 +36,32 @@ class DesktopRequest
         Mouse = 5
     };
 
-    private AtsExecution execution;
+    private readonly AtsExecution execution;
 
     public DesktopRequest(int errorCode, bool atsAgent, string message)
     {
         execution = new AtsExecution(errorCode, atsAgent, message);
     }
 
-    public DesktopRequest(int cmdType, int cmdSubType, string[] cmdData, ActionMouse mouse, ActionKeyboard keyboard, VisualRecorder recorder, DesktopData[] capabilities, List<DesktopWindow> ieWindows)
+    public DesktopRequest(int cmdType, int cmdSubType, string[] cmdData, ActionKeyboard keyboard, VisualRecorder recorder, DesktopData[] capabilities, DesktopManager desktop, bool keyDown = false)
     {
         CommandType type = (CommandType)cmdType;
 
         if (type == CommandType.Driver)
         {
-            execution = new DriverExecution(cmdSubType, cmdData, capabilities);
+            execution = new DriverExecution(cmdSubType, cmdData, capabilities, desktop);
         }
         else if (type == CommandType.Mouse)
         {
-            execution = new MouseExecution(cmdSubType, cmdData, mouse);
+            execution = new MouseExecution(cmdSubType, cmdData, desktop);
         }
         else if (type == CommandType.Keyboard)
         {
-            execution = new KeyboardExecution(cmdSubType, cmdData, keyboard);
+            execution = new KeyboardExecution(cmdSubType, cmdData, keyboard, keyDown);
         }
         else if (type == CommandType.Window)
         {
-            execution = new WindowExecution(cmdSubType, cmdData, keyboard, ieWindows, recorder);
+            execution = new WindowExecution(cmdSubType, cmdData, keyboard, recorder, desktop);
         }
         else if (type == CommandType.Record)
         {
@@ -66,15 +69,15 @@ class DesktopRequest
         }
         else if (type == CommandType.Element)
         {
-            execution = new ElementExecution(cmdSubType, cmdData);
+            execution = new ElementExecution(cmdSubType, cmdData, desktop);
         }
         else
         {
-            execution = new AtsExecution(-3, true, "unkown command type");
+            execution = new AtsExecution(errorCode, true, errorMessage);
         }
     }
 
-    public bool execute(HttpListenerContext context)
+    public bool Execute(HttpListenerContext context)
     {
         return execution.Run(context);
     }
@@ -86,9 +89,10 @@ public class DesktopResponse
     public int type = 0;
     public string atsvFilePath;
 
-    public DesktopResponse() {}
+    public DesktopResponse() { }
 
-    public DesktopResponse(int error, bool atsAgent, string message) {
+    public DesktopResponse(int error, bool atsAgent, string message)
+    {
         setError(error, message);
         if (!atsAgent)
         {
@@ -96,11 +100,6 @@ public class DesktopResponse
         }
     }
 
-    internal void setCommandError()
-    {
-        setError(-1, "command request error");
-    }
-    
     public void setError(int code, string message)
     {
         ErrorCode = code;
@@ -108,22 +107,22 @@ public class DesktopResponse
     }
 
     [DataMember(Name = "windows", IsRequired = false)]
-    public DesktopWindow[] Windows { get; set; }
+    public DesktopWindow[] Windows;
 
     [DataMember(Name = "image", IsRequired = false)]
-    public byte[] Image { get; set; }
+    public byte[] Image;
 
     [DataMember(Name = "elements", IsRequired = false)]
-    public AtsElement[] Elements { get; set; }
+    public AtsElement[] Elements;
 
     [DataMember(Name = "data", IsRequired = false)]
-    public DesktopData[] Data { get; set; }
+    public DesktopData[] Data;
 
     [DataMember(Name = "errorCode", IsRequired = true)]
-    public int ErrorCode { get; set; }
+    public int ErrorCode;
 
     [DataMember(Name = "errorMessage", IsRequired = false)]
-    public string ErrorMessage { get; set; }
+    public string ErrorMessage;
 }
 
 [DataContract(Name = "com.ats.executor.TestBound")]
@@ -140,14 +139,14 @@ public class TestBound
     }
 
     [DataMember(Name = "height")]
-    public double Height { get; set; }
+    public double Height;
 
     [DataMember(Name = "width")]
-    public double Width { get; set; }
+    public double Width;
 
     [DataMember(Name = "x")]
-    public double X { get; set; }
+    public double X;
 
     [DataMember(Name = "y")]
-    public double Y { get; set; }
+    public double Y;
 }

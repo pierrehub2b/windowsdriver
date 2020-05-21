@@ -20,21 +20,23 @@ under the License.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Management;
+using windowsdriver;
 
 class DriverExecution : AtsExecution
 {
-    private static int errorCode = -4;
+    private const int errorCode = -4;
 
     private enum DriverType
     {
         Capabilities = 0,
         Application = 1,
-        Process = 2,
+        CloseWindows = 2,
         Close = 3
     };
 
-    public DriverExecution(int t, string[] commandsData, DesktopData[] caps) : base()
+    public DriverExecution(int t, string[] commandsData, DesktopData[] caps, DesktopManager desktop) : base()
     {
         DriverType type = (DriverType)t;
 
@@ -49,13 +51,15 @@ class DriverExecution : AtsExecution
                 string applicationPath = commandsData[0];
                 try
                 {
-                    List<DesktopData> data = new List<DesktopData>();
-                    var versInfo = FileVersionInfo.GetVersionInfo(applicationPath);
-                    data.Add(new DesktopData("ApplicationVersion", string.Format("V{0}.{1}.{2}", versInfo.FileMajorPart, versInfo.FileMinorPart, versInfo.FileBuildPart)));
-                    data.Add(new DesktopData("ApplicationBuildVersion", string.Format("{0}", versInfo.FilePrivatePart)));
-                    response.Data = data.ToArray();
+                    FileVersionInfo versInfo = FileVersionInfo.GetVersionInfo(applicationPath);
+
+                    response.Data = new DesktopData[3];
+                    response.Data[0] = new DesktopData("ApplicationVersion", string.Format("{0}", versInfo.ProductVersion));
+                    response.Data[1] = new DesktopData("ApplicationBuildVersion", string.Format("{0}", versInfo.ProductBuildPart));
+                    response.Data[2] = new DesktopData("ApplicationName", string.Format("{0}", versInfo.ProductName));
+
                 }
-                catch (Exception)
+                catch (FileNotFoundException)
                 {
                     response.setError(errorCode, "file path is not valid or not found : " + applicationPath);
                 }
@@ -65,13 +69,16 @@ class DriverExecution : AtsExecution
                 response.setError(errorCode, "no application path data");
             }
         }
-        else if (type == DriverType.Process)
+        else if (type == DriverType.CloseWindows)
         {
-            int pid = -1;
-            int.TryParse(commandsData[0], out pid);
+            _ = int.TryParse(commandsData[0], out int pid);
             if (pid > 0)
             {
-                KillProcessAndChildren(pid);
+                List<DesktopWindow> wins = desktop.GetOrderedWindowsByPid(pid);
+                foreach (DesktopWindow win in wins)
+                {
+                    win.Close();
+                }
             }
             else
             {
@@ -101,6 +108,8 @@ class DriverExecution : AtsExecution
             Process proc = Process.GetProcessById(pid);
             proc.Kill();
         }
-        catch (ArgumentException){}
+        catch { }
+
+        searcher.Dispose();
     }
 }

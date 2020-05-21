@@ -23,7 +23,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 
 public class VisualRecorder
 {
@@ -32,7 +31,7 @@ public class VisualRecorder
 
     [DllImport("user32.dll", EntryPoint = "GetDC")]
     private static extern IntPtr GetDC(IntPtr ptr);
-         
+
     [DllImport("gdi32.dll", EntryPoint = "CreateCompatibleDC")]
     private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
 
@@ -49,10 +48,10 @@ public class VisualRecorder
     private static extern IntPtr DeleteObject(IntPtr hDc);
 
     [DllImport("gdi32.dll")]
-    public static extern bool DeleteDC(IntPtr hDC);
-    
+    private static extern bool DeleteDC(IntPtr hDC);
+
     private const int SRCCOPY = 0x00CC0020;
-        
+
     private int frameIndex = 0;
     private BufferedStream visualStream;
     private VisualAction currentAction;
@@ -60,9 +59,9 @@ public class VisualRecorder
     private ImageCodecInfo animationEncoder;
     private EncoderParameters animationEncoderParameters;
 
-    private ImageCodecInfo maxQualityEncoder;
-    private EncoderParameters maxQualityEncoderParameters;
-    
+    private readonly ImageCodecInfo maxQualityEncoder;
+    private readonly EncoderParameters maxQualityEncoderParameters;
+
     private string imageType;
 
     private DataContractAmfSerializer AmfSerializer;
@@ -89,34 +88,11 @@ public class VisualRecorder
     public int CurrentPid
     {
         get { return currentPid; }
-        set {
+        set
+        {
             if (value != currentPid)
             {
                 currentPid = value;
-                //string processName = GetInstanceName(value);
-
-                //string instance = GetInstanceNameForProcessId(value);
-                //cpuCounter = new PerformanceCounter("Process", "% Processor Time", instance);
-
-                //cpuCounter = new PerformanceCounter("Processor", "% Processor Time", processName);
-                //ramCounter.InstanceName = processName;
-                
-                /*string processName = GetPerformanceCounterProcessName(value);
-                if (processName != null)
-                {
-                    //cpuCounter.Close(); cpuCounter.Dispose();
-                    // cpuCounter = new PerformanceCounter("Process", "% Processor Time", processName, true);
-                    cpuCounter.InstanceName = GetInstanceName(value);
-
-                    ramCounter.Close(); ramCounter.Dispose();
-                     ramCounter = new PerformanceCounter("Process", "Working Set - Private", processName, true);
-
-                    //networkBytesSent.Close();
-                    //networkBytesSent = new PerformanceCounter("Network Interface", "Bytes Sent/sec", processName, true);
-
-                    //networkBytesReceived.Close();
-                    //networkBytesReceived = new PerformanceCounter("Network Interface", "Bytes Received/sec", processName, true);
-                }*/
             }
         }
     }
@@ -134,17 +110,32 @@ public class VisualRecorder
         return null;
     }
 
-    public byte[] Capture(int x, int y, int w, int h)
+    public byte[] ScreenCapture(int x, int y, int w, int h, Bitmap img)
     {
-        return Capture(x, y, w, h, maxQualityEncoder, maxQualityEncoderParameters);
+        return ScreenCapture(x, y, w, h, maxQualityEncoder, maxQualityEncoderParameters, img);
     }
 
-    public byte[] Capture(double[] bound)
+    public byte[] ScreenCapture(int x, int y, int w, int h)
     {
-        return Capture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters);
+        return ScreenCapture(x, y, w, h, maxQualityEncoder, maxQualityEncoderParameters);
     }
 
-    public byte[] Capture(int x, int y, int w, int h, ImageCodecInfo encoder, EncoderParameters encoderParameters)
+    public byte[] ScreenCapture(double[] bound)
+    {
+        return ScreenCapture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters);
+    }
+
+    public byte[] ScreenCapture(TestBound bounds)
+    {
+        return ScreenCapture((int)bounds.X, (int)bounds.Y, (int)bounds.Width, (int)bounds.Height, animationEncoder, animationEncoderParameters);
+    }
+
+    public byte[] ScreenCapture(double[] bound, Bitmap img)
+    {
+        return ScreenCapture((int)bound[0], (int)bound[1], (int)bound[2], (int)bound[3], animationEncoder, animationEncoderParameters, img);
+    }
+
+    public static byte[] ScreenCapture(int x, int y, int w, int h, ImageCodecInfo encoder, EncoderParameters encoderParameters)
     {
         IntPtr hdcSrc = GetDC(GetDesktopWindow());
         IntPtr hdcDest = CreateCompatibleDC(hdcSrc);
@@ -176,11 +167,30 @@ public class VisualRecorder
         return null;
     }
 
+    public static byte[] ScreenCapture(int x, int y, int w, int h, ImageCodecInfo encoder, EncoderParameters encoderParameters, Bitmap img)
+    {
+        IntPtr hdcSrc = GetDC(GetDesktopWindow());
+        IntPtr hdcDest = CreateCompatibleDC(hdcSrc);
+        IntPtr hBitmap = CreateCompatibleBitmap(hdcSrc, w, h);
+
+        Bitmap bitmap;
+        var cropedImg = img.Clone(new Rectangle(x, y, w, h), img.PixelFormat);
+        using (bitmap = cropedImg)
+        {
+            DeleteObject(hBitmap);
+            GC.Collect();
+
+            MemoryStream imageStream;
+            using (imageStream = new MemoryStream())
+            {
+                bitmap.Save(imageStream, encoder, encoderParameters);
+                return imageStream.ToArray();
+            }
+        }
+    }
+
     internal void Stop()
     {
-        //cpuCounter.Close();
-        //ramCounter.Close();
-
         Flush();
 
         if (visualStream != null)
@@ -191,23 +201,18 @@ public class VisualRecorder
 
         visualStream = null;
         AmfSerializer = null;
-
-        //DeleteDC(hDC);
-
     }
 
     internal void Start(string folderPath, string id, string fullName, string description, string author, string groups, string prereq, int videoQuality, string started)
     {
-        //hDC = GetDC(GetDesktopWindow());
-        //hMemDC = CreateCompatibleDC(hDC);
-
         frameIndex = -1;
         startTime = DateTime.Now;
         imageType = "jpeg";
 
         if (videoQuality > 0)
         {
-            if (AmfSerializer == null) {
+            if (AmfSerializer == null)
+            {
                 AmfSerializer = new DataContractAmfSerializer(typeof(VisualAction), new[] { typeof(VisualElement), typeof(VisualReport), typeof(TestBound) });
             }
 
@@ -221,7 +226,7 @@ public class VisualRecorder
             {
                 animationEncoder = GetEncoder(ImageFormat.Jpeg);
                 animationEncoderParameters = new EncoderParameters(2);
-                
+
                 if (videoQuality == 3) // quality level
                 {
                     animationEncoderParameters.Param[1] = new EncoderParameter(Encoder.Quality, 70L);
@@ -247,12 +252,12 @@ public class VisualRecorder
                     visualStream = new BufferedStream(new FileStream(AtsvFilePath, FileMode.Create));
                     currentAction = new VisualReport(id, fullName, description, author, groups, prereq, videoQuality, started);
                 }
-                catch (IOException) { }
+                catch { }
             }
         }
     }
 
-    public string getDownloadFile()
+    public string GetDownloadFile()
     {
         if (visualStream != null)
         {
@@ -266,20 +271,47 @@ public class VisualRecorder
         return AtsvFilePath;
     }
 
-    internal void Create(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound)
+    internal void Create(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound, bool sync)
     {
+        currentAction.AddImage(this, channelBound, false);
+
         Flush();
-        currentAction = new VisualAction(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F);
+        if(sync)
+        {
+            currentAction = new VisualActionSync(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F);
+        } else
+        {
+            currentAction = new VisualAction(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F);
+        }
+        
+    }
+
+    internal void CreateMobile(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound, string url, bool sync)
+    {
+        currentAction.AddImage(this, url, channelBound, false);
+
+        Flush(); 
+        if(sync) {
+            currentAction = new VisualActionSync(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
+        } else
+        {
+            currentAction = new VisualAction(this, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
+        }
     }
 
     internal void AddImage(double[] screenRect, bool isRef)
     {
-        currentAction.addImage(this, screenRect, isRef);
+        currentAction.AddImage(this, screenRect, isRef);
+    }
+
+    internal void AddImage(string url, double[] screenRect, bool isRef)
+    {
+        currentAction.AddImage(this, url, screenRect, isRef);
     }
 
     internal void AddValue(string v)
     {
-        if(v != string.Empty)
+        if (!string.IsNullOrEmpty(v))
         {
             currentAction.Value = v;
         }
@@ -288,7 +320,7 @@ public class VisualRecorder
     internal void AddData(string v1, string v2)
     {
         AddValue(v1);
-        if (v2 != string.Empty)
+        if (!string.IsNullOrEmpty(v2))
         {
             currentAction.Data = v2;
         }
@@ -307,9 +339,9 @@ public class VisualRecorder
 
     internal void AddPosition(string hpos, string hposValue, string vpos, string vposValue)
     {
-        if(currentAction.Element != null)
+        if (currentAction.Element != null)
         {
-            currentAction.Element.updatePosition(hpos, hposValue, vpos, vposValue);
+            currentAction.Element.UpdatePosition(hpos, hposValue, vpos, vposValue);
         }
     }
 
@@ -318,8 +350,14 @@ public class VisualRecorder
         currentAction.Index = frameIndex;
         frameIndex++;
 
-        if(visualStream != null) {
+        if (visualStream != null)
+        {
+            if(currentAction is VisualActionSync)
+            {
+                currentAction = new VisualAction(currentAction as VisualActionSync);
+            }
             AmfSerializer.WriteObject(visualStream, currentAction);
+            visualStream.Flush();
         }
     }
 

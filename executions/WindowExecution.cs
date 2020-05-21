@@ -17,17 +17,26 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Definitions;
+using FlaUI.Core.Input;
+using FlaUI.Core.WindowsAPI;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Windows.Automation;
+using windowsdriver;
 
 class WindowExecution : AtsExecution
 {
-    private static int errorCode = -7;
+    //-------------------------------------------------
+    // com.ats.executor.ActionStatus -> status code
+    //-------------------------------------------------
+    private const int UNREACHABLE_GOTO_URL = -11;
+    private const int WINDOW_NOT_FOUND = -14;
+    //-------------------------------------------------
 
-    private WindowType type;
+    private readonly WindowType type;
     private enum WindowType
     {
         Title = 0,
@@ -43,29 +52,25 @@ class WindowExecution : AtsExecution
         State = 10
     };
 
-    private DesktopWindow window;
-    private ActionKeyboard keyboard;
+    private readonly DesktopWindow window;
+    private readonly ActionKeyboard keyboard;
+    private readonly DesktopManager desktop;
 
-    private int pid = -1;
-    private int[] bounds;
-    private string keys;
-    private string state;
+    private readonly int pid = -1;
+    private readonly int[] bounds;
+    private readonly string keys;
+    private readonly string state;
 
-    private string folderPath;
-
-    private List<DesktopWindow> ieWindows;
-
-    public WindowExecution(int type, string[] commandsData, ActionKeyboard keyboard, List<DesktopWindow> ieWindows, VisualRecorder recorder) : base()
+    public WindowExecution(int type, string[] commandsData, ActionKeyboard keyboard, VisualRecorder recorder, DesktopManager desktop) : base()
     {
-        int handle = -1;
         this.type = (WindowType)type;
         this.keyboard = keyboard;
-        this.ieWindows = ieWindows;
+        this.desktop = desktop;
 
-        if (this.type == WindowType.Close || this.type == WindowType.Handle || this.type == WindowType.ToFront || this.type == WindowType.State || this.type == WindowType.Keys)
+        if (this.type == WindowType.Close || this.type == WindowType.Handle || this.type == WindowType.State || this.type == WindowType.Keys)
         {
-            int.TryParse(commandsData[0], out handle);
-            window = DesktopWindow.getWindowByHandle(handle);
+            _ = int.TryParse(commandsData[0], out int handle);
+            window = desktop.GetWindowByHandle(handle);
 
             if (this.type == WindowType.State)
             {
@@ -75,79 +80,116 @@ class WindowExecution : AtsExecution
             {
                 this.keys = commandsData[1];
             }
-            else if (this.type == WindowType.ToFront)
+        }
+        else if (this.type == WindowType.ToFront)
+        {
+            if (commandsData.Length > 1)
             {
-                int.TryParse(commandsData[1], out pid);
+                _ = int.TryParse(commandsData[0], out int handle);
+                _ = int.TryParse(commandsData[1], out pid);
+
+                window = desktop.GetWindowByHandle(handle);
                 recorder.CurrentPid = pid;
+            }
+            else
+            {
+                _ = int.TryParse(commandsData[0], out pid);
+                recorder.CurrentPid = pid;
+
+                List<DesktopWindow> windows = desktop.GetOrderedWindowsByPid(pid);
+                if (windows.Count > 0)
+                {
+                    window = windows[0];
+                }
             }
         }
         else if (this.type == WindowType.Url)
         {
-            int.TryParse(commandsData[0], out handle);
-            window = DesktopWindow.getWindowByHandle(handle);
+            _ = int.TryParse(commandsData[0], out int handle);
+            window = desktop.GetWindowByHandle(handle);
 
-            string fname = Environment.ExpandEnvironmentVariables(commandsData[1]);
-
-            try
+            if (window.isIE)
             {
-                if (Directory.Exists(@fname))
-                {
-                    folderPath = Path.GetFullPath(@fname);
-                }
-                else
-                {
-                    response.setError(errorCode, "directory not found : " + fname);
-                }
-            }
-            catch (Exception) {
-                response.setError(errorCode, "directory path not valid : " + fname);
-            }
+                window.ToFront();
 
+                AutomationElement win = window.Element;
+                AutomationElement addressBar = win.FindFirst(TreeScope.Descendants, win.ConditionFactory.ByControlType(ControlType.Pane).And(win.ConditionFactory.ByClassName("Address Band Root")));
+                if (addressBar != null)
+                {
+                    addressBar.Focus();
+                    AutomationElement edit = addressBar.FindFirstChild(addressBar.ConditionFactory.ByControlType(ControlType.Edit));
+
+                    if(edit != null)
+                    {
+                        edit.Focus();
+                        edit.AsTextBox().Enter(commandsData[1]);
+                        Keyboard.Type(VirtualKeyShort.ENTER);
+                    }
+                }
+            }
+            else
+            {
+                string fname = Environment.ExpandEnvironmentVariables(commandsData[1]);
+                try
+                {
+                    if (Directory.Exists(@fname))
+                    {
+                        window.ToFront();
+                        keyboard.AddressBar(Path.GetFullPath(@fname));
+                    }
+                    else
+                    {
+                        response.setError(UNREACHABLE_GOTO_URL, "directory not found : " + fname);
+                    }
+                }
+                catch (Exception)
+                {
+                    response.setError(UNREACHABLE_GOTO_URL, "directory path not valid : " + fname);
+                }
+            }
         }
         else if (this.type == WindowType.Title)
         {
-            window = DesktopWindow.getWindowPid(commandsData[0]);
+            window = desktop.GetWindowPid(commandsData[0]);
         }
         else if (this.type == WindowType.List)
         {
-            int.TryParse(commandsData[0], out pid);
+            _ = int.TryParse(commandsData[0], out pid);
         }
         else if (this.type == WindowType.Switch)
         {
-            int.TryParse(commandsData[0], out handle);
-            window = DesktopWindow.getWindowByHandle(handle);
+            if (commandsData.Length > 1)
+            {
+                _ = int.TryParse(commandsData[0], out int pid);
+                _ = int.TryParse(commandsData[1], out int index);
+                window = desktop.GetWindowIndexByPid(pid, index);
+            }
+            else
+            { 
+                _ = int.TryParse(commandsData[0], out int handle);
+                window = desktop.GetWindowByHandle(handle);
+            }
+
+            if (window != null)
+            {
+                window.ToFront();
+                response.Windows = new DesktopWindow[] { window };
+            }
+            else
+            {
+                response.setError(WINDOW_NOT_FOUND, "window not found");
+            }
         }
         else if (this.type == WindowType.Move || this.type == WindowType.Resize)
         {
             bounds = new int[] { 0, 0 };
 
-            int.TryParse(commandsData[0], out handle);
-            int.TryParse(commandsData[1], out bounds[0]);
-            int.TryParse(commandsData[2], out bounds[1]);
+            _ = int.TryParse(commandsData[0], out int handle);
+            _ = int.TryParse(commandsData[1], out bounds[0]);
+            _ = int.TryParse(commandsData[2], out bounds[1]);
 
-            window = DesktopWindow.getWindowByHandle(handle);
+            window = desktop.GetWindowByHandle(handle);
         }
-    }
-
-    private DesktopWindow[] getWindowsList()
-    {
-        List<DesktopWindow> wins = DesktopWindow.getOrderedWindowsByPid(pid);
-
-        if (ieWindows.Count > 0 && ieWindows[0].Pid == pid)
-        {
-            List<DesktopWindow> reorderedList = new List<DesktopWindow>();
-            foreach (DesktopWindow ieWin in ieWindows)
-            {
-                DesktopWindow reordered = wins.Find(w => w.Handle == ieWin.Handle);
-                if (reordered != null)
-                {
-                    reorderedList.Add(reordered);
-                }
-            }
-            return reorderedList.ToArray();
-        }
-
-        return wins.ToArray();
     }
 
     public override bool Run(HttpListenerContext context)
@@ -158,37 +200,30 @@ class WindowExecution : AtsExecution
 
                 if (window != null)
                 {
-                    window.close();
+                    window.Close();
                 }
                 break;
 
             case WindowType.State:
                 if (window != null)
                 {
-                    window.state(state);
+                    window.ChangeState(state);
                 }
                 break;
             case WindowType.List:
 
-                try
-                {
-                    response.Windows = getWindowsList();
-                }
-                catch (Exception e)
-                {
-                    response.setError(errorCode, e.Message);
-                }
+                response.Windows = desktop.GetOrderedWindowsByPid(pid).ToArray();
                 break;
 
             case WindowType.Move:
 
                 if (window != null)
                 {
-                    window.move(bounds[0], bounds[1]);
+                    window.Move(bounds[0], bounds[1]);
                 }
                 else
                 {
-                    response.setError(errorCode, "window not found");
+                    response.setError(WINDOW_NOT_FOUND, "window not found");
                 }
                 break;
 
@@ -196,62 +231,30 @@ class WindowExecution : AtsExecution
 
                 if (window != null)
                 {
-                    window.resize(bounds[0], bounds[1]);
+                    if(bounds[0] > 0 && bounds[1] > 0)
+                    {
+                        window.Resize(bounds[0], bounds[1]);
+                    }
                 }
                 else
                 {
-                    response.setError(errorCode, "window not found");
+                    response.setError(WINDOW_NOT_FOUND, "window not found");
                 }
                 break;
 
             case WindowType.Url:
-
-                if (folderPath != null && window != null)
-                {
-                    try
-                    {
-                        window.toFront();
-                        keyboard.addressBar(folderPath);
-                    }
-                    catch (ElementNotAvailableException) {
-                        response.setError(errorCode, "address bar not found");
-                    }
-                }
-
                 break;
-
             case WindowType.Switch:
-
-                try
-                {
-                    try
-                    {
-                        window.toFront();
-                    }
-                    catch (ElementNotAvailableException) { }
-
-                    response.Windows = new DesktopWindow[] { window };
-
-                }
-                catch (Exception e)
-                {
-                    response.setError(errorCode, e.Message);
-                }
                 break;
-
             case WindowType.ToFront:
 
                 if (window != null)
                 {
-                    try
-                    {
-                        window.toFront();
-                    }
-                    catch (ElementNotAvailableException) { }
+                    window.ToFront();
                 }
                 else
                 {
-                    response.setError(errorCode, "unable to find top window with pid = " + pid);
+                    response.setError(WINDOW_NOT_FOUND, "unable to find top window with pid = " + pid);
                 }
                 break;
 
@@ -259,16 +262,12 @@ class WindowExecution : AtsExecution
 
                 if (window != null)
                 {
-                    try
-                    {
-                        window.toFront();
-                    }
-                    catch (ElementNotAvailableException) { }
+                    window.ToFront();
                 }
-                keyboard.rootKeys(keys.ToLower());
-                
+                keyboard.RootKeys(keys.ToLower());
+
                 break;
-                
+
             default:
                 if (window != null)
                 {
@@ -276,7 +275,7 @@ class WindowExecution : AtsExecution
                 }
                 else
                 {
-                    response.setError(errorCode, "window not found");
+                    response.setError(WINDOW_NOT_FOUND, "window not found");
                 }
                 break;
         }

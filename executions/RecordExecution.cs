@@ -17,8 +17,6 @@ specific language governing permissions and limitations
 under the License.
  */
 
-using System;
-using System.Drawing.Imaging;
 using System.IO;
 
 class RecordExecution : AtsExecution
@@ -35,7 +33,10 @@ class RecordExecution : AtsExecution
         Status = 7,
         Element = 8,
         Position = 9,
-        Download = 10
+        Download = 10,
+        ImageMobile = 11,
+        CreateMobile = 12,
+        ScreenshotMobile = 13
     };
 
     public RecordExecution(int type, string[] commandsData, VisualRecorder recorder) : base()
@@ -50,33 +51,36 @@ class RecordExecution : AtsExecution
         else if (recordType == RecordType.Download)
         {
             response.type = 1;
-            response.atsvFilePath = recorder.getDownloadFile();
+            response.atsvFilePath = recorder.GetDownloadFile();
         }
 
         if (commandsData.Length > 0)
         {
             if (recordType == RecordType.Screenshot)
             {
-                int[] screenRect = new int[] { 0, 0, 1, 1 };
-                int.TryParse(commandsData[0], out screenRect[0]);
-                int.TryParse(commandsData[1], out screenRect[1]);
-                int.TryParse(commandsData[2], out screenRect[2]);
-                int.TryParse(commandsData[3], out screenRect[3]);
-
-                response.Image = recorder.Capture(screenRect[0], screenRect[1], screenRect[2], screenRect[3]);
+                if(int.TryParse(commandsData[0], out int x) &&
+                int.TryParse(commandsData[1], out int y) &&
+                int.TryParse(commandsData[2], out int w) &&
+                int.TryParse(commandsData[3], out int h))
+                {
+                    response.Image = recorder.ScreenCapture(x, y, w, h);
+                }
+            }
+            else if (recordType == RecordType.ScreenshotMobile)
+            {
+                response.Image = VisualAction.GetScreenshot(commandsData[0]);
             }
             else if (recordType == RecordType.Start)
             {
                 string tempFolder = Path.GetTempPath() + "\\ats_recorder";
                 long freeSpace = 0;
-
                 try
                 {
                     DriveInfo drive = new DriveInfo(new FileInfo(tempFolder).Directory.Root.FullName);
                     freeSpace = drive.AvailableFreeSpace;
                 }
-                catch (Exception) { }
-                
+                catch { }
+
                 if (freeSpace > 100000000)
                 {
                     try
@@ -94,7 +98,7 @@ class RecordExecution : AtsExecution
                             Directory.CreateDirectory(tempFolder);
                         }
                     }
-                    catch (Exception) { }
+                    catch { }
 
 
                     string id = commandsData[0];
@@ -106,49 +110,78 @@ class RecordExecution : AtsExecution
 
                     response.atsvFilePath = tempFolder + "\\" + fullName;
 
-                    int videoQuality = 2;
-                    int.TryParse(commandsData[6], out videoQuality);
+                    _ = int.TryParse(commandsData[6], out int videoQuality);
 
                     recorder.Start(tempFolder, id, fullName, description, author, groups, prereq, videoQuality, commandsData[7]);
                 }
                 else
                 {
                     response.ErrorCode = -50;
-                    response.ErrorMessage = "Not enough space available on disk : " + (freeSpace/1024/1024) + " Mo";
+                    response.ErrorMessage = "Not enough space available on disk : " + (freeSpace / 1024 / 1024) + " Mo";
                 }
             }
             else if (recordType == RecordType.Create)
             {
                 string actionType = commandsData[0];
 
-                int line = 0;
-                int.TryParse(commandsData[1], out line);
+                _ = int.TryParse(commandsData[1], out int line);
 
-                long timeLine = 0;
-                long.TryParse(commandsData[2], out timeLine);
+                _ = long.TryParse(commandsData[2], out long timeLine);
 
                 string channelName = commandsData[3];
 
                 double[] channelDimmension = new double[] { 0, 0, 1, 1 };
-                double.TryParse(commandsData[4], out channelDimmension[0]);
-                double.TryParse(commandsData[5], out channelDimmension[1]);
-                double.TryParse(commandsData[6], out channelDimmension[2]);
-                double.TryParse(commandsData[7], out channelDimmension[3]);
+                _ = double.TryParse(commandsData[4], out channelDimmension[0]);
+                _ = double.TryParse(commandsData[5], out channelDimmension[1]);
+                _ = double.TryParse(commandsData[6], out channelDimmension[2]);
+                _ = double.TryParse(commandsData[7], out channelDimmension[3]);
 
-                recorder.Create(actionType, line, timeLine, channelName, channelDimmension);
+                _ = bool.TryParse(commandsData[8], out bool sync);
+                    
+                recorder.Create(actionType, line, timeLine, channelName, channelDimmension, sync);
+            }
+            else if (recordType == RecordType.CreateMobile)
+            {
+                string actionType = commandsData[0];
+
+                _ = int.TryParse(commandsData[1], out int line);
+
+                _ = long.TryParse(commandsData[2], out long timeLine);
+
+                string channelName = commandsData[3];
+
+                double[] channelDimmension = new double[] { 0, 0, 1, 1 };
+                _ = double.TryParse(commandsData[4], out channelDimmension[0]);
+                _ = double.TryParse(commandsData[5], out channelDimmension[1]);
+                _ = double.TryParse(commandsData[6], out channelDimmension[2]);
+                _ = double.TryParse(commandsData[7], out channelDimmension[3]);
+
+                _ = bool.TryParse(commandsData[9], out bool sync);
+
+                recorder.CreateMobile(actionType, line, timeLine, channelName, channelDimmension, commandsData[8], sync);
             }
             else if (recordType == RecordType.Image)
             {
                 double[] screenRect = new double[] { 0, 0, 1, 1 };
-                double.TryParse(commandsData[0], out screenRect[0]);
-                double.TryParse(commandsData[1], out screenRect[1]);
-                double.TryParse(commandsData[2], out screenRect[2]);
-                double.TryParse(commandsData[3], out screenRect[3]);
+                _ = double.TryParse(commandsData[0], out screenRect[0]);
+                _ = double.TryParse(commandsData[1], out screenRect[1]);
+                _ = double.TryParse(commandsData[2], out screenRect[2]);
+                _ = double.TryParse(commandsData[3], out screenRect[3]);
 
-                bool isRef = false;
-                bool.TryParse(commandsData[4], out isRef);
+                _ = bool.TryParse(commandsData[4], out bool isRef);
 
                 recorder.AddImage(screenRect, isRef);
+            }
+            else if (recordType == RecordType.ImageMobile)
+            {
+                double[] screenRect = new double[] { 0, 0, 1, 1 };
+                _ = double.TryParse(commandsData[0], out screenRect[0]);
+                _ = double.TryParse(commandsData[1], out screenRect[1]);
+                _ = double.TryParse(commandsData[2], out screenRect[2]);
+                _ = double.TryParse(commandsData[3], out screenRect[3]);
+
+                _ = bool.TryParse(commandsData[4], out bool isRef);
+                recorder.AddImage(commandsData[5], screenRect, isRef);
             }
             else if (recordType == RecordType.Value)
             {
@@ -160,27 +193,22 @@ class RecordExecution : AtsExecution
             }
             else if (recordType == RecordType.Status)
             {
-                int error = 0;
-                int.TryParse(commandsData[0], out error);
-
-                long duration = 0;
-                long.TryParse(commandsData[1], out duration);
+                _ = int.TryParse(commandsData[0], out int error);
+                _ = long.TryParse(commandsData[1], out long duration);
 
                 recorder.Status(error, duration);
             }
             else if (recordType == RecordType.Element)
             {
                 double[] elementBound = new double[] { 0, 0, 0, 0 };
-                double.TryParse(commandsData[0], out elementBound[0]);
-                double.TryParse(commandsData[1], out elementBound[1]);
-                double.TryParse(commandsData[2], out elementBound[2]);
-                double.TryParse(commandsData[3], out elementBound[3]);
+                _ = double.TryParse(commandsData[0], out elementBound[0]);
+                _ = double.TryParse(commandsData[1], out elementBound[1]);
+                _ = double.TryParse(commandsData[2], out elementBound[2]);
+                _ = double.TryParse(commandsData[3], out elementBound[3]);
 
-                long searchDuration = 0;
-                long.TryParse(commandsData[4], out searchDuration);
+                _ = long.TryParse(commandsData[4], out long searchDuration);
 
-                int numElements = 0;
-                int.TryParse(commandsData[5], out numElements);
+                _ = int.TryParse(commandsData[5], out int numElements);
 
                 string criterias = "";
                 if (commandsData.Length > 6)

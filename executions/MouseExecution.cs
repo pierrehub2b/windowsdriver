@@ -17,13 +17,19 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using FlaUI.Core.Input;
+using System;
+using System.Drawing;
 using System.Net;
+using windowsdriver;
 
 class MouseExecution : AtsExecution
 {
-    private static int errorCode = -5;
+    private const int errorCode = -5;
 
-    private MouseType type;
+    private readonly MouseType type;
+    private readonly DesktopManager desktop;
+
     private enum MouseType
     {
         Move = 0,
@@ -33,28 +39,25 @@ class MouseExecution : AtsExecution
         DoubleClick = 4,
         Down = 5,
         Release = 6,
-        Wheel = 7
+        Wheel = 7,
+        Drag = 8
     };
 
-    private ActionMouse action;
+    private readonly int data0 = 0;
+    private readonly int data1 = 0;
 
-    private int[] move;
-    private int wheelDelta = 0;
-
-    public MouseExecution(int type, string[] commandsData, ActionMouse action) : base()
+    public MouseExecution(int type, string[] commandsData, DesktopManager desktop) : base()
     {
-        this.action = action;
         this.type = (MouseType)type;
+        this.desktop = desktop;
 
-        if (commandsData.Length > 1)
+        if (commandsData.Length > 0)
         {
-            move = new int[] { 0, 0 };
-            int.TryParse(commandsData[0], out move[0]);
-            int.TryParse(commandsData[1], out move[1]);
-        }
-        else if (commandsData.Length > 0)
-        {
-            int.TryParse(commandsData[0], out wheelDelta);
+            _ = int.TryParse(commandsData[0], out data0);
+            if (commandsData.Length > 1)
+            {
+                _ = int.TryParse(commandsData[1], out data1);
+            }
         }
     }
 
@@ -64,49 +67,60 @@ class MouseExecution : AtsExecution
         {
             case MouseType.Move:
 
-                if (move != null)
+                Mouse.Position = new Point(data0, data1);
+                break;
+                
+            case MouseType.Drag:
+
+                int dragOffsetX = 20;
+                int dragOffsetY = 10;
+
+                AtsElement current = desktop.GetElementFromPoint(Mouse.Position);
+                if(current != null)
                 {
-                    action.mouseMove(move[0], move[1]);
+                    dragOffsetX = Convert.ToInt32(current.Width / 2);
+                    dragOffsetY = Convert.ToInt32(current.Height / 2);
                 }
-                else
-                {
-                    response.setError(errorCode, "move data command error");
-                }
+                
+                Mouse.Down(MouseButton.Left);
+                System.Threading.Thread.Sleep(200);
+                Mouse.MoveBy(dragOffsetX, dragOffsetY);
+                
                 break;
 
             case MouseType.Click:
 
-                action.click();
+                Mouse.Click(MouseButton.Left);
                 break;
 
             case MouseType.DoubleClick:
 
-                action.doubleClick();
+                Mouse.DoubleClick(MouseButton.Left);
                 break;
 
             case MouseType.RightClick:
 
-                action.rightClick();
+                Mouse.Click(MouseButton.Right);
                 break;
 
             case MouseType.MiddleClick:
 
-                action.middleClick();
+                Mouse.Click(MouseButton.Middle);
                 break;
 
             case MouseType.Down:
 
-                action.down();
+                Mouse.Down(MouseButton.Left);
                 break;
 
             case MouseType.Release:
 
-                action.release();
+                Mouse.Up(MouseButton.Left);
                 break;
 
             case MouseType.Wheel:
 
-                action.wheel(wheelDelta);
+                Mouse.Scroll(-data0 / 100);
                 break;
 
             default:
