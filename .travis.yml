@@ -4,6 +4,7 @@ branches:
   only:
     - master
 before_deploy:
+  - git tag v2.0.0
   - cd /home/travis/build/pierrehub2b/windowsdriver/bin/Release
   - zip windowsdriver.zip windowsdriver.exe DotAmf.dll FlaUI.Core.dll FlaUI.UIA3.dll Interop.UIAutomationClient.dll
 deploy:
