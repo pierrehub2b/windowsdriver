@@ -104,11 +104,11 @@
     <Reference Include="DotAmf, Version=1.0.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\DotAmf.1.0.4\lib\net40-client\DotAmf.dll</HintPath>
     </Reference>
-    <Reference Include="FlaUI.Core, Version=3.0.0.0, Culture=neutral, PublicKeyToken=5b28cd3eabb9203e, processorArchitecture=MSIL">
-      <HintPath>packages\FlaUI.Core.Signed.3.0.0\lib\net45\FlaUI.Core.dll</HintPath>
+    <Reference Include="FlaUI.Core, Version=3.1.0.0, Culture=neutral, PublicKeyToken=5b28cd3eabb9203e, processorArchitecture=MSIL">
+      <HintPath>packages\FlaUI.Core.Signed.3.1.0\lib\net45\FlaUI.Core.dll</HintPath>
     </Reference>
-    <Reference Include="FlaUI.UIA3, Version=3.0.0.0, Culture=neutral, PublicKeyToken=5b28cd3eabb9203e, processorArchitecture=MSIL">
-      <HintPath>packages\FlaUI.UIA3.Signed.3.0.0\lib\net45\FlaUI.UIA3.dll</HintPath>
+    <Reference Include="FlaUI.UIA3, Version=3.1.0.0, Culture=neutral, PublicKeyToken=5b28cd3eabb9203e, processorArchitecture=MSIL">
+      <HintPath>packages\FlaUI.UIA3.Signed.3.1.0\lib\net45\FlaUI.UIA3.dll</HintPath>
     </Reference>
     <Reference Include="Interop.UIAutomationClient, Version=10.0.18362.0, Culture=neutral, PublicKeyToken=0f06aa439ea1c622, processorArchitecture=MSIL">
       <HintPath>packages\Interop.UIAutomationClient.Signed.10.18362.0\lib\net45\Interop.UIAutomationClient.dll</HintPath>
