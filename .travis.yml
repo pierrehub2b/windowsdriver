@@ -6,6 +6,7 @@ branches:
 before_deploy:
   - cd /home/travis/build/pierrehub2b/windowsdriver/bin/Release
   - zip windowsdriver.zip windowsdriver.exe DotAmf.dll FlaUI.Core.dll FlaUI.UIA3.dll Interop.UIAutomationClient.dll
+  - git tag v2.0.5 -m "ATS v2.0.5"
 deploy:
   provider: releases
   api_key:
@@ -14,7 +15,6 @@ deploy:
   on:
     repo: pierrehub2b/windowsdriver
     branch: master
-    tags: true
   skip_cleanup: 'true'
 notifications:
   slack: agilitest:89arTDhysVkKJ7TGJ2qw6Xwv
