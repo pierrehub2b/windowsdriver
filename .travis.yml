@@ -9,10 +9,9 @@ before_deploy:
 deploy:
   provider: pages
   github_token: $GITHUB_TOKEN
-  file: /home/travis/build/pierrehub2b/windowsdriver/bin/Release/windowsdriver.zip
+  local_dir: /home/travis/build/pierrehub2b/windowsdriver/bin/Release
   keep_history: true
   on:
-    repo: pierrehub2b/windowsdriver
     branch: master
   skip_cleanup: true
 notifications:
