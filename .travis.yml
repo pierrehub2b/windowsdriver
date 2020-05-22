@@ -5,8 +5,8 @@ branches:
     - master
 before_script:
   - export VERSION_NUMBER="2.0.8"
-  - cd $TRAVIS_BUILD_DIR/Properties
-  - sed -i 's/0.0.0.0/$VERSION_NUMBER.0/g' AssemblyInfo.cs
+  - cd $TRAVIS_BUILD_DIR
+  - sed -i 's/0.0.0.0/$VERSION_NUMBER.0/g' Properties/AssemblyInfo.cs
 before_deploy:
   - cd $TRAVIS_BUILD_DIR/bin/Release
   - mkdir deploy
