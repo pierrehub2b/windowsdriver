@@ -19,6 +19,7 @@ under the License.
 
 using System;
 using System.Net;
+using System.Reflection;
 
 public static class DesktopDriver
 {
@@ -44,7 +45,7 @@ public static class DesktopDriver
             }
         }
 
-        Console.WriteLine("Starting ATS Windows Desktop Driver on port {0}", defaultPort);
+        Console.WriteLine("Starting ATS Windows Desktop Driver {0} on port {1}", Assembly.GetExecutingAssembly().GetName().Version.ToString(), defaultPort);
         Console.WriteLine("Only local connections are allowed.");
         new WebServer(defaultPort).Run();
 
