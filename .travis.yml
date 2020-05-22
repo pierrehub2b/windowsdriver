@@ -2,11 +2,11 @@ language: csharp
 solution: windowsdriver.sln
 branches:
   only:
-    - master
+    - release
 before_deploy:
   - cd /home/travis/build/pierrehub2b/windowsdriver/bin/Release
   - zip windowsdriver.zip windowsdriver.exe DotAmf.dll FlaUI.Core.dll FlaUI.UIA3.dll Interop.UIAutomationClient.dll
-  - git tag v2.0.5 -m "ATS v2.0.5"
+  - git tag v2.0.6 -m "ATS v2.0.6"
 deploy:
   provider: releases
   api_key:
@@ -14,7 +14,7 @@ deploy:
   file: /home/travis/build/pierrehub2b/windowsdriver/bin/Release/windowsdriver.zip
   on:
     repo: pierrehub2b/windowsdriver
-    branch: master
+    branch: release
   skip_cleanup: 'true'
 notifications:
   slack: agilitest:89arTDhysVkKJ7TGJ2qw6Xwv
