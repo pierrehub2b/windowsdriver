@@ -3,7 +3,7 @@ solution: windowsdriver.sln
 branches:
   only:
     - release
-script:
+before_script:
   - export VERSION_NUMBER="v2.0.7"
   - msbuild /p:Configuration=Release windowsdriver.sln /p:VersionAssembly=$VERSION_NUMBER
 before_deploy:
