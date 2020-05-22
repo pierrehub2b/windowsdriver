@@ -7,12 +7,13 @@ before_script:
   - export VERSION_NUMBER="v2.0.8"
   - msbuild /p:Configuration=Release windowsdriver.sln /p:VersionAssembly=$VERSION_NUMBER
 before_deploy:
-  - cd /home/travis/build/pierrehub2b/windowsdriver/bin/Release
-  - zip windowsdriver.zip windowsdriver.exe DotAmf.dll FlaUI.Core.dll FlaUI.UIA3.dll Interop.UIAutomationClient.dll
+  - cd $TRAVIS_BUILD_DIR/bin/Release
+  - mkdir deploy
+  - zip deploy/windowsdriver.zip windowsdriver.exe DotAmf.dll FlaUI.Core.dll FlaUI.UIA3.dll Interop.UIAutomationClient.dll
 deploy:
   - provider: pages
     github_token: $GITHUB_TOKEN
-    local_dir: /home/travis/build/pierrehub2b/windowsdriver/bin/Release
+    local_dir: $TRAVIS_BUILD_DIR/bin/Release/deploy
     keep_history: true
     on:
       branch: master
@@ -20,7 +21,7 @@ deploy:
   - provider: releases
     api_key:
       secure: nJgf4UYrMWvnny0IiWTgrJpIvBv1ef+Bg+WGfXGV0YrrY/kvsao3aR+qgBaM8XEDY7XGXlEPZflgU4mnQu7Y7vQkfZ9QNkrP1iyJhGxEut0820DogP1I+CdmMXAGO+WSoN6ZYIztkuT96bO/ytPLbFCxo2EnWD3uZyiKfRhvDHckVqb2rWg2VfnLEvuvi0Y0qYM9jElAITJUspc/h4V0r8R6vAXHrPyhntz6GmT/2YRFr10lBmSBrp8+5tDmv8NPhnl3bRV3oYjfWCZQUqVZTpH3y8WDvssORLEuxvRv/MvEi+DCA3m1wHgg7QOkSXp0yqXxNNGDACGViuyz1hyxwNgjSeYKYm8WCNjAe36JjB/riSytcQSgIeq5AvG2zYMZwpunNw4nCYR48LvmbFrHIAQxigDEQFy/Pp3fFhtILXzEEQcvjXCN9RjbGTlEqVxKoxVSpuypbtbQjuGTALG2UDR+hrNTWux2YzYxnXAlqp1SkQoV5+tztYBCMqBAcpZuXfsKoyot436HmJ83rzXeFJMikTUnkdfmig+aFTmeBlRB3ebYSv/c4hNyeobyunuGjmXE/xQHLjFr+DOxYVGnGEW5A9l2bM+XjjetXfG1KmkG33+Sytd6DizvXRKPDhXN0RiswQ8ZPfy1B2xksSaAwJE3BmzzV6x1vBhjoP1AagU=
-    file: /home/travis/build/pierrehub2b/windowsdriver/bin/Release/windowsdriver.zip
+    file: $TRAVIS_BUILD_DIR/bin/Release/windowsdriver.zip
     on:
       branch: release
     skip_cleanup: true
