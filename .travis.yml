@@ -3,6 +3,7 @@ solution: windowsdriver.sln
 branches:
   only:
     - master
+    - release
 before_script:
   - export VERSION_NUMBER="2.0.9"
   - cd $TRAVIS_BUILD_DIR
