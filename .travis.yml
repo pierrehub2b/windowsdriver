@@ -4,8 +4,9 @@ branches:
   only:
     - master
 before_script:
-  - export VERSION_NUMBER="v2.0.8"
-  - msbuild /p:Configuration=Release windowsdriver.sln /p:VersionAssembly=$VERSION_NUMBER
+  - export VERSION_NUMBER="2.0.8"
+  - cd $TRAVIS_BUILD_DIR/Properties
+  - sed -i 's/0.0.0.0/$VERSION_NUMBER.0/g' Assembly.cs
 before_deploy:
   - cd $TRAVIS_BUILD_DIR/bin/Release
   - mkdir deploy
