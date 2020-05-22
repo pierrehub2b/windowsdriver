@@ -9,8 +9,8 @@ before_script:
 before_deploy:
   - cd $TRAVIS_BUILD_DIR/bin/Release
   - mkdir deploy
-  - cp -R *.dll /deploy
-  - cp -R *.exe /deploy
+  - cp -R *.dll deploy
+  - cp -R *.exe deploy
   - cd deploy
   - zip windowsdriver.zip windowsdriver.exe DotAmf.dll FlaUI.Core.dll FlaUI.UIA3.dll Interop.UIAutomationClient.dll
 deploy:
