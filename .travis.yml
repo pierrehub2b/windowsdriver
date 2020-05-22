@@ -2,22 +2,34 @@ language: csharp
 solution: windowsdriver.sln
 branches:
   only:
+    - master
     - release
 before_script:
-  - export VERSION_NUMBER="v2.0.8"
-  - msbuild /p:Configuration=Release windowsdriver.sln /p:VersionAssembly=$VERSION_NUMBER
+  - export VERSION_NUMBER="2.0.9"
+  - cd $TRAVIS_BUILD_DIR
+  - sed -i "s/0.0.0.0/$VERSION_NUMBER.0/g" Properties/AssemblyInfo.cs
 before_deploy:
-  - cd /home/travis/build/pierrehub2b/windowsdriver/bin/Release
+  - cd $TRAVIS_BUILD_DIR/bin/Release
+  - mkdir deploy
+  - cp -R *.dll deploy
+  - cp -R *.exe deploy
+  - cd deploy
   - zip windowsdriver.zip windowsdriver.exe DotAmf.dll FlaUI.Core.dll FlaUI.UIA3.dll Interop.UIAutomationClient.dll
-  - git tag $VERSION_NUMBER
+  - if [ $TRAVIS_BRANCH == "release" ]; then git tag v$VERSION_NUMBER; fi
 deploy:
-  provider: releases
-  api_key:
-    secure: nJgf4UYrMWvnny0IiWTgrJpIvBv1ef+Bg+WGfXGV0YrrY/kvsao3aR+qgBaM8XEDY7XGXlEPZflgU4mnQu7Y7vQkfZ9QNkrP1iyJhGxEut0820DogP1I+CdmMXAGO+WSoN6ZYIztkuT96bO/ytPLbFCxo2EnWD3uZyiKfRhvDHckVqb2rWg2VfnLEvuvi0Y0qYM9jElAITJUspc/h4V0r8R6vAXHrPyhntz6GmT/2YRFr10lBmSBrp8+5tDmv8NPhnl3bRV3oYjfWCZQUqVZTpH3y8WDvssORLEuxvRv/MvEi+DCA3m1wHgg7QOkSXp0yqXxNNGDACGViuyz1hyxwNgjSeYKYm8WCNjAe36JjB/riSytcQSgIeq5AvG2zYMZwpunNw4nCYR48LvmbFrHIAQxigDEQFy/Pp3fFhtILXzEEQcvjXCN9RjbGTlEqVxKoxVSpuypbtbQjuGTALG2UDR+hrNTWux2YzYxnXAlqp1SkQoV5+tztYBCMqBAcpZuXfsKoyot436HmJ83rzXeFJMikTUnkdfmig+aFTmeBlRB3ebYSv/c4hNyeobyunuGjmXE/xQHLjFr+DOxYVGnGEW5A9l2bM+XjjetXfG1KmkG33+Sytd6DizvXRKPDhXN0RiswQ8ZPfy1B2xksSaAwJE3BmzzV6x1vBhjoP1AagU=
-  file: /home/travis/build/pierrehub2b/windowsdriver/bin/Release/windowsdriver.zip
-  on:
-    repo: pierrehub2b/windowsdriver
-    branch: release
-  skip_cleanup: 'true'
+  - provider: pages
+    github_token: $GITHUB_TOKEN
+    local_dir: $TRAVIS_BUILD_DIR/bin/Release/deploy
+    keep_history: true
+    on:
+      branch: master
+    skip_cleanup: true
+  - provider: releases
+    api_key:
+      secure: nJgf4UYrMWvnny0IiWTgrJpIvBv1ef+Bg+WGfXGV0YrrY/kvsao3aR+qgBaM8XEDY7XGXlEPZflgU4mnQu7Y7vQkfZ9QNkrP1iyJhGxEut0820DogP1I+CdmMXAGO+WSoN6ZYIztkuT96bO/ytPLbFCxo2EnWD3uZyiKfRhvDHckVqb2rWg2VfnLEvuvi0Y0qYM9jElAITJUspc/h4V0r8R6vAXHrPyhntz6GmT/2YRFr10lBmSBrp8+5tDmv8NPhnl3bRV3oYjfWCZQUqVZTpH3y8WDvssORLEuxvRv/MvEi+DCA3m1wHgg7QOkSXp0yqXxNNGDACGViuyz1hyxwNgjSeYKYm8WCNjAe36JjB/riSytcQSgIeq5AvG2zYMZwpunNw4nCYR48LvmbFrHIAQxigDEQFy/Pp3fFhtILXzEEQcvjXCN9RjbGTlEqVxKoxVSpuypbtbQjuGTALG2UDR+hrNTWux2YzYxnXAlqp1SkQoV5+tztYBCMqBAcpZuXfsKoyot436HmJ83rzXeFJMikTUnkdfmig+aFTmeBlRB3ebYSv/c4hNyeobyunuGjmXE/xQHLjFr+DOxYVGnGEW5A9l2bM+XjjetXfG1KmkG33+Sytd6DizvXRKPDhXN0RiswQ8ZPfy1B2xksSaAwJE3BmzzV6x1vBhjoP1AagU=
+    file: $TRAVIS_BUILD_DIR/bin/Release/deploy/windowsdriver.zip
+    on:
+      branch: release
+    skip_cleanup: true
 notifications:
   slack: agilitest:89arTDhysVkKJ7TGJ2qw6Xwv
