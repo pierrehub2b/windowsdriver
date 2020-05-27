@@ -22,6 +22,7 @@ using FlaUI.Core.WindowsAPI;
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows.Forms;
 
 class ActionKeyboard
@@ -45,9 +46,17 @@ class ActionKeyboard
         }
         else
         {
-            Keyboard.Type(keyDown ? data.ToLowerInvariant() : data);
+            if (keyDown)
+            {
+                Keyboard.Type(data.ToLowerInvariant());
+            }
+            else
+            {
+                SendKeys.SendWait(data);
+                Thread.Sleep(data.Length*10);
+            }
         }
-    }
+     }
 
     internal void Clear(AtsElement element)
     {

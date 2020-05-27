@@ -27,7 +27,6 @@ public static class DesktopDriver
 
     public static int Main(String[] args)
     {
-
         int defaultPort = DefaultPort;
         for (int i = 0; i < args.Length; i++)
         {
