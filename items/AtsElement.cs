@@ -335,6 +335,7 @@ public class AtsElement
 
     private static readonly ExecuteFunction FocusFunction = new ExecuteFunction("Focus");
     private static readonly ExecuteFunction InvokeFunction = new ExecuteFunction("Invoke");
+    private static readonly ExecuteFunction SetValueFunction = new ExecuteFunction("SetValue");
     private static readonly ExecuteFunction SelectTextFunction = new ExecuteFunction("SelectText");
     private static readonly ExecuteFunction SelectIndexFunction = new ExecuteFunction("SelectIndex");
     private static readonly ExecuteFunction SelectTextItemFunction = new ExecuteFunction("SelectTextItem");
@@ -389,6 +390,13 @@ public class AtsElement
             else if (FocusFunction.Match(script))
             {
                 Focus();
+            }
+            else if (SetValueFunction.Match(script))
+            {
+                if (Element.Patterns.Value.IsSupported)
+                {
+                    Element.Patterns.Value.Pattern.SetValue(SetValueFunction.ValueAsString());
+                }
             }
             else if (SelectTextFunction.Match(script))
             {

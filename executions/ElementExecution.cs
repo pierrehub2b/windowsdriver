@@ -40,7 +40,8 @@ class ElementExecution : AtsExecution
         Script = 6,
         Root = 7,
         LoadTree = 8,
-        ListItems = 9
+        ListItems = 9,
+        DialogBox = 10
     };
 
     private readonly Executor executor;
@@ -67,6 +68,11 @@ class ElementExecution : AtsExecution
         else if (elemType == ElementType.FromPoint)
         {
             executor = new FromPointExecutor(response, desktop);
+            return;
+        }
+        else if (elemType == ElementType.DialogBox)
+        {
+            executor = new ModalDialogExecutor(response, desktop);
             return;
         }
         else
@@ -291,6 +297,39 @@ class ElementExecution : AtsExecution
         }
     }
 
+    private class ModalDialogExecutor : Executor
+    {
+        protected DesktopManager desktop;
+
+        public ModalDialogExecutor(DesktopResponse response, DesktopManager desktop) : base(response)
+        {
+            this.desktop = desktop;
+        }
+
+        public override void Run()
+        {
+            AtsElement[] elems = new AtsElement[0];
+
+            AutomationElement pane = desktop.GetFirstModalPane();
+            if(pane != null)
+            {
+                AutomationElement dialog = pane.FindFirstChild(pane.ConditionFactory.ByControlType(FlaUI.Core.Definitions.ControlType.Window));
+                if (dialog != null)
+                {
+                    elems = new AtsElement[] { new AtsElement(desktop, dialog) };
+                }
+            }
+            response.Elements = elems;
+
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            desktop = null;
+        }
+    }
+
     private class ElementExecutor : Executor
     {
         protected AtsElement element;
@@ -311,6 +350,7 @@ class ElementExecution : AtsExecution
         public void Dispose()
         {
             element = null;
+            desktop = null;
         }
     }
 

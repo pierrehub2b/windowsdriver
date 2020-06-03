@@ -198,6 +198,11 @@ namespace windowsdriver
             return windowsList;
         }
 
+        public AutomationElement GetFirstModalPane()
+        {
+            return desktop.FindFirstChild(desktop.ConditionFactory.ByControlType(ControlType.Pane).And(desktop.ConditionFactory.ByClassName("Alternate Modal Top Most")));
+        }
+
         public Queue<AtsElement> GetElements(string tag, string[] attributes)
         {
             return DesktopElement.GetElements(tag, attributes, desktop, this);

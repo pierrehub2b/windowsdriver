@@ -121,9 +121,18 @@ class WindowExecution : AtsExecution
 
                     if(edit != null)
                     {
-                        edit.Focus();
-                        edit.AsTextBox().Enter(commandsData[1]);
-                        Keyboard.Type(VirtualKeyShort.ENTER);
+                        try
+                        {
+                            edit.Focus();
+                            edit.Click();
+                            if (edit.Patterns.Value.IsSupported)
+                            {
+                                edit.Patterns.Value.Pattern.SetValue(commandsData[1]);
+                            }
+                            //edit.AsTextBox().Enter(commandsData[1]);
+                            Keyboard.Type(VirtualKeyShort.ENTER);
+                        }
+                        catch { }
                     }
                 }
             }
