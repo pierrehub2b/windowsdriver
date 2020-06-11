@@ -18,11 +18,13 @@ under the License.
  */
 
 using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Conditions;
 using FlaUI.Core.Input;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using windowsdriver;
 using windowsdriver.items;
@@ -313,14 +315,24 @@ class ElementExecution : AtsExecution
             AutomationElement pane = desktop.GetFirstModalPane();
             if(pane != null)
             {
-                AutomationElement dialog = pane.FindFirstChild(pane.ConditionFactory.ByControlType(FlaUI.Core.Definitions.ControlType.Window));
+                PropertyCondition winCondition = pane.ConditionFactory.ByControlType(FlaUI.Core.Definitions.ControlType.Window);
+                AutomationElement dialog = pane.FindFirstChild(winCondition);
+                int maxTry = 20;
+                while(dialog == null && maxTry > 0)
+                {
+                    dialog = pane.FindFirstChild(winCondition);
+                    Thread.Sleep(200);
+                    maxTry--;
+                }
+
                 if (dialog != null)
                 {
                     elems = new AtsElement[] { new AtsElement(desktop, dialog) };
+                    dialog.Focus();
                 }
             }
-            response.Elements = elems;
 
+            response.Elements = elems;
             Dispose();
         }
 

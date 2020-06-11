@@ -1093,10 +1093,6 @@ public class AtsElement
                 properties.Add(new DesktopData(name, property.ValueOrDefault));
             }
             catch { }
-            /*if (property.IsSupported)
-            {
-                properties.Add(new DesktopData(name, property.ValueOrDefault));
-            }*/
         }
     }
 }

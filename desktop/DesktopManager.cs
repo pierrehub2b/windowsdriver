@@ -27,6 +27,7 @@ using System.Drawing;
 using windowsdriver.items;
 using windowsdriver.desktop;
 using FlaUI.Core.Conditions;
+using System.Threading;
 
 namespace windowsdriver
 {
@@ -46,6 +47,7 @@ namespace windowsdriver
         public readonly Rectangle DesktopRect;
 
         public readonly PropertyCondition NotOffScreenProperty;
+        private readonly AndCondition TopModalCondition;
 
         public DesktopManager()
         {
@@ -58,6 +60,7 @@ namespace windowsdriver
 
             desktop = uia3.GetDesktop();
             NotOffScreenProperty = new PropertyCondition(uia3.PropertyLibrary.Element.IsOffscreen, false);
+            TopModalCondition = desktop.ConditionFactory.ByControlType(ControlType.Pane).And(desktop.ConditionFactory.ByClassName("Alternate Modal Top Most"));
 
             DesktopElement = new DesktopElement(desktop, DesktopRect);
 
@@ -200,7 +203,15 @@ namespace windowsdriver
 
         public AutomationElement GetFirstModalPane()
         {
-            return desktop.FindFirstChild(desktop.ConditionFactory.ByControlType(ControlType.Pane).And(desktop.ConditionFactory.ByClassName("Alternate Modal Top Most")));
+            AutomationElement modalPane = desktop.FindFirstChild(TopModalCondition);
+            int maxTry = 20;
+            while (modalPane == null && maxTry > 0)
+            {
+                modalPane = desktop.FindFirstChild(TopModalCondition);
+                Thread.Sleep(200);
+                maxTry--;
+            }
+            return modalPane;
         }
 
         public Queue<AtsElement> GetElements(string tag, string[] attributes)
