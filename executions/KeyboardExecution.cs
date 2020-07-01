@@ -71,7 +71,10 @@ class KeyboardExecution : AtsExecution
         {
             if (type == KeyType.Enter)
             {
-                action.FocusElement(CachedElements.Instance.GetElementById(id));
+                if(!string.IsNullOrEmpty(id))
+                {
+                    action.FocusElement(CachedElements.Instance.GetElementById(id));
+                }
                 action.SendKeysData(data, keyDown) ;
             }
             else if (type == KeyType.Down)
