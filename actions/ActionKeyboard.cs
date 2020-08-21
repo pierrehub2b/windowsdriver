@@ -55,7 +55,7 @@ class ActionKeyboard
                 foreach (char c in data)
                 {
                     Keyboard.Type(c);
-                    Thread.Sleep(10);
+                    Thread.Sleep(15);
                 }
 
                 //SendKeys.SendWait(data);
