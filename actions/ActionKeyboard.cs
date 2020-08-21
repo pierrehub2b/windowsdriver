@@ -52,8 +52,14 @@ class ActionKeyboard
             }
             else
             {
-                SendKeys.SendWait(data);
-                Thread.Sleep(data.Length*10);
+                foreach (char c in data)
+                {
+                    Keyboard.Type(c);
+                    Thread.Sleep(10);
+                }
+
+                //SendKeys.SendWait(data);
+                //Thread.Sleep(data.Length*10);
             }
         }
      }

@@ -18,15 +18,31 @@ under the License.
  */
 
 using System;
+using System.IO;
 using System.Net;
 using System.Reflection;
+using System.Windows.Forms;
 
 public static class DesktopDriver
 {
+    public static readonly string[] dlls = {"Interop.UIAutomationClient", "FlaUI.Core", "FlaUI.UIA3", "DotAmf"};
     public const int DefaultPort = 9988;
+
+    private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+    {
+        string assemblyName = new AssemblyName(args.Name).Name;
+        if (Array.Exists(dlls, element => element == assemblyName))
+        {
+            return Assembly.LoadFrom(Path.Combine(Application.StartupPath, assemblyName + ".dll"));
+        }
+
+        throw new Exception();
+    }
 
     public static int Main(String[] args)
     {
+        AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+
         int defaultPort = DefaultPort;
         for (int i = 0; i < args.Length; i++)
         {
