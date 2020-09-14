@@ -143,9 +143,33 @@ namespace windowsdriver
             return null;
         }
 
-        public DesktopWindow GetWindowPid(string title)
+        public DesktopWindow GetWindowPid(string title, string name)
         {
             AutomationElement[] windows = desktop.FindAllChildren();
+
+            //-------------------------------------------------------------------------------------------------
+            // Try to find JXBrowser main window
+            //-------------------------------------------------------------------------------------------------
+
+            if (name.Equals("jx"))
+            {
+                for (int i = 0; i < windows.Length; i++)
+                {
+                    AutomationElement window = windows[i];
+                    if (window.Properties.AutomationId.IsSupported && window.AutomationId.Equals("JavaFX1"))
+                    {
+                        AutomationElement[] texts = window.FindAllChildren(window.ConditionFactory.ByName(title));
+                        if (texts.Length > 0)
+                        {
+                            return new DesktopWindow(window, this);
+                        }
+                    }
+                }
+            }
+
+            //-------------------------------------------------------------------------------------------------
+            // try to find standard window
+            //-------------------------------------------------------------------------------------------------
 
             for (int i = 0; i < windows.Length; i++)
             {

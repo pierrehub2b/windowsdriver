@@ -159,7 +159,12 @@ class WindowExecution : AtsExecution
         }
         else if (this.type == WindowType.Title)
         {
-            window = desktop.GetWindowPid(commandsData[0]);
+            string name = "";
+            if(commandsData.Length > 1)
+            {
+                name = commandsData[1];
+            }
+            window = desktop.GetWindowPid(commandsData[0], name);
         }
         else if (this.type == WindowType.List)
         {
