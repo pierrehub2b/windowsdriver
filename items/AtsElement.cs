@@ -250,7 +250,7 @@ public class AtsElement
         {
             if (currentIndex == index)
             {
-                Keyboard.Type(VirtualKeyShort.ENTER);
+                SelectOrClick(currentItem);
                 break;
             }
 
@@ -258,6 +258,19 @@ public class AtsElement
             currentItem = GetSelectedItem(currentItem, desktop);
 
             currentIndex++;
+        }
+    }
+
+    private void SelectOrClick(AutomationElement item)
+    {
+        try
+        {
+            Rectangle rec = item.BoundingRectangle;
+            Mouse.Position = new Point((rec.Width / 2) + rec.X, (rec.Height / 2) + rec.Y);
+            Mouse.Click();
+        }
+        catch (Exception) {
+            Keyboard.Type(VirtualKeyShort.ENTER);
         }
     }
 
@@ -269,7 +282,7 @@ public class AtsElement
         {
             if (predicate(currentItem))
             {
-                Keyboard.Type(VirtualKeyShort.ENTER);
+                SelectOrClick(currentItem);
                 break;
             }
 
