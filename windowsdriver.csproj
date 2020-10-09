@@ -47,9 +47,10 @@
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>true</Prefer32Bit>
+    <WarningLevel>0</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
     <CodeAnalysisRuleSet>ExtendedCorrectnessRules.ruleset</CodeAnalysisRuleSet>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <ManifestCertificateThumbprint>80BB7D7864EAF4AC278DFE3C705EAF8141D16067</ManifestCertificateThumbprint>
@@ -104,14 +105,14 @@
     <Reference Include="DotAmf, Version=1.0.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\DotAmf.1.0.4\lib\net40-client\DotAmf.dll</HintPath>
     </Reference>
-    <Reference Include="FlaUI.Core, Version=3.1.0.0, Culture=neutral, PublicKeyToken=5b28cd3eabb9203e, processorArchitecture=MSIL">
-      <HintPath>packages\FlaUI.Core.Signed.3.1.0\lib\net45\FlaUI.Core.dll</HintPath>
+    <Reference Include="FlaUI.Core, Version=3.2.0.0, Culture=neutral, PublicKeyToken=5b28cd3eabb9203e, processorArchitecture=MSIL">
+      <HintPath>packages\FlaUI.Core.Signed.3.2.0\lib\net45\FlaUI.Core.dll</HintPath>
     </Reference>
-    <Reference Include="FlaUI.UIA3, Version=3.1.0.0, Culture=neutral, PublicKeyToken=5b28cd3eabb9203e, processorArchitecture=MSIL">
-      <HintPath>packages\FlaUI.UIA3.Signed.3.1.0\lib\net45\FlaUI.UIA3.dll</HintPath>
+    <Reference Include="FlaUI.UIA3, Version=3.2.0.0, Culture=neutral, PublicKeyToken=5b28cd3eabb9203e, processorArchitecture=MSIL">
+      <HintPath>packages\FlaUI.UIA3.Signed.3.2.0\lib\net45\FlaUI.UIA3.dll</HintPath>
     </Reference>
-    <Reference Include="Interop.UIAutomationClient, Version=10.0.18362.0, Culture=neutral, PublicKeyToken=0f06aa439ea1c622, processorArchitecture=MSIL">
-      <HintPath>packages\Interop.UIAutomationClient.Signed.10.18362.0\lib\net45\Interop.UIAutomationClient.dll</HintPath>
+    <Reference Include="Interop.UIAutomationClient, Version=10.0.19041.0, Culture=neutral, PublicKeyToken=0f06aa439ea1c622, processorArchitecture=MSIL">
+      <HintPath>packages\Interop.UIAutomationClient.Signed.10.19041.0\lib\net45\Interop.UIAutomationClient.dll</HintPath>
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="PresentationCore" />
@@ -182,7 +183,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-<!--  <Target Name="AfterBuild" Condition=" '$(Configuration)' == 'Release' ">
+  <!--  <Target Name="AfterBuild" Condition=" '$(Configuration)' == 'Release' ">
     <MakeDir Directories="$(OutDir)Merge" />
     <Exec Command="$(SolutionDir)packages\ILMerge.Tools.2.14.1208\tools\ILMerge.exe /target:exe /wildcards /ndebug /out:$(OutDir)Merge\windowsdriver.exe $(OutDir)windowsdriver.exe $(OutDir)*.dll" />
   </Target> -->
