@@ -163,6 +163,7 @@
     <Compile Include="record\VisualAction.cs" />
     <Compile Include="record\VisualElement.cs" />
     <Compile Include="record\VisualRecorder.cs" />
+    <Compile Include="record\VisualSummary.cs" />
     <Compile Include="record\VisualReport.cs" />
     <Compile Include="WebServer.cs" />
   </ItemGroup>

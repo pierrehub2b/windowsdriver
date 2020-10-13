@@ -68,6 +68,8 @@ public class VisualRecorder
 
     private DateTime startTime;
 
+    private VisualSummary summary;
+
     private string AtsvFilePath;
 
     //private PerformanceCounter cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
@@ -196,6 +198,10 @@ public class VisualRecorder
         if (visualStream != null)
         {
             visualStream.Flush();
+            
+            AmfSerializer.WriteObject(visualStream, summary);
+            visualStream.Flush();
+
             visualStream.Close();
         }
 
@@ -213,7 +219,7 @@ public class VisualRecorder
         {
             if (AmfSerializer == null)
             {
-                AmfSerializer = new DataContractAmfSerializer(typeof(VisualAction), new[] { typeof(VisualElement), typeof(VisualReport), typeof(TestBound) });
+                AmfSerializer = new DataContractAmfSerializer(typeof(VisualAction), new[] { typeof(VisualElement), typeof(VisualReport), typeof(TestBound), typeof(VisualSummary) });
             }
 
             if (videoQuality == 4) // max quality level
@@ -257,6 +263,11 @@ public class VisualRecorder
         }
     }
 
+    internal void Summary(bool passed, int actions, string suiteName, string testName,  string data)
+    {
+        summary = new VisualSummary(passed, actions, suiteName, testName, data);
+    }
+    
     public string GetDownloadFile()
     {
         if (visualStream != null)
@@ -360,99 +371,4 @@ public class VisualRecorder
             visualStream.Flush();
         }
     }
-
-    //-------------------------------------------------------------------------------------------------------------------
-
-    /*private static string GetInstanceNameForProcessId(int processId)
-    {
-        var process = Process.GetProcessById(processId);
-        string processName = Path.GetFileNameWithoutExtension(process.ProcessName);
-
-        PerformanceCounterCategory cat = new PerformanceCounterCategory("Process");
-        string[] instances = cat.GetInstanceNames().Where(inst => inst.StartsWith(processName)).ToArray();
-
-        foreach (string instance in instances)
-        {
-            using (PerformanceCounter cnt = new PerformanceCounter("Process",
-                "ID Process", instance, true))
-            {
-                int val = (int)cnt.RawValue;
-                if (val == processId)
-                {
-                    return instance;
-                }
-            }
-        }
-        return null;
-    }
-
-    private string GetInstanceName(int processId)
-    {
-        string instanceName = Process.GetProcessById(processId).ProcessName;
-        bool found = false;
-        if (!string.IsNullOrEmpty(instanceName))
-        {
-            Process[] processes = Process.GetProcessesByName(instanceName);
-            if (processes.Length > 0)
-            {
-                int i = 0;
-                foreach (Process p in processes)
-                {
-                    instanceName = string.Format("{0}#{1}", p.ProcessName, i);
-                    if (PerformanceCounterCategory.CounterExists("ID Process", "Process"))
-                    {
-                        PerformanceCounter counter = new PerformanceCounter("Process", "ID Process", instanceName);
-
-                        if (processId == counter.RawValue)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                    i++;
-                }
-            }
-        }
-
-        if (!found)
-            instanceName = string.Empty;
-
-        return instanceName;
-    }
-    
-    private string GetPerformanceCounterProcessName(int pid)
-    {
-        return GetPerformanceCounterProcessName(pid, Process.GetProcessById(pid).ProcessName);
-    }
-
-    private string GetPerformanceCounterProcessName(int pid, string processName)
-    {
-        int nameIndex = 1;
-        string value = processName;
-        string counterName = processName + "#" + nameIndex;
-        PerformanceCounter pc = new PerformanceCounter("Process", "ID Process", counterName, true);
-
-        while (true)
-        {
-            try
-            {
-                if (pid == (int)pc.NextValue())
-                {
-                    value = counterName;
-                    break;
-                }
-                else
-                {
-                    nameIndex++;
-                    counterName = processName + "#" + nameIndex;
-                    pc = new PerformanceCounter("Process", "ID Process", counterName, true);
-                }
-            }
-            catch (SystemException)
-            {
-                return null;
-            }
-        }
-        return value;
-    }*/
 }
