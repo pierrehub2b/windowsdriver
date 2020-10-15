@@ -56,7 +56,14 @@ class RecordExecution : AtsExecution
         else if (recordType == RecordType.Summary)
         {
             if (bool.TryParse(commandsData[0], out bool passed) && int.TryParse(commandsData[1], out int actions)){
-                recorder.Summary(passed, actions, commandsData[2], commandsData[3], commandsData[4]);
+                if(!passed && commandsData.Length == 8 && int.TryParse(commandsData[6], out int errorLine))
+                {
+                    recorder.Summary(passed, actions, commandsData[2], commandsData[3], commandsData[4], commandsData[5], errorLine, commandsData[7]);
+                }
+                else
+                {
+                    recorder.Summary(passed, actions, commandsData[2], commandsData[3], commandsData[4]);
+                }
             }
         }
         else

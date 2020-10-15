@@ -19,25 +19,31 @@ under the License.
 
 using System.Runtime.Serialization;
 
-[DataContract(Name = "com.ats.recorder.VisualSummary")]
-public class VisualSummary
+[DataContract(Name = "com.ats.recorder.ReportSummary")]
+public class ReportSummary
 {
-    public VisualSummary() : base() { }
+    public ReportSummary() : base() { }
 
-    public VisualSummary(bool passed, int actions, string suiteName, string testName, string data) : this()
+    public ReportSummary(bool passed, int actions, string suiteName, string testName, string data) : this()
     {
-        this.Passed = passed;
+        if (passed)
+        {
+            this.Status = 1;
+        }
+        else
+        {
+            this.Status = 0;
+        }
         this.SuiteName = suiteName;
         this.TestName = testName;
         this.Actions = actions;
         this.Data = data;
     }
 
-    [DataMember(Name = "passed")]
-    public bool Passed;
-
-    [DataMember(Name = "data")]
-    public string Data;
+    public ReportSummary(bool passed, int actions, string suiteName, string testName, string data, string errorScript, int errorLine, string errorMessage) : this(passed, actions, suiteName, testName, data)
+    {
+        this.Error = new ReportSummaryError(errorScript, errorLine, errorMessage);
+    }
 
     [DataMember(Name = "suiteName")]
     public string SuiteName;
@@ -45,6 +51,15 @@ public class VisualSummary
     [DataMember(Name = "testName")]
     public string TestName;
 
+    [DataMember(Name = "data")]
+    public string Data;
+    
+    [DataMember(Name = "status")]
+    public int Status;
+
     [DataMember(Name = "actions")]
     public int Actions;
+
+    [DataMember(Name = "error")]
+    public ReportSummaryError Error;
 }

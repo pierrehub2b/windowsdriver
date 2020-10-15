@@ -17,6 +17,7 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using DotAmf.Data;
 using DotAmf.Serialization;
 using System;
 using System.Drawing;
@@ -68,7 +69,7 @@ public class VisualRecorder
 
     private DateTime startTime;
 
-    private VisualSummary summary;
+    private ReportSummary summary;
 
     private string AtsvFilePath;
 
@@ -219,7 +220,7 @@ public class VisualRecorder
         {
             if (AmfSerializer == null)
             {
-                AmfSerializer = new DataContractAmfSerializer(typeof(VisualAction), new[] { typeof(VisualElement), typeof(VisualReport), typeof(TestBound), typeof(VisualSummary) });
+                AmfSerializer = new DataContractAmfSerializer(typeof(VisualAction), new[] {typeof(ReportSummary), typeof(ReportSummaryError), typeof(VisualElement), typeof(VisualReport), typeof(TestBound)});
             }
 
             if (videoQuality == 4) // max quality level
@@ -265,9 +266,14 @@ public class VisualRecorder
 
     internal void Summary(bool passed, int actions, string suiteName, string testName,  string data)
     {
-        summary = new VisualSummary(passed, actions, suiteName, testName, data);
+        summary = new ReportSummary(passed, actions, suiteName, testName, data);
     }
-    
+
+    internal void Summary(bool passed, int actions, string suiteName, string testName, string data, string errorScript, int errorLine, string errorMessage)
+    {
+        summary = new ReportSummary(passed, actions, suiteName, testName, data, errorScript, errorLine, errorMessage);
+    }
+
     public string GetDownloadFile()
     {
         if (visualStream != null)

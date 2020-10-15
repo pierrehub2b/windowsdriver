@@ -159,11 +159,12 @@
     <Compile Include="items\DesktopRequest.cs" />
     <Compile Include="items\DesktopData.cs" />
     <Compile Include="record\HardwareInfo.cs" />
+    <Compile Include="record\ReportSummaryError.cs" />
     <Compile Include="record\VisualActionSync.cs" />
     <Compile Include="record\VisualAction.cs" />
     <Compile Include="record\VisualElement.cs" />
     <Compile Include="record\VisualRecorder.cs" />
-    <Compile Include="record\VisualSummary.cs" />
+    <Compile Include="record\ReportSummary.cs" />
     <Compile Include="record\VisualReport.cs" />
     <Compile Include="WebServer.cs" />
   </ItemGroup>
