@@ -125,14 +125,18 @@ public class WebServer
             new DesktopData("Version", Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseId", "").ToString())
         };
 
-        string driveLetter = Path.GetPathRoot(Environment.CurrentDirectory);
-        DriveInfo dinf = new DriveInfo(driveLetter);
-        if (dinf.IsReady)
+        try
         {
-            osData.Add(new DesktopData("DriveLetter", driveLetter));
-            osData.Add(new DesktopData("DiskTotalSize", dinf.TotalSize / 1024 / 1024 + " Mo"));
-            osData.Add(new DesktopData("DiskFreeSpace", dinf.AvailableFreeSpace / 1024 / 1024 + " Mo"));
+            string driveLetter = Path.GetPathRoot(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            DriveInfo dinf = new DriveInfo(driveLetter);
+            if (dinf.IsReady)
+            {
+                osData.Add(new DesktopData("DriveLetter", driveLetter));
+                osData.Add(new DesktopData("DiskTotalSize", dinf.TotalSize / 1024 / 1024 + " Mo"));
+                osData.Add(new DesktopData("DiskFreeSpace", dinf.AvailableFreeSpace / 1024 / 1024 + " Mo"));
+            }
         }
+        catch (Exception) {}
 
         ManagementObject os = new ManagementObjectSearcher("select * from Win32_OperatingSystem").Get().Cast<ManagementObject>().First();
         osData.Add(new DesktopData("BuildNumber", (string)os["BuildNumber"]));
