@@ -56,7 +56,7 @@ class RecordExecution : AtsExecution
         else if (recordType == RecordType.Summary)
         {
             if (bool.TryParse(commandsData[0], out bool passed) && int.TryParse(commandsData[1], out int actions)){
-                if(!passed && commandsData.Length == 8 && int.TryParse(commandsData[6], out int errorLine))
+                if(!passed && commandsData.Length >= 8 && int.TryParse(commandsData[6], out int errorLine))
                 {
                     recorder.Summary(passed, actions, commandsData[2], commandsData[3], commandsData[4], commandsData[5], errorLine, commandsData[7]);
                 }
@@ -150,8 +150,9 @@ class RecordExecution : AtsExecution
                     _ = double.TryParse(commandsData[7], out channelDimmension[3]);
 
                     _ = bool.TryParse(commandsData[8], out bool sync);
+                    _ = bool.TryParse(commandsData[9], out bool stop);
 
-                    recorder.Create(actionType, line, timeLine, channelName, channelDimmension, sync);
+                    recorder.Create(actionType, line, timeLine, channelName, channelDimmension, sync, stop);
                 }
                 else if (recordType == RecordType.CreateMobile)
                 {
@@ -170,8 +171,9 @@ class RecordExecution : AtsExecution
                     _ = double.TryParse(commandsData[7], out channelDimmension[3]);
 
                     _ = bool.TryParse(commandsData[9], out bool sync);
+                    _ = bool.TryParse(commandsData[10], out bool stop);
 
-                    recorder.CreateMobile(actionType, line, timeLine, channelName, channelDimmension, commandsData[8], sync);
+                    recorder.CreateMobile(actionType, line, timeLine, channelName, channelDimmension, commandsData[8], sync, stop);
                 }
                 else if (recordType == RecordType.Image)
                 {

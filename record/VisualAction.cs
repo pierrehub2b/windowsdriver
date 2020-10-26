@@ -136,7 +136,7 @@ public class VisualAction
         return bmp;
     }
 
-    public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived) : this()
+    public VisualAction(VisualRecorder recorder, bool stop, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived) : this()
     {
         this.Type = type;
         this.Line = line;
@@ -146,9 +146,10 @@ public class VisualAction
         this.imagesList.Add(recorder.ScreenCapture(channelBound));
         this.ImageType = imageType;
         this.ImageRef = 0;
+        this.Stop = stop;
     }
 
-    public VisualAction(VisualRecorder recorder, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) : this()
+    public VisualAction(VisualRecorder recorder, bool stop, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) : this()
     {
         this.Type = type;
         this.Line = line;
@@ -158,6 +159,7 @@ public class VisualAction
         this.ChannelBound = new TestBound(channelBound);
         this.ImageType = imageType;
         this.ImageRef = 0;
+        this.Stop = stop;
     }
 
     public VisualAction(VisualActionSync action) : this()
@@ -176,6 +178,7 @@ public class VisualAction
         this.TimeLine = action.TimeLine;
         this.Type = action.Type;
         this.Value = action.Value;
+        this.Stop = action.Stop;
     }
 
     public virtual void AddImage(VisualRecorder recorder, double[] channelBound, bool isRef)
@@ -208,6 +211,9 @@ public class VisualAction
 
     [DataMember(Name = "error")]
     public int Error;
+
+    [DataMember(Name = "stop")]
+    public bool Stop;
 
     [DataMember(Name = "duration")]
     public long Duration;
