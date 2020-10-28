@@ -23,12 +23,12 @@ using System.Windows.Media;
 public class VisualActionSync : VisualAction
 {
 
-    public VisualActionSync(VisualRecorder recorder, bool stop, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) 
-        : base(recorder, stop, type, line, timeLine,  channelName,  channelBound,  imageType,  cpu,  ram,  netSent,  netReceived,  url)
+    public VisualActionSync(VisualRecorder recorder, bool stop, string type, int line, string script, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) 
+        : base(recorder, stop, type, line, script, timeLine,  channelName,  channelBound,  imageType,  cpu,  ram,  netSent,  netReceived,  url)
     {}
 
-    public VisualActionSync(VisualRecorder recorder, bool stop, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived)
-        : base(recorder, stop, type, line, timeLine, channelName, channelBound, imageType, cpu, ram, netSent, netReceived)
+    public VisualActionSync(VisualRecorder recorder, bool stop, string type, int line, string script, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived)
+        : base(recorder, stop, type, line, script, timeLine, channelName, channelBound, imageType, cpu, ram, netSent, netReceived)
     { }
 
     public override void AddImage(VisualRecorder recorder, double[] channelBound, bool isRef)

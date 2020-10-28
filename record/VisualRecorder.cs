@@ -288,31 +288,31 @@ public class VisualRecorder
         return AtsvFilePath;
     }
 
-    internal void Create(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound, bool sync, bool stop)
+    internal void Create(string actionType, int actionLine, string actionScript, long timeLine, string channelName, double[] channelBound, bool sync, bool stop)
     {
         currentAction.AddImage(this, channelBound, false);
 
         Flush();
         if(sync)
         {
-            currentAction = new VisualActionSync(this, stop, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F);
+            currentAction = new VisualActionSync(this, stop, actionType, actionLine,actionScript, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F);
         } else
         {
-            currentAction = new VisualAction(this, stop, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F);
+            currentAction = new VisualAction(this, stop, actionType, actionLine, actionScript, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F);
         }
         
     }
 
-    internal void CreateMobile(string actionType, int actionLine, long timeLine, string channelName, double[] channelBound, string url, bool sync, bool stop)
+    internal void CreateMobile(string actionType, int actionLine, string actionScript, long timeLine, string channelName, double[] channelBound, string url, bool sync, bool stop)
     {
         currentAction.AddImage(this, url, channelBound, false);
 
         Flush(); 
         if(sync) {
-            currentAction = new VisualActionSync(this, stop, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
+            currentAction = new VisualActionSync(this, stop, actionType, actionLine, actionScript, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
         } else
         {
-            currentAction = new VisualAction(this, stop, actionType, actionLine, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
+            currentAction = new VisualAction(this, stop, actionType, actionLine, actionScript, timeLine, channelName, channelBound, imageType, null, null, 0.0F, 0.0F, url);
         }
     }
 

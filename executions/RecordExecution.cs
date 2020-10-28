@@ -139,20 +139,22 @@ class RecordExecution : AtsExecution
 
                     _ = int.TryParse(commandsData[1], out int line);
 
-                    _ = long.TryParse(commandsData[2], out long timeLine);
+                    string script = commandsData[2];
 
-                    string channelName = commandsData[3];
+                    _ = long.TryParse(commandsData[3], out long timeLine);
+
+                    string channelName = commandsData[4];
 
                     double[] channelDimmension = new double[] { 0, 0, 1, 1 };
-                    _ = double.TryParse(commandsData[4], out channelDimmension[0]);
-                    _ = double.TryParse(commandsData[5], out channelDimmension[1]);
-                    _ = double.TryParse(commandsData[6], out channelDimmension[2]);
-                    _ = double.TryParse(commandsData[7], out channelDimmension[3]);
+                    _ = double.TryParse(commandsData[5], out channelDimmension[0]);
+                    _ = double.TryParse(commandsData[6], out channelDimmension[1]);
+                    _ = double.TryParse(commandsData[7], out channelDimmension[2]);
+                    _ = double.TryParse(commandsData[8], out channelDimmension[3]);
 
-                    _ = bool.TryParse(commandsData[8], out bool sync);
-                    _ = bool.TryParse(commandsData[9], out bool stop);
+                    _ = bool.TryParse(commandsData[9], out bool sync);
+                    _ = bool.TryParse(commandsData[10], out bool stop);
 
-                    recorder.Create(actionType, line, timeLine, channelName, channelDimmension, sync, stop);
+                    recorder.Create(actionType, line, script, timeLine, channelName, channelDimmension, sync, stop);
                 }
                 else if (recordType == RecordType.CreateMobile)
                 {
@@ -160,20 +162,24 @@ class RecordExecution : AtsExecution
 
                     _ = int.TryParse(commandsData[1], out int line);
 
-                    _ = long.TryParse(commandsData[2], out long timeLine);
+                    string script = commandsData[2];
 
-                    string channelName = commandsData[3];
+                    _ = long.TryParse(commandsData[6], out long timeLine);
+
+                    string channelName = commandsData[4];
 
                     double[] channelDimmension = new double[] { 0, 0, 1, 1 };
-                    _ = double.TryParse(commandsData[4], out channelDimmension[0]);
-                    _ = double.TryParse(commandsData[5], out channelDimmension[1]);
-                    _ = double.TryParse(commandsData[6], out channelDimmension[2]);
-                    _ = double.TryParse(commandsData[7], out channelDimmension[3]);
+                    _ = double.TryParse(commandsData[5], out channelDimmension[0]);
+                    _ = double.TryParse(commandsData[6], out channelDimmension[1]);
+                    _ = double.TryParse(commandsData[7], out channelDimmension[2]);
+                    _ = double.TryParse(commandsData[8], out channelDimmension[3]);
 
-                    _ = bool.TryParse(commandsData[9], out bool sync);
-                    _ = bool.TryParse(commandsData[10], out bool stop);
+                    string url = commandsData[9];
 
-                    recorder.CreateMobile(actionType, line, timeLine, channelName, channelDimmension, commandsData[8], sync, stop);
+                    _ = bool.TryParse(commandsData[10], out bool sync);
+                    _ = bool.TryParse(commandsData[11], out bool stop);
+
+                    recorder.CreateMobile(actionType, line, script, timeLine, channelName, channelDimmension, url, sync, stop);
                 }
                 else if (recordType == RecordType.Image)
                 {

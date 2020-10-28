@@ -136,10 +136,11 @@ public class VisualAction
         return bmp;
     }
 
-    public VisualAction(VisualRecorder recorder, bool stop, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived) : this()
+    public VisualAction(VisualRecorder recorder, bool stop, string type, int line, string script, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived) : this()
     {
         this.Type = type;
         this.Line = line;
+        this.Script = script;
         this.TimeLine = timeLine;
         this.ChannelName = channelName;
         this.ChannelBound = new TestBound(channelBound);
@@ -149,10 +150,11 @@ public class VisualAction
         this.Stop = stop;
     }
 
-    public VisualAction(VisualRecorder recorder, bool stop, string type, int line, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) : this()
+    public VisualAction(VisualRecorder recorder, bool stop, string type, int line, string script, long timeLine, string channelName, double[] channelBound, string imageType, PerformanceCounter cpu, PerformanceCounter ram, float netSent, float netReceived, string url) : this()
     {
         this.Type = type;
         this.Line = line;
+        this.Script = script;
         this.TimeLine = timeLine;
         this.ChannelName = channelName;
         this.imagesList.Add(recorder.ScreenCapture(channelBound, GetScreenshotImage(url)));
@@ -175,6 +177,7 @@ public class VisualAction
         this.ImageType = action.ImageType;
         this.Index = action.Index;
         this.Line = action.Line;
+        this.Script = action.Script;
         this.TimeLine = action.TimeLine;
         this.Type = action.Type;
         this.Value = action.Value;
@@ -220,6 +223,9 @@ public class VisualAction
 
     [DataMember(Name = "line")]
     public int Line;
+
+    [DataMember(Name = "script")]
+    public string Script;
 
     [DataMember(Name = "timeLine")]
     public long TimeLine;
