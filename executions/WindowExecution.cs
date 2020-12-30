@@ -25,6 +25,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Threading;
 using windowsdriver;
 
 class WindowExecution : AtsExecution
@@ -277,7 +278,8 @@ class WindowExecution : AtsExecution
 
                 if (window != null)
                 {
-                    window.ToFront();
+                    window.SetMouseFocus();
+                    Thread.Sleep(200);
                 }
                 keyboard.RootKeys(keys.ToLower());
 

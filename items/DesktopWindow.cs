@@ -19,6 +19,7 @@ under the License.
 
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
+using FlaUI.Core.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -112,7 +113,8 @@ public class DesktopWindow : AtsElement
 
         foreach (AutomationElement child in popupChildren.Concat(Element.FindAllChildren(desktop.NotOffScreenProperty)))
         {
-            if(child.Properties.ClassName.IsSupported && child.ClassName.Equals("Intermediate D3D Window")){ // Main Google Chrome app window
+            if(child.Properties.ClassName.IsSupported && (child.ClassName.Equals("Intermediate D3D Window") || child.ClassName.Equals("MozillaCompositorWindowClass")))
+            { // Main Google Chrome app window or main Firefox app window
                 continue;
             }
             listElements.Enqueue(new AtsElement(desktop, child));
@@ -282,6 +284,12 @@ public class DesktopWindow : AtsElement
             Element.AsWindow().Focus();
             Element.AsWindow().FocusNative();
         }
+    }
+
+    public virtual void SetMouseFocus()
+    {
+        ToFront();
+        Element.Click();
     }
 
     private bool HasModalChild()

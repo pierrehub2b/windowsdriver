@@ -52,14 +52,7 @@ class ActionKeyboard
             }
             else
             {
-                foreach (char c in data)
-                {
-                    Keyboard.Type(c);
-                    Thread.Sleep(15);
-                }
-
-                //SendKeys.SendWait(data);
-                //Thread.Sleep(data.Length*10);
+                KeyBoardType(data);
             }
         }
      }
@@ -94,15 +87,31 @@ class ActionKeyboard
         {
             if(token.Length > 0)    
             {
-                try
+                if(token.StartsWith("$key", StringComparison.OrdinalIgnoreCase))
                 {
-                    SendKeys.SendWait("{" + token.ToUpper() + "}");
+                    try
+                    {
+                        SendKeys.SendWait("{" + token.ToUpper() + "}");
+                    }
+                    catch
+                    {
+                        KeyBoardType(token);
+                    }
                 }
-                catch
+                else
                 {
-                    Keyboard.Type(token);
+                    KeyBoardType(token);
                 }
             }
+        }
+    }
+
+    private void KeyBoardType(string data)
+    {
+        foreach (char c in data)
+        {
+            Keyboard.Type(c);
+            Thread.Sleep(20);
         }
     }
 
