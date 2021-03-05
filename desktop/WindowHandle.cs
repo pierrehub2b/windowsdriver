@@ -27,6 +27,7 @@ namespace windowsdriver.desktop
 {
     class WindowHandle
     {
+
         //private static readonly int WinCloseEventId = System.Windows.Automation.WindowPattern.WindowClosedEvent.Id;
         private static readonly int WinCloseEventId = 20017;
 
@@ -36,9 +37,9 @@ namespace windowsdriver.desktop
 
         public WindowHandle(int pid, AutomationElement win, List<WindowHandle> list)
         {
-            this.Pid = pid;
-            this.Win = win;
-            this.Handle = win.AsWindow().Properties.NativeWindowHandle;
+            Pid = pid;
+            Win = win;
+            Handle = win.AsWindow().Properties.NativeWindowHandle;
 
             AutomationEventHandlerBase closeEvent = null;
             closeEvent = win.RegisterAutomationEvent(new FlaUI.Core.Identifiers.EventId(WinCloseEventId, "WindowClosedEvent"), TreeScope.Element, (removed, evType) =>
@@ -47,7 +48,11 @@ namespace windowsdriver.desktop
                 {
                     list.Remove(this);
                     Win = null;
-                    closeEvent.Dispose();
+                    try
+                    {
+                        closeEvent.Dispose();
+                    }
+                    catch { }
                 }
             });
         }

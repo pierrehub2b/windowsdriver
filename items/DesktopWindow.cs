@@ -19,7 +19,6 @@ under the License.
 
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
-using FlaUI.Core.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -210,7 +209,9 @@ public class DesktopWindow : AtsElement
                     }
                 }
             }
-            catch { }
+            catch (Exception e) {
+                var verif = e.Message;
+            }
         }
 
         Dispose();
@@ -235,7 +236,7 @@ public class DesktopWindow : AtsElement
         for (int i = 0; i < dialogs.Length; i++)
         {
             AutomationElement dialog = dialogs[i];
-            if (dialog.Patterns.Window.Pattern.IsModal)
+            if (dialog.Patterns.Window.IsSupported && dialog.Patterns.Window.Pattern.IsModal)
             {
                 dialog.AsWindow().Close();
                 findModal = true;
@@ -261,7 +262,7 @@ public class DesktopWindow : AtsElement
     {
         if (isWindow)
         {
-            if (!HasModalChild() && Element.Patterns.Window.Pattern.WindowVisualState.IsSupported)
+            if (!HasModalChild() && Element.Patterns.Window.IsSupported && Element.Patterns.Window.Pattern.WindowVisualState.IsSupported)
             {
                 double w = Element.AsWindow().ActualWidth;
                 double h = Element.AsWindow().ActualHeight;
@@ -297,7 +298,8 @@ public class DesktopWindow : AtsElement
         AutomationElement[] children = Element.FindAllChildren(Element.ConditionFactory.ByControlType(ControlType.Window));
         for (int i = 0; i < children.Length; i++)
         {
-            if (children[i].Patterns.Window.Pattern.IsModal)
+            AutomationElement child = children[i];
+            if (child.Patterns.Window.IsSupported && child.Patterns.Window.Pattern.IsModal)
             {
                 return true;
             }

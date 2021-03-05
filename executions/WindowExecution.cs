@@ -23,10 +23,13 @@ using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Management;
 using System.Net;
 using System.Threading;
 using windowsdriver;
+using static System.Management.ManagementObjectCollection;
 
 class WindowExecution : AtsExecution
 {
@@ -50,7 +53,8 @@ class WindowExecution : AtsExecution
         Close = 7,
         Url = 8,
         Keys = 9,
-        State = 10
+        State = 10,
+        Uwp = 11
     };
 
     private readonly DesktopWindow window;
@@ -158,6 +162,26 @@ class WindowExecution : AtsExecution
                 }
             }
         }
+        else if (this.type == WindowType.Uwp)
+        {
+
+            ManagementObjectSearcher searcher = new ManagementObjectSearcher(string.Format("select ProcessID,CommandLine from Win32_Process where CommandLine like '%{0}%{1}%'", commandsData[0], commandsData[1]));
+            ManagementObjectEnumerator enu = searcher.Get().GetEnumerator();
+
+            if (enu.MoveNext())
+            {
+                string commandLine = enu.Current["CommandLine"].ToString();
+                int processId = Int32.Parse(enu.Current["ProcessID"].ToString());
+
+                Process uwpProcess = Process.GetProcessById(processId);
+                ProcessModule module = uwpProcess.MainModule;
+
+                window = desktop.GetWindowPid(commandsData[2]);
+                window.Pid = processId;
+
+                //window = desktop.GetWindowByHandle(windowHandle.ToInt32());
+            }
+        }
         else if (this.type == WindowType.Title)
         {
             if (commandsData[0].Equals("jx")){
@@ -179,6 +203,12 @@ class WindowExecution : AtsExecution
                 _ = int.TryParse(commandsData[0], out int pid);
                 _ = int.TryParse(commandsData[1], out int index);
                 window = desktop.GetWindowIndexByPid(pid, index);
+
+                if(window == null)
+                {
+                    _ = int.TryParse(commandsData[2], out int handle);
+                    window = desktop.GetWindowByHandle(handle);
+                }
             }
             else
             { 

@@ -72,6 +72,8 @@ class DriverExecution : AtsExecution
         else if (type == DriverType.CloseWindows)
         {
             _ = int.TryParse(commandsData[0], out int pid);
+            _ = int.TryParse(commandsData[1], out int handle);
+
             if (pid > 0)
             {
                 List<DesktopWindow> wins = desktop.GetOrderedWindowsByPid(pid);
@@ -83,6 +85,12 @@ class DriverExecution : AtsExecution
             else
             {
                 response.setError(errorCode, "pid must be greater than 0");
+            }
+
+            DesktopWindow winapp = desktop.GetWindowByHandle(handle);
+            if(winapp != null)
+            {
+                winapp.Close();
             }
         }
         else if (type == DriverType.Close)
