@@ -23,6 +23,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading;
@@ -36,6 +38,21 @@ public class DesktopWindow : AtsElement
 
     [DataMember(Name = "handle")]
     public int Handle;
+
+    [DataMember(Name = "appVersion")]
+    public string AppVersion;
+
+    [DataMember(Name = "appBuildVersion")]
+    public string AppBuildVersion;
+
+    [DataMember(Name = "appName")]
+    public string AppName;
+
+    [DataMember(Name = "appPath")]
+    public string AppPath;
+
+    [DataMember(Name = "appIcon")]
+    public byte[] AppIcon;
 
     public readonly bool isIE = false;
 
@@ -60,6 +77,10 @@ public class DesktopWindow : AtsElement
         Tag = "Window";
         this.desktop = desktop;
 
+        this.AppName = elem.Name;
+        this.AppVersion = "0";
+        this.AppBuildVersion = "0";
+
         elem.Properties.ProcessId.TryGetValue(out Pid);
 
         elem.Properties.NativeWindowHandle.TryGetValue(out IntPtr handle);
@@ -71,6 +92,34 @@ public class DesktopWindow : AtsElement
             elem.Properties.ClassName.TryGetValue(out string className);
             isIE = "IEFrame".Equals(className);
         }
+    }
+    
+    internal void UpdateApplicationData(Process process)
+    {
+            Pid = process.Id;
+            FileVersionInfo info = process.MainModule.FileVersionInfo;
+            if (AppName == null || AppName.Length == 0)
+            {
+                AppName = info.FileDescription;
+            }
+
+            AppVersion = info.FileVersion;
+            AppBuildVersion = info.FileMajorPart + "." + info.FileMinorPart + "." + info.FileBuildPart;
+            AppPath = process.MainModule.FileName;
+
+            try
+            {
+                Icon icon = Icon.ExtractAssociatedIcon(process.MainModule.FileName);
+                using (var stream = new MemoryStream())
+                {
+                    icon.ToBitmap().Save(stream, ImageFormat.Png);
+                    AppIcon = stream.ToArray();
+                }
+            }
+            catch
+            {
+                AppIcon = new byte[1];
+            }
     }
 
     private bool CanMoveResize()
@@ -110,7 +159,7 @@ public class DesktopWindow : AtsElement
             }
         }
 
-        foreach (AutomationElement child in popupChildren.Concat(Element.FindAllChildren(desktop.NotOffScreenProperty)))
+        foreach (AutomationElement child in popupChildren.Concat(Element.FindAllChildren(desktop.OnScreenProperty)))
         {
             if(child.Properties.ClassName.IsSupported && (child.ClassName.Equals("Intermediate D3D Window") || child.ClassName.Equals("MozillaCompositorWindowClass")))
             { // Main Google Chrome app window or main Firefox app window
@@ -121,7 +170,7 @@ public class DesktopWindow : AtsElement
 
         return listElements.ToArray();
     }
-
+    
     public override Queue<AtsElement> GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop)
     {
         //---------------------------------------------------------------------

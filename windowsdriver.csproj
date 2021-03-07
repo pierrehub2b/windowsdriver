@@ -167,6 +167,7 @@
     <Compile Include="record\VisualRecorder.cs" />
     <Compile Include="record\ReportSummary.cs" />
     <Compile Include="record\VisualReport.cs" />
+    <Compile Include="utils\UwpApplications.cs" />
     <Compile Include="WebServer.cs" />
   </ItemGroup>
   <ItemGroup>

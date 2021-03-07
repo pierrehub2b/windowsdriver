@@ -26,7 +26,6 @@ using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Windows.Media;
 
 [DataContract(Name = "com.ats.recorder.VisualAction")]
 public class VisualAction

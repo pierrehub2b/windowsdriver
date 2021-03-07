@@ -41,7 +41,7 @@ namespace windowsdriver.items
         {
             List<AtsElement> listElements = new List<AtsElement>();
             
-            foreach (AutomationElement child in Element.FindAllChildren(desktop.NotOffScreenProperty))
+            foreach (AutomationElement child in Element.FindAllChildren(desktop.OnScreenProperty))
             {
                 if (!child.ClassName.Equals("ApolloRuntimeContentWindow"))
                 {
@@ -65,7 +65,7 @@ namespace windowsdriver.items
             Queue<AtsElement> listElements = new Queue<AtsElement>();
             listElements.Enqueue(this);
 
-            AutomationElement[] desktopChildren = Element.FindAllChildren(desktop.NotOffScreenProperty);
+            AutomationElement[] desktopChildren = Element.FindAllChildren(desktop.OnScreenProperty);
 
             List<AutomationElement> desktopElements = new List<AutomationElement>();
 
@@ -77,7 +77,7 @@ namespace windowsdriver.items
                 if (DesktopManager.IsDesktopComponent(child.ClassName))
                 {
                     Stack<AutomationElement> items = new Stack<AutomationElement>();
-                    AtsElement.LoadDescendants(desktop.NotOffScreenProperty, items, child);
+                    AtsElement.LoadDescendants(desktop.OnScreenProperty, items, child);
 
                     foreach (AutomationElement subChild in items)
                     {

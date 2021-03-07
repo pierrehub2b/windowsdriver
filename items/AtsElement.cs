@@ -92,31 +92,37 @@ public class AtsElement
     {
         try
         {
-            Rectangle rec = elem.Properties.BoundingRectangle;
-
             AccessibilityState state = elem.Patterns.LegacyIAccessible.Pattern.State.Value;
-                if (state.HasFlag(AccessibilityState.STATE_SYSTEM_INVISIBLE))
-                {
-                    return false;
-                }
-                               
-                X = rec.X;
-                Y = rec.Y;
-                Width = rec.Width;
-                Height = rec.Height;
+            if (state.HasFlag(AccessibilityState.STATE_SYSTEM_INVISIBLE))
+            {
+                return false;
+            }
 
-                return true;
+            return true;
         }
         catch (Exception) { }
 
         return false;
     }
 
+    private void calculateSize(AutomationElement elem)
+    {
+        try
+        {
+            Rectangle rec = elem.Properties.BoundingRectangle;
+            X = rec.X;
+            Y = rec.Y;
+            Width = rec.Width;
+            Height = rec.Height;
+        }
+        catch (Exception) { }
+    }
+
     public AtsElement(DesktopManager desktop, AutomationElement elem) : this(elem)
     {
         if (Visible)
         {
-            AutomationElement[] childs = elem.FindAllChildren(desktop.NotOffScreenProperty);
+            AutomationElement[] childs = elem.FindAllChildren(desktop.OnScreenProperty);
             NumChildren = childs.Length;
             if (NumChildren > 0)
             {
@@ -146,6 +152,8 @@ public class AtsElement
             Tag = GetTag(Element);
             Password = IsPassword(Element);
             CachedElements.Instance.Add(Id, this);
+
+            calculateSize(Element);
         }
     }
 
@@ -589,11 +597,11 @@ public class AtsElement
         return GetElements(tag, attributes, root, desktop, new Stack<AutomationElement>());
     }
     
-    private static PropertyCondition NotOffScreenProperty;
+    private static PropertyCondition OnScreenProperty;
 
     public virtual Queue<AtsElement> GetElements(string tag, string[] attributes, AutomationElement root, DesktopManager desktop, Stack<AutomationElement> elements)
     {
-        NotOffScreenProperty = desktop.NotOffScreenProperty;
+        OnScreenProperty = desktop.OnScreenProperty;
 
         if ("*".Equals(tag) || string.IsNullOrEmpty(tag))
         {
@@ -642,7 +650,7 @@ public class AtsElement
 
     public static void LoadDescendants(PropertyCondition property, Stack<AutomationElement> items, AutomationElement root)
     {
-        NotOffScreenProperty = property;
+        OnScreenProperty = property;
         ChildWalker(items, root);
     }
 
@@ -675,44 +683,44 @@ public class AtsElement
 
     private static void ChildWalker(Stack<AutomationElement> list, AutomationElement parent, ControlType type)
     {
-        AutomationElement[] children = parent.FindAllChildren(NotOffScreenProperty);
-        for (int i = 0; i < children.Length; i++)
+        AutomationElement[] children = parent.FindAllChildren(OnScreenProperty);
+        foreach (AutomationElement child in children)
         {
             try
             {
-                if (children[i].ControlType.Equals(type))
+                if (child.Properties.ControlType.IsSupported && child.ControlType.Equals(type))
                 {
-                    list.Push(children[i]);
+                    list.Push(child);
                 }
             }
             catch { }
                        
-            ChildWalker(list, children[i], type);
+            ChildWalker(list, child, type);
         }
         Array.Clear(children, 0, children.Length);
     }
 
     private static void UndefinedChildWalker(Stack<AutomationElement> list, AutomationElement parent)
     {
-        AutomationElement[] children = parent.FindAllChildren(NotOffScreenProperty);
-        for (int i = 0; i < children.Length; i++)
+        AutomationElement[] children = parent.FindAllChildren(OnScreenProperty);
+        foreach (AutomationElement child in children)
         {
-            if (!children[i].Properties.ControlType.IsSupported)
+            if (!child.Properties.ControlType.IsSupported)
             {
-                list.Push(children[i]);
+                list.Push(child);
             }
-            UndefinedChildWalker(list, children[i]);
+            UndefinedChildWalker(list, child);
         }
         Array.Clear(children, 0, children.Length);
     }
 
     static void ChildWalker(Stack<AutomationElement> list, AutomationElement parent)
     {
-        AutomationElement[] children = parent.FindAllChildren(NotOffScreenProperty);
-        for (int i = 0; i < children.Length; i++)
+        AutomationElement[] children = parent.FindAllChildren(OnScreenProperty);
+        foreach (AutomationElement child in children)
         {
-            list.Push(children[i]);
-            ChildWalker(list, children[i]);
+            list.Push(child);
+            ChildWalker(list, child);
         }
         Array.Clear(children, 0, children.Length);
     }

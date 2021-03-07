@@ -32,14 +32,14 @@ namespace windowsdriver.desktop
         private static readonly int WinCloseEventId = 20017;
 
         public int Pid;
-        public IntPtr Handle;
+        public int Handle;
         public AutomationElement Win;
 
         public WindowHandle(int pid, AutomationElement win, List<WindowHandle> list)
         {
             Pid = pid;
             Win = win;
-            Handle = win.AsWindow().Properties.NativeWindowHandle;
+            Handle = win.Properties.NativeWindowHandle.Value.ToInt32();
 
             AutomationEventHandlerBase closeEvent = null;
             closeEvent = win.RegisterAutomationEvent(new FlaUI.Core.Identifiers.EventId(WinCloseEventId, "WindowClosedEvent"), TreeScope.Element, (removed, evType) =>

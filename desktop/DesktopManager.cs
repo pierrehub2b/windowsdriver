@@ -28,6 +28,8 @@ using windowsdriver.items;
 using windowsdriver.desktop;
 using FlaUI.Core.Conditions;
 using System.Threading;
+using System.Diagnostics;
+using FlaUI.Core;
 
 namespace windowsdriver
 {
@@ -46,7 +48,7 @@ namespace windowsdriver
 
         public readonly Rectangle DesktopRect;
 
-        public readonly PropertyCondition NotOffScreenProperty;
+        public readonly PropertyCondition OnScreenProperty;
         private readonly AndCondition TopModalCondition;
 
         public DesktopManager()
@@ -59,7 +61,7 @@ namespace windowsdriver
             uia3.TransactionTimeout = new TimeSpan(0, 1, 0);
 
             desktop = uia3.GetDesktop();
-            NotOffScreenProperty = new PropertyCondition(uia3.PropertyLibrary.Element.IsOffscreen, false);
+            OnScreenProperty = new PropertyCondition(uia3.PropertyLibrary.Element.IsOffscreen, false);
             TopModalCondition = desktop.ConditionFactory.ByControlType(ControlType.Pane).And(desktop.ConditionFactory.ByClassName("Alternate Modal Top Most"));
 
             DesktopElement = new DesktopElement(desktop, DesktopRect);
@@ -97,6 +99,12 @@ namespace windowsdriver
                     catch {}
                 }
             });
+        }
+        
+        internal DesktopWindow getAppMainWindow(FlaUI.Core.Application app)
+        {
+            Window win = app.GetMainWindow(uia3, TimeSpan.FromSeconds(10));
+            return new DesktopWindow(win, this);
         }
 
         public void Clean()
@@ -194,10 +202,14 @@ namespace windowsdriver
                 for (int j = 0; j < windowChildren.Length; j++)
                 {
                     AutomationElement windowChild = windowChildren[j];
-                    if (windowChild.Properties.Name.IsSupported && windowChild.Name.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0)
+                    try
                     {
-                        return new DesktopWindow(windowChild, this);
+                        if (windowChild.Properties.Name.IsSupported && windowChild.Name.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            return new DesktopWindow(windowChild, this);
+                        }
                     }
+                    catch { }
                 }
             }
 
@@ -208,10 +220,13 @@ namespace windowsdriver
         {
             if (handle > 0)
             {
-                AutomationElement window = handles.Find(w => w.Handle == new IntPtr(handle)).Win;
-                if (window != null)
+                //AutomationElement window = handles.Find(w => w.Handle == handle).Win;
+                foreach(WindowHandle winh in handles.ToArray())
                 {
-                    return new DesktopWindow(window, this);
+                    if(winh.Handle == handle)
+                    {
+                        return new DesktopWindow(winh.Win, this);
+                    }
                 }
             }
             else
@@ -227,6 +242,27 @@ namespace windowsdriver
             handles.FindAll(w => w.Pid == pid).ForEach(e => windowsList.Add(new DesktopWindow(e.Win, this)));
 
             return windowsList;
+        }
+
+        public DesktopWindow getWindowByProcess(Process proc)
+        {
+            int maxTry = 5;
+            DesktopWindow window = null;
+            int mainWindowHandle = proc.MainWindowHandle.ToInt32();
+            if (mainWindowHandle > 0)
+            {
+                while (window == null && maxTry > 0)
+                {
+                    System.Threading.Thread.Sleep(100);
+                    window = GetWindowByHandle(mainWindowHandle);
+                    maxTry--;
+                }
+            }
+            else
+            {
+                window = GetWindowPid(proc.ProcessName);
+            }
+            return window;
         }
 
         public AutomationElement GetFirstModalPane()

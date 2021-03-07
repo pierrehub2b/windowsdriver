@@ -53,8 +53,7 @@ class WindowExecution : AtsExecution
         Close = 7,
         Url = 8,
         Keys = 9,
-        State = 10,
-        Uwp = 11
+        State = 10
     };
 
     private readonly DesktopWindow window;
@@ -160,26 +159,6 @@ class WindowExecution : AtsExecution
                 {
                     response.setError(UNREACHABLE_GOTO_URL, "directory path not valid : " + fname);
                 }
-            }
-        }
-        else if (this.type == WindowType.Uwp)
-        {
-
-            ManagementObjectSearcher searcher = new ManagementObjectSearcher(string.Format("select ProcessID,CommandLine from Win32_Process where CommandLine like '%{0}%{1}%'", commandsData[0], commandsData[1]));
-            ManagementObjectEnumerator enu = searcher.Get().GetEnumerator();
-
-            if (enu.MoveNext())
-            {
-                string commandLine = enu.Current["CommandLine"].ToString();
-                int processId = Int32.Parse(enu.Current["ProcessID"].ToString());
-
-                Process uwpProcess = Process.GetProcessById(processId);
-                ProcessModule module = uwpProcess.MainModule;
-
-                window = desktop.GetWindowPid(commandsData[2]);
-                window.Pid = processId;
-
-                //window = desktop.GetWindowByHandle(windowHandle.ToInt32());
             }
         }
         else if (this.type == WindowType.Title)
