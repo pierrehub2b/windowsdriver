@@ -192,7 +192,6 @@ class DriverExecution : AtsExecution
 
                             /*Process proc = Process.Start(start);
                             proc.WaitForInputIdle();
-
                             System.Threading.Thread.Sleep(2000);*/
 
                             try

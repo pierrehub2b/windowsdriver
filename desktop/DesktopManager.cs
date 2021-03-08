@@ -221,7 +221,7 @@ namespace windowsdriver
             if (handle > 0)
             {
                 //AutomationElement window = handles.Find(w => w.Handle == handle).Win;
-                foreach(WindowHandle winh in handles.ToArray())
+                foreach(WindowHandle winh in handles)
                 {
                     if(winh.Handle == handle)
                     {
@@ -246,14 +246,14 @@ namespace windowsdriver
 
         public DesktopWindow getWindowByProcess(Process proc)
         {
-            int maxTry = 5;
+            int maxTry = 20;
             DesktopWindow window = null;
             int mainWindowHandle = proc.MainWindowHandle.ToInt32();
             if (mainWindowHandle > 0)
             {
                 while (window == null && maxTry > 0)
                 {
-                    System.Threading.Thread.Sleep(100);
+                    System.Threading.Thread.Sleep(500);
                     window = GetWindowByHandle(mainWindowHandle);
                     maxTry--;
                 }
