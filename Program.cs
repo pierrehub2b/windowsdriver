@@ -35,7 +35,6 @@ public static class DesktopDriver
         {
             return Assembly.LoadFrom(Path.Combine(Application.StartupPath, assemblyName + ".dll"));
         }
-
         throw new Exception();
     }
 

@@ -94,7 +94,7 @@ class DriverExecution : AtsExecution
                                         while (uwpProcess == null && maxTry > 0)
                                         {
                                             System.Threading.Thread.Sleep(300);
-                                            uwpProcess = getUwpProcess(groupId, publisherId);
+                                            uwpProcess = GetUwpProcess(groupId, publisherId);
                                             maxTry--;
                                         }*/
 
@@ -153,7 +153,7 @@ class DriverExecution : AtsExecution
                         while (appProcess == null && maxTry > 0)
                         {
                             System.Threading.Thread.Sleep(300);
-                            appProcess = getProcessByInfo(applicationPath);
+                            appProcess = GetProcessByInfo(applicationPath);
                             maxTry--;
                         }
 
@@ -198,17 +198,15 @@ class DriverExecution : AtsExecution
                             {
                                 Application app = Application.AttachOrLaunch(startInfo);
                                 app.WaitWhileBusy(TimeSpan.FromSeconds(7));
-                                app.WaitWhileMainHandleIsMissing(TimeSpan.FromSeconds(7));
 
-                                Process appProc = Process.GetProcessById(app.ProcessId);
+                                Process proc = Process.GetProcessById(app.ProcessId);
 
                                 if (!app.HasExited)
                                 {
-                                    //DesktopWindow window = desktop.getWindowByProcess(appProc);
-                                    DesktopWindow window = desktop.getAppMainWindow(app);
+                                    DesktopWindow window = desktop.getAppMainWindow(proc);
                                     if (window != null)
                                     {
-                                        window.UpdateApplicationData(appProc);
+                                        window.UpdateApplicationData(proc);
                                         response.Windows = new DesktopWindow[] { window };
                                     }
                                     else
@@ -276,7 +274,7 @@ class DriverExecution : AtsExecution
         }
     }
     
-    private Process getUwpProcess(string groupId, string publisherId)
+    /*private Process GetUwpProcess(string groupId, string publisherId)
     {
         ManagementObjectSearcher searcher = new ManagementObjectSearcher(string.Format("select ProcessID,CommandLine from Win32_Process where CommandLine like '%{0}%{1}%'", groupId, publisherId));
         ManagementObjectEnumerator enu = searcher.Get().GetEnumerator();
@@ -287,9 +285,9 @@ class DriverExecution : AtsExecution
             return Process.GetProcessById(processId);
         }
         return null;
-    }
+    }*/
 
-    private Process getProcessByInfo(string info)
+    private Process GetProcessByInfo(string info)
     {
         Regex infoRegex = new Regex(info);
 

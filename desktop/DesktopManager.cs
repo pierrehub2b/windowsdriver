@@ -30,6 +30,7 @@ using FlaUI.Core.Conditions;
 using System.Threading;
 using System.Diagnostics;
 using FlaUI.Core;
+using windowsdriver.utils;
 
 namespace windowsdriver
 {
@@ -101,10 +102,41 @@ namespace windowsdriver
             });
         }
         
-        internal DesktopWindow getAppMainWindow(FlaUI.Core.Application app)
+        internal DesktopWindow getAppMainWindow(Process proc)
         {
-            Window win = app.GetMainWindow(uia3, TimeSpan.FromSeconds(10));
-            return new DesktopWindow(win, this);
+            List<int> procList = new List<int>();
+            new ProcessTree(proc, procList);
+
+            int maxTry = 20;
+            List<DesktopWindow> wins = GetOrderedWindowsByPids(procList);
+            while(wins.Count != 1 && maxTry > 0)
+            {
+                System.Threading.Thread.Sleep(500);
+                wins = GetOrderedWindowsByPids(procList);
+                maxTry--;
+            }
+
+            if(wins.Count > 0)
+            {
+                return wins[0];
+            }
+
+            return null;
+
+            /*Window[] wins = app.GetAllTopLevelWindows(uia3);
+            Window win = null;
+            int maxTry = 10;
+            while(win == null && maxTry > 0)
+            {
+                win = app.GetMainWindow(uia3, TimeSpan.FromSeconds(1));
+                maxTry--;
+            }
+
+            if(win != null)
+            {
+                return new DesktopWindow(win, this);
+            }
+            return null;*/
         }
 
         public void Clean()
@@ -212,7 +244,6 @@ namespace windowsdriver
                     catch { }
                 }
             }
-
             return null;
         }
 
@@ -240,8 +271,14 @@ namespace windowsdriver
         {
             List<DesktopWindow> windowsList = new List<DesktopWindow>();
             handles.FindAll(w => w.Pid == pid).ForEach(e => windowsList.Add(new DesktopWindow(e.Win, this)));
-
             return windowsList;
+        }
+
+        public List<DesktopWindow> GetOrderedWindowsByPids(List<int> pids)
+        {
+            List<DesktopWindow> wins = new List<DesktopWindow>();
+            handles.FindAll(w => pids.IndexOf(w.Pid) > -1).ForEach(e => wins.Add(new DesktopWindow(e.Win, this)));
+            return wins;
         }
 
         public DesktopWindow getWindowByProcess(Process proc)
