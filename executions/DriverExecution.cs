@@ -203,7 +203,7 @@ class DriverExecution : AtsExecution
 
                                 if (!app.HasExited)
                                 {
-                                    DesktopWindow window = desktop.getAppMainWindow(proc);
+                                    DesktopWindow window = desktop.GetAppMainWindow(proc);
                                     if (window != null)
                                     {
                                         window.UpdateApplicationData(proc);
@@ -273,7 +273,7 @@ class DriverExecution : AtsExecution
             response.setError(errorCode, "unknown driver command");
         }
     }
-    
+        
     /*private Process GetUwpProcess(string groupId, string publisherId)
     {
         ManagementObjectSearcher searcher = new ManagementObjectSearcher(string.Format("select ProcessID,CommandLine from Win32_Process where CommandLine like '%{0}%{1}%'", groupId, publisherId));
@@ -289,18 +289,17 @@ class DriverExecution : AtsExecution
 
     private Process GetProcessByInfo(string info)
     {
-        Regex infoRegex = new Regex(info);
-
-        ManagementObjectSearcher processes = new ManagementObjectSearcher("select ProcessID,Caption,ExecutablePath from Win32_Process");
-        foreach (ManagementObject o in processes.Get())
+        ManagementObjectCollection processes = new ManagementObjectSearcher("select ProcessID,Caption,ExecutablePath from Win32_Process").Get();
+        foreach (ManagementObject o in processes)
         {
-            Object exec = o["ExecutablePath"];
+            object exec = o["ExecutablePath"];
             if (exec != null)
             {
                 string procName = Regex.Replace(o["Caption"].ToString(), @".exe$", "");
-                string executablePath = exec.ToString();
+                string executablePath = exec.ToString().ToLower();
 
-                if (string.Equals(info, procName, StringComparison.CurrentCultureIgnoreCase) || infoRegex.IsMatch(executablePath))
+                Regex infoRegex = new Regex(info);
+                if (string.Equals(info, procName, StringComparison.OrdinalIgnoreCase) || infoRegex.IsMatch(executablePath))
                 {
                     int.TryParse(o["ProcessID"].ToString(), out int procId);
                     return Process.GetProcessById(procId);

@@ -104,8 +104,8 @@ public class DesktopWindow : AtsElement
             }
 
             AppVersion = info.FileVersion;
-            AppBuildVersion = info.FileMajorPart + "." + info.FileMinorPart + "." + info.FileBuildPart;
-            AppPath = process.MainModule.FileName;
+            AppBuildVersion = info.FileMajorPart + "." + info.FileMinorPart + "." + info.FileBuildPart + "." + info.FilePrivatePart;
+            AppPath = process.MainModule.FileName.ToLower();
 
             try
             {

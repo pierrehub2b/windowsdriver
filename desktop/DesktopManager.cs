@@ -102,7 +102,7 @@ namespace windowsdriver
             });
         }
         
-        internal DesktopWindow getAppMainWindow(Process proc)
+        internal DesktopWindow GetAppMainWindow(Process proc)
         {
             List<int> procList = new List<int>();
             new ProcessTree(proc, procList);
