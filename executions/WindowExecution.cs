@@ -23,13 +23,10 @@ using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Management;
 using System.Net;
 using System.Threading;
 using windowsdriver;
-using static System.Management.ManagementObjectCollection;
 
 class WindowExecution : AtsExecution
 {
@@ -40,8 +37,7 @@ class WindowExecution : AtsExecution
     private const int WINDOW_NOT_FOUND = -14;
     //-------------------------------------------------
 
-    private readonly WindowType type;
-    private enum WindowType
+    public enum WindowType
     {
         Title = 0,
         Handle = 1,
@@ -55,49 +51,50 @@ class WindowExecution : AtsExecution
         Keys = 9,
         State = 10
     };
+    
+    private readonly Executor executor;
 
-    private readonly DesktopWindow window;
-    private readonly ActionKeyboard keyboard;
-    private readonly DesktopManager desktop;
-
-    private readonly int pid = -1;
-    private readonly int[] bounds;
-    private readonly string keys;
-    private readonly string state;
-
-    public WindowExecution(int type, string[] commandsData, ActionKeyboard keyboard, VisualRecorder recorder, DesktopManager desktop) : base()
+    public WindowExecution(WindowType type, string[] commandsData, ActionKeyboard keyboard, VisualRecorder recorder, DesktopManager desktop) : base()
     {
-        this.type = (WindowType)type;
-        this.keyboard = keyboard;
-        this.desktop = desktop;
+        DesktopWindow window = null;
 
-        if (this.type == WindowType.Close || this.type == WindowType.Handle || this.type == WindowType.State || this.type == WindowType.Keys)
+        if (type == WindowType.Close || type == WindowType.Handle || type == WindowType.State || type == WindowType.Keys)
         {
             _ = int.TryParse(commandsData[0], out int handle);
             window = desktop.GetWindowByHandle(handle);
-
-            if (this.type == WindowType.State)
+            if (window != null)
             {
-                this.state = commandsData[1];
-            }
-            else if (this.type == WindowType.Keys)
-            {
-                this.keys = commandsData[1];
+                if (type == WindowType.State)
+                {
+                    executor = new StateExecutor(window, response, commandsData[1]);
+                }
+                else if (type == WindowType.Keys)
+                {
+                    executor = new KeysExecutor(window, response, keyboard, commandsData[1]);
+                }
+                else if (type == WindowType.Close)
+                {
+                    executor = new CloseExecutor(window, response);
+                }
+                else if (type == WindowType.Handle)
+                {
+                    executor = new HandleExecutor(window, response);
+                }
             }
         }
-        else if (this.type == WindowType.ToFront)
+        else if (type == WindowType.ToFront)
         {
             if (commandsData.Length > 1)
             {
                 _ = int.TryParse(commandsData[0], out int handle);
-                _ = int.TryParse(commandsData[1], out pid);
+                _ = int.TryParse(commandsData[1], out int pid);
 
                 window = desktop.GetWindowByHandle(handle);
                 recorder.CurrentPid = pid;
             }
             else
             {
-                _ = int.TryParse(commandsData[0], out pid);
+                _ = int.TryParse(commandsData[0], out int pid);
                 recorder.CurrentPid = pid;
 
                 List<DesktopWindow> windows = desktop.GetOrderedWindowsByPid(pid);
@@ -106,8 +103,13 @@ class WindowExecution : AtsExecution
                     window = windows[0];
                 }
             }
+
+            if (window != null)
+            {
+                window.ToFront();
+            }
         }
-        else if (this.type == WindowType.Url)
+        else if (type == WindowType.Url)
         {
             _ = int.TryParse(commandsData[0], out int handle);
             window = desktop.GetWindowByHandle(handle);
@@ -133,7 +135,6 @@ class WindowExecution : AtsExecution
                             {
                                 edit.Patterns.Value.Pattern.SetValue(commandsData[1]);
                             }
-                            //edit.AsTextBox().Enter(commandsData[1]);
                             Keyboard.Type(VirtualKeyShort.ENTER);
                         }
                         catch { }
@@ -161,7 +162,7 @@ class WindowExecution : AtsExecution
                 }
             }
         }
-        else if (this.type == WindowType.Title)
+        else if (type == WindowType.Title)
         {
             if (commandsData[0].Equals("jx")){
                 window = desktop.GetJxWindowPid(commandsData[1]);
@@ -171,11 +172,12 @@ class WindowExecution : AtsExecution
                 window = desktop.GetWindowPid(commandsData[0]);
             }
         }
-        else if (this.type == WindowType.List)
+        else if (type == WindowType.List)
         {
-            _ = int.TryParse(commandsData[0], out pid);
+            _ = int.TryParse(commandsData[0], out int pid);
+            executor = new ListExecutor(window, response, desktop.GetOrderedWindowsByPid(pid).ToArray());
         }
-        else if (this.type == WindowType.Switch)
+        else if (type == WindowType.Switch)
         {
             if (commandsData.Length > 1)
             {
@@ -198,6 +200,53 @@ class WindowExecution : AtsExecution
             if (window != null)
             {
                 window.ToFront();
+            }
+        }
+        else if (type == WindowType.Move || type == WindowType.Resize)
+        {
+            _ = int.TryParse(commandsData[0], out int handle);
+            _ = int.TryParse(commandsData[1], out int value1);
+            _ = int.TryParse(commandsData[2], out int value2);
+
+            window = desktop.GetWindowByHandle(handle);
+            if(window != null)
+            {
+                if (type == WindowType.Move)
+                {
+                    executor = new MoveExecutor(window, response, value1, value2);
+                }
+                else
+                {
+                    executor = new ResizeExecutor(window, response, value1, value2);
+                }
+            }
+        }
+
+        if(executor == null)
+        {
+            executor = new EmptyExecutor(window, response);
+        }
+    }
+
+    private abstract class Executor
+    {
+        protected readonly DesktopWindow window;
+        protected readonly DesktopResponse response;
+        
+        public Executor(DesktopWindow window, DesktopResponse response)
+        {
+            this.window = window;
+            this.response = response;
+        }
+        public abstract void Run();
+    }
+
+    private class EmptyExecutor : Executor
+    {
+        public EmptyExecutor(DesktopWindow window, DesktopResponse response) : base(window, response) { }
+        public override void Run() {
+            if (window != null)
+            {
                 response.Windows = new DesktopWindow[] { window };
             }
             else
@@ -205,107 +254,131 @@ class WindowExecution : AtsExecution
                 response.setError(WINDOW_NOT_FOUND, "window not found");
             }
         }
-        else if (this.type == WindowType.Move || this.type == WindowType.Resize)
+    }
+
+    private class HandleExecutor : Executor
+    {
+        public HandleExecutor(DesktopWindow window, DesktopResponse response) : base(window, response) { }
+        public override void Run()
         {
-            bounds = new int[] { 0, 0 };
+            response.Windows = new DesktopWindow[] { window };
+        }
+    }
 
-            _ = int.TryParse(commandsData[0], out int handle);
-            _ = int.TryParse(commandsData[1], out bounds[0]);
-            _ = int.TryParse(commandsData[2], out bounds[1]);
+    private class ListExecutor : Executor
+    {
+        protected DesktopWindow[] windows;
 
-            window = desktop.GetWindowByHandle(handle);
+        public ListExecutor(DesktopWindow window, DesktopResponse response, DesktopWindow[] windows) : base(window, response)
+        {
+            this.windows = windows;
+        }
+
+        public override void Run()
+        {
+            response.Windows = windows;
+        }
+    }
+
+    private class MoveExecutor : Executor
+    {
+        protected int x = 0;
+        protected int y = 0;
+
+        public MoveExecutor(DesktopWindow window, DesktopResponse response, int value1, int value2) : base(window, response)
+        {
+            x = value1;
+            y = value2;
+        }
+
+        public override void Run()
+        {
+            window.Move(x, y);
+        }
+    }
+
+    private class ResizeExecutor : Executor
+    {
+        protected int w = 0;
+        protected int h = 0;
+
+        public ResizeExecutor(DesktopWindow window, DesktopResponse response, int value1, int value2) : base(window, response)
+        {
+            w = value1;
+            h = value2;
+        }
+
+        public override void Run()
+        {
+            if (w > 0 && h > 0)
+            {
+                window.Resize(w, h);
+            }
+        }
+    }
+
+    private class StateExecutor : Executor
+    {
+        protected string state;
+
+        public StateExecutor(DesktopWindow window, DesktopResponse response, string state) : base(window, response)
+        {
+            this.state = state;
+        }
+
+        public override void Run()
+        {
+            window.ChangeState(state);
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            state = null;
+        }
+    }
+    private class CloseExecutor : Executor
+    {
+        public CloseExecutor(DesktopWindow window, DesktopResponse response) : base(window, response) { }
+        public override void Run()
+        {
+            window.Close();
+        }
+    }
+
+    private class KeysExecutor : Executor
+    {
+        protected ActionKeyboard keyboard;
+        protected string keys;
+
+        public KeysExecutor(DesktopWindow window, DesktopResponse response, ActionKeyboard keyboard, string keys) : base(window, response)
+        {
+            this.keyboard = keyboard;
+            this.keys = keys;
+        }
+
+        public override void Run()
+        {
+            if (window != null)
+            {
+                window.SetMouseFocus();
+                Thread.Sleep(200);
+            }
+            keyboard.RootKeys(keys);
+
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            keyboard = null;
+            keys = null;
         }
     }
 
     public override bool Run(HttpListenerContext context)
     {
-        switch (type)
-        {
-            case WindowType.Close:
-
-                if (window != null)
-                {
-                    window.Close();
-                }
-                break;
-
-            case WindowType.State:
-                if (window != null)
-                {
-                    window.ChangeState(state);
-                }
-                break;
-            case WindowType.List:
-
-                response.Windows = desktop.GetOrderedWindowsByPid(pid).ToArray();
-                break;
-
-            case WindowType.Move:
-
-                if (window != null)
-                {
-                    window.Move(bounds[0], bounds[1]);
-                }
-                else
-                {
-                    response.setError(WINDOW_NOT_FOUND, "window not found");
-                }
-                break;
-
-            case WindowType.Resize:
-
-                if (window != null)
-                {
-                    if(bounds[0] > 0 && bounds[1] > 0)
-                    {
-                        window.Resize(bounds[0], bounds[1]);
-                    }
-                }
-                else
-                {
-                    response.setError(WINDOW_NOT_FOUND, "window not found");
-                }
-                break;
-
-            case WindowType.Url:
-                break;
-            case WindowType.Switch:
-                break;
-            case WindowType.ToFront:
-
-                if (window != null)
-                {
-                    window.ToFront();
-                }
-                else
-                {
-                    response.setError(WINDOW_NOT_FOUND, "unable to find top window with pid = " + pid);
-                }
-                break;
-
-            case WindowType.Keys:
-
-                if (window != null)
-                {
-                    window.SetMouseFocus();
-                    Thread.Sleep(200);
-                }
-                keyboard.RootKeys(keys.ToLower());
-
-                break;
-
-            default:
-                if (window != null)
-                {
-                    response.Windows = new DesktopWindow[] { window };
-                }
-                else
-                {
-                    response.setError(WINDOW_NOT_FOUND, "window not found");
-                }
-                break;
-        }
-
+        executor.Run();
         return base.Run(context);
     }
 }

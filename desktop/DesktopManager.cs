@@ -29,7 +29,6 @@ using windowsdriver.desktop;
 using FlaUI.Core.Conditions;
 using System.Threading;
 using System.Diagnostics;
-using FlaUI.Core;
 using windowsdriver.utils;
 
 namespace windowsdriver
@@ -105,7 +104,7 @@ namespace windowsdriver
         internal DesktopWindow GetAppMainWindow(Process proc)
         {
             List<int> procList = new List<int>();
-            new ProcessTree(proc, procList);
+            _ = new ProcessTree(proc, procList);
 
             int maxTry = 20;
             List<DesktopWindow> wins = GetOrderedWindowsByPids(procList);
@@ -122,21 +121,6 @@ namespace windowsdriver
             }
 
             return null;
-
-            /*Window[] wins = app.GetAllTopLevelWindows(uia3);
-            Window win = null;
-            int maxTry = 10;
-            while(win == null && maxTry > 0)
-            {
-                win = app.GetMainWindow(uia3, TimeSpan.FromSeconds(1));
-                maxTry--;
-            }
-
-            if(win != null)
-            {
-                return new DesktopWindow(win, this);
-            }
-            return null;*/
         }
 
         public void Clean()

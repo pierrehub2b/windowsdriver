@@ -27,7 +27,7 @@ using System.Windows.Forms;
 
 class ActionKeyboard
 {
-    private readonly string keyPattern = @"\$key\(([^)]*)\)";
+    private readonly string keyPattern = @"(\$key\([^)]*\))";
 
     internal void SendKeysData(string data, bool keyDown)
     {
@@ -87,16 +87,15 @@ class ActionKeyboard
         {
             if(token.Length > 0)    
             {
+                string data = token;
                 if(token.StartsWith("$key", StringComparison.OrdinalIgnoreCase))
                 {
+                    data = token.Substring(5, token.Length - 6);
                     try
                     {
-                        SendKeys.SendWait("{" + token.ToUpper() + "}");
+                        SendKeys.SendWait("{" + data.ToUpper() + "}");
                     }
-                    catch
-                    {
-                        KeyBoardType(token);
-                    }
+                    catch {}
                 }
                 else
                 {

@@ -20,6 +20,7 @@ under the License.
 using System.Net;
 using System.Runtime.Serialization;
 using windowsdriver;
+using static WindowExecution;
 
 struct DesktopRequest
 {
@@ -61,7 +62,7 @@ struct DesktopRequest
         }
         else if (type == CommandType.Window)
         {
-            execution = new WindowExecution(cmdSubType, cmdData, keyboard, recorder, desktop);
+            execution = new WindowExecution((WindowType)cmdSubType, cmdData, keyboard, recorder, desktop);
         }
         else if (type == CommandType.Record)
         {
