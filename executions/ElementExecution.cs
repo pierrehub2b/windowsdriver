@@ -43,7 +43,8 @@ class ElementExecution : AtsExecution
         Root = 7,
         LoadTree = 8,
         ListItems = 9,
-        DialogBox = 10
+        DialogBox = 10,
+        Focus = 11
     };
 
     private readonly Executor executor;
@@ -119,6 +120,11 @@ class ElementExecution : AtsExecution
                 else if (elemType == ElementType.ListItems)
                 {
                     executor = new ListItemsExecutor(response, element, desktop);
+                    return;
+                }
+                else if (elemType == ElementType.Focus)
+                {
+                    executor = new FocusExecutor(response, element, desktop);
                     return;
                 }
                 else if (commandsData.Length > 1)
@@ -452,6 +458,26 @@ class ElementExecution : AtsExecution
         }
     }
 
+    private class FocusExecutor : ElementExecutor
+    {
+        public FocusExecutor(DesktopResponse response, AtsElement element, DesktopManager desktop) : base(response, element, desktop)
+        {
+        }
+
+        public override void Run()
+        {
+            try
+            {
+                element.Focus();
+            }
+            catch { }
+                        
+            element.LoadProperties();
+            response.Data = element.Attributes;
+            Dispose();
+        }
+    }
+
     private class SelectExecutor : ElementExecutor
     {
         private readonly bool regexp = false;
@@ -476,7 +502,7 @@ class ElementExecution : AtsExecution
             if ("index".Equals(type))
             {
                 _ = int.TryParse(value, out int index);
-                element.SelectItem(index, desktop);
+                response.ErrorMessage = element.SelectItem(index, desktop);
             }
             else
             {
@@ -486,24 +512,30 @@ class ElementExecution : AtsExecution
                     Regex rx = new Regex(@value);
                     if (byValue)
                     {
-                        element.SelectItem((AutomationElement e) => { return e.Patterns.Value.IsSupported && rx.IsMatch(e.Patterns.Value.ToString());}, desktop);
+                        response.ErrorMessage = element.SelectItem((AutomationElement e) => { return e.Patterns.Value.IsSupported && rx.IsMatch(e.Patterns.Value.ToString());}, desktop);
                     }
                     else
                     {
-                        element.SelectItem((AutomationElement e) => { return rx.IsMatch(e.Name); }, desktop);
+                        response.ErrorMessage = element.SelectItem((AutomationElement e) => { return rx.IsMatch(e.Name); }, desktop);
                     }
                 }
                 else
                 {
                     if (byValue)
                     {
-                        element.SelectItem((AutomationElement e) => { return e.Patterns.Value.IsSupported && e.Patterns.Value.ToString() == value; }, desktop);
+                        response.ErrorMessage = element.SelectItem((AutomationElement e) => { return e.Patterns.Value.IsSupported && e.Patterns.Value.ToString() == value; }, desktop);
                     }
                     else
                     {
-                        element.SelectItem((AutomationElement e) => { return e.Name == value; }, desktop);
+                        response.ErrorMessage = element.SelectItem((AutomationElement e) => { return e.Name == value; }, desktop);
                     }
                 }
+            }
+
+            if(response.ErrorMessage != null)
+            {
+                element.Click();
+                response.ErrorCode = -199;
             }
         }
     }

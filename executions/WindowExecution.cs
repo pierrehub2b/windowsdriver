@@ -90,6 +90,12 @@ class WindowExecution : AtsExecution
                 _ = int.TryParse(commandsData[1], out int pid);
 
                 window = desktop.GetWindowByHandle(handle);
+
+                if(window == null)
+                {
+                    window = desktop.GetWindowIndexByPid(pid, 0);
+                }
+                
                 recorder.CurrentPid = pid;
             }
             else

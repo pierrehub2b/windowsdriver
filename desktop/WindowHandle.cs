@@ -20,7 +20,6 @@ under the License.
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.EventHandlers;
-using System;
 using System.Collections.Generic;
 
 namespace windowsdriver.desktop
@@ -29,7 +28,7 @@ namespace windowsdriver.desktop
     {
 
         //private static readonly int WinCloseEventId = System.Windows.Automation.WindowPattern.WindowClosedEvent.Id;
-        private static readonly int WinCloseEventId = 20017;
+        private const int WinCloseEventId = 20017;
 
         public int Pid;
         public int Handle;

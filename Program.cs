@@ -40,28 +40,28 @@ public static class DesktopDriver
 
     public static int Main(String[] args)
     {
-        AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+         AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
 
-        int defaultPort = DefaultPort;
-        for (int i = 0; i < args.Length; i++)
-        {
-            if (args[i].IndexOf("--port=") == 0)
-            {
-                String[] dataPort = args[i].Split('=');
-                if (dataPort.Length >= 2)
-                {
-                    _ = int.TryParse(dataPort[1], out defaultPort);
-                    if (defaultPort < 1025 || defaultPort > IPEndPoint.MaxPort)
-                    {
-                        defaultPort = DefaultPort;
-                    }
-                }
-            }
-        }
+         int defaultPort = DefaultPort;
+         for (int i = 0; i < args.Length; i++)
+         {
+             if (args[i].IndexOf("--port=") == 0)
+             {
+                 String[] dataPort = args[i].Split('=');
+                 if (dataPort.Length >= 2)
+                 {
+                     _ = int.TryParse(dataPort[1], out defaultPort);
+                     if (defaultPort < 1025 || defaultPort > IPEndPoint.MaxPort)
+                     {
+                         defaultPort = DefaultPort;
+                     }
+                 }
+             }
+         }
 
-        Console.WriteLine("Starting ATS Windows Desktop Driver {0} on port {1}", Assembly.GetExecutingAssembly().GetName().Version.ToString(), defaultPort);
-        Console.WriteLine("Only local connections are allowed.");
-        new WebServer(defaultPort).Run();
+         Console.WriteLine("Starting ATS Windows Desktop Driver {0} on port {1}", Assembly.GetExecutingAssembly().GetName().Version.ToString(), defaultPort);
+         Console.WriteLine("Only local connections are allowed.");
+         new WebServer(defaultPort).Run();
 
         return 0;
     }

@@ -77,7 +77,14 @@ public class DesktopWindow : AtsElement
         Tag = "Window";
         this.desktop = desktop;
 
-        this.AppName = elem.Name;
+        try
+        {
+            this.AppName = elem.Name;
+        } catch
+        {
+            this.AppName = "";
+        }
+
         this.AppVersion = "0";
         this.AppBuildVersion = "0";
 

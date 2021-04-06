@@ -100,12 +100,12 @@ public class AtsElement
 
             return true;
         }
-        catch (Exception) { }
+        catch {}
 
         return false;
     }
 
-    private void calculateSize(AutomationElement elem)
+    private void CalculateSize(AutomationElement elem)
     {
         try
         {
@@ -115,7 +115,7 @@ public class AtsElement
             Width = rec.Width;
             Height = rec.Height;
         }
-        catch (Exception) { }
+        catch {}
     }
 
     public AtsElement(DesktopManager desktop, AutomationElement elem) : this(elem)
@@ -153,7 +153,7 @@ public class AtsElement
             Password = IsPassword(Element);
             CachedElements.Instance.Add(Id, this);
 
-            calculateSize(Element);
+            CalculateSize(Element);
         }
     }
 
@@ -216,11 +216,22 @@ public class AtsElement
     // Select
     //-----------------------------------------------------------------------------------------
 
+    public void Click()
+    {
+        Element.Click();
+    }
+
     private AutomationElement SelectFirstItem(DesktopManager desktop)
     {
         ExpandElement();
         Thread.Sleep(100);
-        Keyboard.Type(new[] { VirtualKeyShort.PRIOR, VirtualKeyShort.HOME });
+
+        AutomationElement[] items = GetListItemElements(desktop);
+        for (int i = 0; i < items.Length; i++)
+        {
+            Keyboard.Type(new[] { VirtualKeyShort.UP });
+            //Keyboard.Type(new[] { VirtualKeyShort.PRIOR, VirtualKeyShort.HOME });
+        }
 
         return GetSelectedItem(null, desktop);
     }
@@ -249,7 +260,7 @@ public class AtsElement
         return null;
     }
 
-    internal void SelectItem(int index, DesktopManager desktop)
+    internal string SelectItem(int index, DesktopManager desktop)
     {
         AutomationElement currentItem = SelectFirstItem(desktop);
 
@@ -259,7 +270,7 @@ public class AtsElement
             if (currentIndex == index)
             {
                 SelectOrClick(currentItem);
-                break;
+                return null;
             }
 
             Keyboard.Type(VirtualKeyShort.DOWN);
@@ -267,6 +278,7 @@ public class AtsElement
 
             currentIndex++;
         }
+        return "item index not found";
     }
 
     private void SelectOrClick(AutomationElement item)
@@ -282,7 +294,7 @@ public class AtsElement
         }
     }
 
-    internal void SelectItem(Predicate<AutomationElement> predicate, DesktopManager desktop)
+    internal string SelectItem(Predicate<AutomationElement> predicate, DesktopManager desktop)
     {
         AutomationElement currentItem = SelectFirstItem(desktop);
 
@@ -291,12 +303,14 @@ public class AtsElement
             if (predicate(currentItem))
             {
                 SelectOrClick(currentItem);
-                break;
+                return null;
             }
 
             Keyboard.Type(VirtualKeyShort.DOWN);
             currentItem = GetSelectedItem(currentItem, desktop);
         }
+
+        return "item not found";
     }
 
     internal bool TryExpand()

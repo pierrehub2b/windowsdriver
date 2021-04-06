@@ -26,7 +26,6 @@ using System.Management;
 using System.Text.RegularExpressions;
 using windowsdriver;
 using windowsdriver.utils;
-using static System.Management.ManagementObjectCollection;
 
 class DriverExecution : AtsExecution
 {
@@ -55,11 +54,14 @@ class DriverExecution : AtsExecution
         {
             if (commandsData.Length > 0)
             {
-                int protocoleSplitIndex = commandsData[0].IndexOf("://");
+                bool.TryParse(commandsData[0], out bool attach);
+                string appName = commandsData[1];
+
+                int protocoleSplitIndex = appName.IndexOf("://");
                 if(protocoleSplitIndex > 0)
                 {
-                    string applicationProtocol = commandsData[0].Substring(0, protocoleSplitIndex).ToLower();
-                    string applicationPath = commandsData[0].Substring(protocoleSplitIndex + 3);
+                    string applicationProtocol = appName.Substring(0, protocoleSplitIndex).ToLower();
+                    string applicationPath = appName.Substring(protocoleSplitIndex + 3);
 
                     if (applicationProtocol.Equals(UWP_PROTOCOLE))
                     {
@@ -178,45 +180,38 @@ class DriverExecution : AtsExecution
                     else
                     {
                         applicationPath = Uri.UnescapeDataString(Regex.Replace(applicationPath, @"^/", ""));
-                        if (File.Exists(applicationPath))
+                        Process proc = null;
+
+                        if (attach)
+                        {
+                            proc = GetProcessByFilename(applicationPath);
+                        }
+
+                        if(proc == null && File.Exists(applicationPath))
                         {
                             ProcessStartInfo startInfo = new ProcessStartInfo();
-                            if (commandsData.Length > 1)
+                            if (commandsData.Length > 2)
                             {
-                                int newLen = commandsData.Length - 1;
+                                int newLen = commandsData.Length - 2;
                                 string[] args = new string[newLen];
-                                Array.Copy(commandsData, 1, args, 0, newLen);
+                                Array.Copy(commandsData, 2, args, 0, newLen);
                                 startInfo.Arguments = String.Join(" ", args);
                             }
                             startInfo.FileName = applicationPath;
-
-                            /*Process proc = Process.Start(start);
-                            proc.WaitForInputIdle();
-                            System.Threading.Thread.Sleep(2000);*/
+                            startInfo.WorkingDirectory = Directory.GetParent(applicationPath).FullName;
 
                             try
                             {
-                                Application app = Application.AttachOrLaunch(startInfo);
+                                Application app = Application.Launch(startInfo);
                                 app.WaitWhileBusy(TimeSpan.FromSeconds(7));
 
-                                Process proc = Process.GetProcessById(app.ProcessId);
-
-                                if (!app.HasExited)
+                                if (app.HasExited)
                                 {
-                                    DesktopWindow window = desktop.GetAppMainWindow(proc);
-                                    if (window != null)
-                                    {
-                                        window.UpdateApplicationData(proc);
-                                        response.Windows = new DesktopWindow[] { window };
-                                    }
-                                    else
-                                    {
-                                        response.setError(errorCode, "unable to find window for application : " + applicationPath);
-                                    }
+                                    response.setError(errorCode, "the process has exited, you may try another way to start this application (UWP ?)");
                                 }
                                 else
                                 {
-                                    response.setError(errorCode, "the process has exited, you may try another way to start this application (UWP ?)");
+                                    proc = Process.GetProcessById(app.ProcessId);
                                 }
                             }
                             catch (Exception e)
@@ -224,9 +219,19 @@ class DriverExecution : AtsExecution
                                 response.setError(errorCode, "cannot start application : " + e.Message);
                             }
                         }
-                        else
+
+                        if(proc != null)
                         {
-                            response.setError(errorCode, "application file not found : " + applicationPath);
+                            DesktopWindow window = desktop.GetAppMainWindow(proc);
+                            if (window != null)
+                            {
+                                window.UpdateApplicationData(proc);
+                                response.Windows = new DesktopWindow[] { window };
+                            }
+                            else
+                            {
+                                response.setError(errorCode, "unable to find window for application : " + applicationPath);
+                            }
                         }
                     }
                 }
@@ -305,6 +310,24 @@ class DriverExecution : AtsExecution
                     return Process.GetProcessById(procId);
                 }
             }
+        }
+        return null;
+    }
+
+    public static Process GetProcessByFilename(string fileName)
+    {
+        fileName = fileName.Replace("/", "\\");
+        Process[] procs = Process.GetProcesses();
+        foreach (Process p in procs)
+        {
+            try
+            {
+                if (fileName.Equals(p.MainModule.FileName))
+                {
+                    return p;
+                }
+            }
+            catch { }
         }
         return null;
     }
