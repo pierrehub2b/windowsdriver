@@ -216,9 +216,16 @@ public class AtsElement
     // Select
     //-----------------------------------------------------------------------------------------
 
-    public void Click()
+    public void SafeClick()
     {
-        Element.Click();
+        try
+        {
+            Element.Click();
+        }
+        catch
+        {
+            SelectOrClick(Element);
+        }
     }
 
     private AutomationElement SelectFirstItem(DesktopManager desktop)
@@ -281,7 +288,7 @@ public class AtsElement
         return "item index not found";
     }
 
-    private void SelectOrClick(AutomationElement item)
+    private static void SelectOrClick(AutomationElement item)
     {
         try
         {

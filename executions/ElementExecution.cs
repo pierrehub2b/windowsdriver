@@ -499,10 +499,11 @@ class ElementExecution : AtsExecution
 
         public override void Run()
         {
+            string error = null;
             if ("index".Equals(type))
             {
                 _ = int.TryParse(value, out int index);
-                response.ErrorMessage = element.SelectItem(index, desktop);
+                error = element.SelectItem(index, desktop);
             }
             else
             {
@@ -512,31 +513,33 @@ class ElementExecution : AtsExecution
                     Regex rx = new Regex(@value);
                     if (byValue)
                     {
-                        response.ErrorMessage = element.SelectItem((AutomationElement e) => { return e.Patterns.Value.IsSupported && rx.IsMatch(e.Patterns.Value.ToString());}, desktop);
+                        error = element.SelectItem((AutomationElement e) => { return e.Patterns.Value.IsSupported && rx.IsMatch(e.Patterns.Value.ToString());}, desktop);
                     }
                     else
                     {
-                        response.ErrorMessage = element.SelectItem((AutomationElement e) => { return rx.IsMatch(e.Name); }, desktop);
+                        error = element.SelectItem((AutomationElement e) => { return rx.IsMatch(e.Name); }, desktop);
                     }
                 }
                 else
                 {
                     if (byValue)
                     {
-                        response.ErrorMessage = element.SelectItem((AutomationElement e) => { return e.Patterns.Value.IsSupported && e.Patterns.Value.ToString() == value; }, desktop);
+                        error = element.SelectItem((AutomationElement e) => { return e.Patterns.Value.IsSupported && e.Patterns.Value.ToString() == value; }, desktop);
                     }
                     else
                     {
-                        response.ErrorMessage = element.SelectItem((AutomationElement e) => { return e.Name == value; }, desktop);
+                        error = element.SelectItem((AutomationElement e) => { return e.Name == value; }, desktop);
                     }
                 }
             }
 
-            if(response.ErrorMessage != null)
+            if(error != null)
             {
-                element.Click();
+                element.SafeClick();
                 response.ErrorCode = -199;
             }
+
+            response.ErrorMessage = error;
         }
     }
 }

@@ -110,7 +110,7 @@ namespace windowsdriver
             List<DesktopWindow> wins = GetOrderedWindowsByPids(procList);
             while(wins.Count != 1 && maxTry > 0)
             {
-                System.Threading.Thread.Sleep(500);
+                Thread.Sleep(1000);
                 wins = GetOrderedWindowsByPids(procList);
                 maxTry--;
             }
