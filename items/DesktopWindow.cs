@@ -101,9 +101,12 @@ public class DesktopWindow : AtsElement
         }
     }
     
-    internal void UpdateApplicationData(Process process)
+    internal void UpdateApplicationData(Process process, string appPath)
     {
-            Pid = process.Id;
+        Pid = process.Id;
+
+        try
+        {
             FileVersionInfo info = process.MainModule.FileVersionInfo;
             if (AppName == null || AppName.Length == 0)
             {
@@ -113,20 +116,28 @@ public class DesktopWindow : AtsElement
             AppVersion = info.FileVersion;
             AppBuildVersion = info.FileMajorPart + "." + info.FileMinorPart + "." + info.FileBuildPart + "." + info.FilePrivatePart;
             AppPath = process.MainModule.FileName.ToLower();
+        }
+        catch
+        {
+            AppName = appPath;
+            AppVersion = "NA";
+            AppBuildVersion = "0.0.0.0";
+            AppPath = appPath;
+        }
 
-            try
+        try
+        {
+            Icon icon = Icon.ExtractAssociatedIcon(process.MainModule.FileName);
+            using (var stream = new MemoryStream())
             {
-                Icon icon = Icon.ExtractAssociatedIcon(process.MainModule.FileName);
-                using (var stream = new MemoryStream())
-                {
-                    icon.ToBitmap().Save(stream, ImageFormat.Png);
-                    AppIcon = stream.ToArray();
-                }
+                icon.ToBitmap().Save(stream, ImageFormat.Png);
+                AppIcon = stream.ToArray();
             }
-            catch
-            {
-                AppIcon = new byte[1];
-            }
+        }
+        catch
+        {
+            AppIcon = new byte[1];
+        }
     }
 
     private bool CanMoveResize()

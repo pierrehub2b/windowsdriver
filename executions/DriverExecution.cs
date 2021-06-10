@@ -42,6 +42,24 @@ class DriverExecution : AtsExecution
         Close = 3
     };
 
+    private void WaitWindowReady(Application app)
+    {
+        int maxTry = 20;
+        while (maxTry > 0)
+        {
+            try
+            {
+                app.WaitWhileBusy(TimeSpan.FromSeconds(7));
+                return;
+            }
+            catch (InvalidOperationException e)
+            {
+                System.Threading.Thread.Sleep(200);
+                maxTry--;
+            }
+        }
+    }
+       
     public DriverExecution(int t, string[] commandsData, DesktopData[] caps, DesktopManager desktop) : base()
     {
         DriverType type = (DriverType)t;
@@ -119,7 +137,7 @@ class DriverExecution : AtsExecution
 
                                             if (window != null)
                                             {
-                                                window.UpdateApplicationData(uwpProcess);
+                                                window.UpdateApplicationData(uwpProcess, app.Name);
                                                 response.Windows = new DesktopWindow[] { window };
                                             }
                                             else
@@ -164,7 +182,7 @@ class DriverExecution : AtsExecution
                             DesktopWindow window = desktop.getWindowByProcess(appProcess);
                             if (window != null)
                             {
-                                window.UpdateApplicationData(appProcess);
+                                window.UpdateApplicationData(appProcess, appProcess.ProcessName);
                                 response.Windows = new DesktopWindow[] { window };
                             }
                             else
@@ -203,8 +221,8 @@ class DriverExecution : AtsExecution
                             try
                             {
                                 Application app = Application.Launch(startInfo);
-                                app.WaitWhileBusy(TimeSpan.FromSeconds(7));
-
+                                WaitWindowReady(app);
+                                
                                 if (app.HasExited)
                                 {
                                     response.setError(errorCode, "the process has exited, you may try another way to start this application (UWP ?)");
@@ -216,7 +234,7 @@ class DriverExecution : AtsExecution
                             }
                             catch (Exception e)
                             {
-                                response.setError(errorCode, "cannot start application : " + e.Message);
+                                response.setError(errorCode, "cannot start application : " + e.ToString() + " - " + e.Message);
                             }
                         }
 
@@ -225,7 +243,7 @@ class DriverExecution : AtsExecution
                             DesktopWindow window = desktop.GetAppMainWindow(proc);
                             if (window != null)
                             {
-                                window.UpdateApplicationData(proc);
+                                window.UpdateApplicationData(proc, applicationPath);
                                 response.Windows = new DesktopWindow[] { window };
                             }
                             else
