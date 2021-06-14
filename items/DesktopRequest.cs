@@ -17,6 +17,7 @@ specific language governing permissions and limitations
 under the License.
  */
 
+using System.ComponentModel;
 using System.Net;
 using System.Runtime.Serialization;
 using windowsdriver;
@@ -104,7 +105,7 @@ public class DesktopResponse
     public void setError(int code, string message)
     {
         ErrorCode = code;
-        ErrorMessage = message;
+        ErrorMessage = message.TrimEnd('\r', '\n');
     }
 
     [DataMember(Name = "windows", IsRequired = false)]
