@@ -46,7 +46,7 @@ public class DesktopWindow : AtsElement
     public string AppBuildVersion;
 
     [DataMember(Name = "appName")]
-    public string AppName;
+    private string appName;
 
     [DataMember(Name = "appPath")]
     public string AppPath;
@@ -66,6 +66,8 @@ public class DesktopWindow : AtsElement
     private bool isMaximized = false;
 
     private DesktopManager desktop;
+
+    public string AppName { get => appName == "" ? null : appName; set => appName = value; }
 
     public DesktopWindow(AutomationElement elem, Rectangle deskRect) : base(elem)
     {
